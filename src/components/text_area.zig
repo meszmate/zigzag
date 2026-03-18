@@ -692,9 +692,19 @@ pub const TextArea = struct {
 
         if (width_limit == 0) return;
 
+        const preserve_ansi = std.mem.indexOfScalar(u8, line, 0x1b) != null;
         var rendered_width: usize = 0;
         var byte_idx = start;
         while (byte_idx < end and rendered_width < width_limit) {
+            if (line[byte_idx] == 0x1b) {
+                const seq_end = ansiSequenceEnd(line, byte_idx);
+                if (seq_end > byte_idx) {
+                    try writer.writeAll(line[byte_idx..seq_end]);
+                    byte_idx = seq_end;
+                    continue;
+                }
+            }
+
             const is_cursor = is_cursor_line and self.focused and byte_idx == self.cursor_col;
 
             const byte_len = std.unicode.utf8ByteSequenceLength(line[byte_idx]) catch 1;
@@ -713,6 +723,8 @@ pub const TextArea = struct {
                 const styled = try self.cursor_style.render(allocator, char_slice);
                 defer allocator.free(styled);
                 try writer.writeAll(styled);
+            } else if (preserve_ansi) {
+                try writer.writeAll(char_slice);
             } else {
                 const styled = try self.text_style.render(allocator, char_slice);
                 defer allocator.free(styled);
@@ -739,6 +751,7 @@ pub const TextArea = struct {
 
     fn renderLine(self: *const TextArea, writer: anytype, allocator: std.mem.Allocator, line: []const u8, line_idx: usize, max_width: u16) !void {
         const is_cursor_line = line_idx == self.cursor_row;
+        const preserve_ansi = std.mem.indexOfScalar(u8, line, 0x1b) != null;
 
         // Apply horizontal scroll
         var col: usize = 0;
@@ -746,6 +759,13 @@ pub const TextArea = struct {
 
         // Skip to viewport_col (using display columns)
         while (col < self.viewport_col and byte_idx < line.len) {
+            if (line[byte_idx] == 0x1b) {
+                const seq_end = ansiSequenceEnd(line, byte_idx);
+                if (seq_end > byte_idx) {
+                    byte_idx = seq_end;
+                    continue;
+                }
+            }
             const byte_len = std.unicode.utf8ByteSequenceLength(line[byte_idx]) catch 1;
             if (byte_idx + byte_len <= line.len) {
                 const cp = std.unicode.utf8Decode(line[byte_idx..][0..byte_len]) catch {
@@ -761,6 +781,15 @@ pub const TextArea = struct {
         // Render visible portion
         var rendered_width: usize = 0;
         while (byte_idx < line.len and rendered_width < max_width) {
+            if (line[byte_idx] == 0x1b) {
+                const seq_end = ansiSequenceEnd(line, byte_idx);
+                if (seq_end > byte_idx) {
+                    try writer.writeAll(line[byte_idx..seq_end]);
+                    byte_idx = seq_end;
+                    continue;
+                }
+            }
+
             const is_cursor = is_cursor_line and self.focused and byte_idx == self.cursor_col;
 
             const byte_len = std.unicode.utf8ByteSequenceLength(line[byte_idx]) catch 1;
@@ -781,6 +810,8 @@ pub const TextArea = struct {
                 const styled = try self.cursor_style.render(allocator, char_slice);
                 defer allocator.free(styled);
                 try writer.writeAll(styled);
+            } else if (preserve_ansi) {
+                try writer.writeAll(char_slice);
             } else {
                 const styled = try self.text_style.render(allocator, char_slice);
                 defer allocator.free(styled);
@@ -813,6 +844,13 @@ pub const TextArea = struct {
         var display_col: usize = 0;
         var byte_idx: usize = 0;
         while (byte_idx < self.cursor_col and byte_idx < line.items.len) {
+            if (line.items[byte_idx] == 0x1b) {
+                const seq_end = ansiSequenceEnd(line.items, byte_idx);
+                if (seq_end > byte_idx) {
+                    byte_idx = seq_end;
+                    continue;
+                }
+            }
             const byte_len = std.unicode.utf8ByteSequenceLength(line.items[byte_idx]) catch 1;
             if (byte_idx + byte_len <= line.items.len) {
                 const cp = std.unicode.utf8Decode(line.items[byte_idx..][0..byte_len]) catch {
@@ -964,6 +1002,13 @@ pub const TextArea = struct {
         var segment_width: usize = 0;
 
         while (i < line.len) {
+            if (line[i] == 0x1b) {
+                const seq_end = ansiSequenceEnd(line, i);
+                if (seq_end > i) {
+                    i = seq_end;
+                    continue;
+                }
+            }
             const byte_len = std.unicode.utf8ByteSequenceLength(line[i]) catch 1;
             if (i + byte_len > line.len) break;
 
@@ -994,6 +1039,13 @@ pub const TextArea = struct {
         var width: usize = 0;
         var i = @min(start, clamped_end);
         while (i < clamped_end) {
+            if (line[i] == 0x1b) {
+                const seq_end = ansiSequenceEnd(line, i);
+                if (seq_end > i) {
+                    i = @min(seq_end, clamped_end);
+                    continue;
+                }
+            }
             const byte_len = std.unicode.utf8ByteSequenceLength(line[i]) catch 1;
             if (i + byte_len > line.len) break;
             const cp = std.unicode.utf8Decode(line[i..][0..byte_len]) catch {
@@ -1016,6 +1068,14 @@ pub const TextArea = struct {
         var i = clamped_start;
         while (i < clamped_end) {
             if (col >= target_col) return i;
+
+            if (line[i] == 0x1b) {
+                const seq_end = ansiSequenceEnd(line, i);
+                if (seq_end > i) {
+                    i = @min(seq_end, clamped_end);
+                    continue;
+                }
+            }
 
             const byte_len = std.unicode.utf8ByteSequenceLength(line[i]) catch 1;
             if (i + byte_len > line.len) break;
@@ -1041,6 +1101,39 @@ pub const TextArea = struct {
         return @min(char_width, max_width);
     }
 
+    // ANSI escape parsing reference:
+    // https://zh.wikipedia.org/wiki/ANSI%E8%BD%AC%E4%B9%89%E5%BA%8F%E5%88%97
+    // For CSI, the final byte follows the standard 0x40..0x7E range.
+    fn ansiSequenceEnd(line: []const u8, start: usize) usize {
+        if (start >= line.len or line[start] != 0x1b or start + 1 >= line.len) return start;
+
+        switch (line[start + 1]) {
+            // CSI
+            '[' => {
+                var i = start + 2;
+                while (i < line.len) : (i += 1) {
+                    const c = line[i];
+                    if (c >= 0x40 and c <= 0x7E) return i + 1;
+                    if (c < 0x20 or c == 0x7F) return start;
+                }
+                return start;
+            },
+            // OSC
+            ']' => {
+                var i = start + 2;
+                while (i < line.len) : (i += 1) {
+                    if (line[i] == 0x07) return i + 1;
+                    if (line[i] == 0x1b) {
+                        const next = i + 1;
+                        if (next < line.len and line[next] == '\\') return next + 1;
+                    }
+                }
+                return start;
+            },
+            else => return @min(start + 2, line.len),
+        }
+    }
+
     fn clampCursorToLineBoundary(self: *TextArea) void {
         const line = self.currentLine();
         self.cursor_col = clampToUtf8Boundary(line.items, self.cursor_col);
@@ -1054,3 +1147,33 @@ pub const TextArea = struct {
         return clamped;
     }
 };
+
+test "word wrap preserves ansi styled content" {
+    const allocator = std.testing.allocator;
+
+    const dim = (style_mod.Style{}).dim(true).fg(Color.gray(8));
+    const bad = (style_mod.Style{}).bg(Color.red()).fg(Color.white()).bold(true);
+
+    const dimmed = try dim.render(allocator, "abc");
+    defer allocator.free(dimmed);
+    const highlighted = try bad.render(allocator, "de");
+    defer allocator.free(highlighted);
+    const styled_text = try std.fmt.allocPrint(allocator, "{s}{s}{s}", .{ dimmed, highlighted, "fg" });
+    defer allocator.free(styled_text);
+
+    var area = TextArea.init(allocator);
+    defer area.deinit();
+    area.word_wrap = true;
+    area.focused = false;
+    area.setSize(4, 3);
+    try area.setValue(styled_text);
+
+    const rendered = try area.view(allocator);
+    defer allocator.free(rendered);
+
+    try std.testing.expect(std.mem.indexOf(u8, rendered, "\x1b[2m") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rendered, "\x1b[41m") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rendered, "abc") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rendered, "fg") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rendered, "[0m[") == null);
+}
