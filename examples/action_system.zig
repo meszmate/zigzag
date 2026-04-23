@@ -7,6 +7,10 @@ const zz = @import("zigzag");
 const Model = struct {
     registry: zz.ActionRegistry,
     palette: zz.CommandPalette,
+    /// Owns the shortcut strings handed to the palette by reference.
+    /// CommandPalette stores Command structs verbatim and never frees the
+    /// shortcut bytes itself, so we keep them here and free them on deinit.
+    palette_shortcuts: std.array_list.Managed([]u8),
     palette_open: bool,
     counter: i32,
     last_action: []const u8,
@@ -85,21 +89,26 @@ const Model = struct {
         self.* = .{
             .registry = reg,
             .palette = palette,
+            .palette_shortcuts = std.array_list.Managed([]u8).init(persistent),
             .palette_open = false,
             .counter = 0,
             .last_action = "(none yet)",
         };
 
-        // Push every registered action into the palette. Allocate shortcut
-        // strings on the persistent allocator so they survive across frames
-        // (the palette stores them by reference).
+        // Build palette commands. Shortcut strings are owned by
+        // palette_shortcuts on the Model so they outlive any frame yet still
+        // get freed on deinit — the palette only borrows the bytes.
         var palette_cmds = std.array_list.Managed(zz.Command).init(persistent);
         defer palette_cmds.deinit();
         for (self.registry.actions.items) |a| {
-            const shortcut: []const u8 = if (a.binding) |b|
-                zz.ActionRegistry.formatKey(persistent, b) catch ""
-            else
-                "";
+            const shortcut: []const u8 = if (a.binding) |b| blk: {
+                const formatted = zz.ActionRegistry.formatKey(persistent, b) catch break :blk "";
+                self.palette_shortcuts.append(formatted) catch {
+                    persistent.free(formatted);
+                    break :blk "";
+                };
+                break :blk formatted;
+            } else "";
             palette_cmds.append(.{
                 .id = a.id,
                 .label = a.label,
@@ -113,6 +122,8 @@ const Model = struct {
     }
 
     pub fn deinit(self: *Model) void {
+        for (self.palette_shortcuts.items) |s| self.palette_shortcuts.allocator.free(s);
+        self.palette_shortcuts.deinit();
         self.registry.deinit();
         self.palette.deinit();
     }
