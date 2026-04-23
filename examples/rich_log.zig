@@ -16,7 +16,7 @@ const Model = struct {
     };
 
     pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
-        var log = zz.components.RichLog.init(ctx.allocator, 500);
+        var log = zz.components.RichLog.init(ctx.persistent_allocator, 500);
         log.setSize(80, 14);
         log.show_timestamps = true;
 
@@ -29,7 +29,7 @@ const Model = struct {
         self.* = .{
             .log = log,
             .counter = 0,
-            .search_term = std.array_list.Managed(u8).init(ctx.allocator),
+            .search_term = std.array_list.Managed(u8).init(ctx.persistent_allocator),
             .typing_search = false,
         };
         return .{ .every = 700 * std.time.ns_per_ms };

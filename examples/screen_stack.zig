@@ -141,7 +141,7 @@ const Model = struct {
     };
 
     pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
-        var stack = zz.ScreenStack.init(ctx.allocator);
+        var stack = zz.ScreenStack.init(ctx.persistent_allocator);
         stack.push(home_screen) catch return .quit;
         self.* = .{ .stack = stack };
         return .none;

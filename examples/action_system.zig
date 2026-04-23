@@ -16,7 +16,8 @@ const Model = struct {
     };
 
     pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
-        var reg = zz.ActionRegistry.init(ctx.allocator);
+        const persistent = ctx.persistent_allocator;
+        var reg = zz.ActionRegistry.init(persistent);
 
         // Footer-visible actions.
         reg.register(.{
@@ -78,7 +79,7 @@ const Model = struct {
         reg.addAlias("counter.inc", .{ .key = .up }) catch {};
         reg.addAlias("counter.dec", .{ .key = .down }) catch {};
 
-        var palette = zz.CommandPalette.init(ctx.allocator) catch return .quit;
+        var palette = zz.CommandPalette.init(persistent) catch return .quit;
         palette.placeholder = "Search commands…";
 
         self.* = .{
@@ -89,12 +90,14 @@ const Model = struct {
             .last_action = "(none yet)",
         };
 
-        // Push every registered action into the palette.
-        var palette_cmds = std.array_list.Managed(zz.Command).init(ctx.allocator);
+        // Push every registered action into the palette. Allocate shortcut
+        // strings on the persistent allocator so they survive across frames
+        // (the palette stores them by reference).
+        var palette_cmds = std.array_list.Managed(zz.Command).init(persistent);
         defer palette_cmds.deinit();
         for (self.registry.actions.items) |a| {
-            const shortcut = if (a.binding) |b|
-                zz.ActionRegistry.formatKey(ctx.allocator, b) catch ""
+            const shortcut: []const u8 = if (a.binding) |b|
+                zz.ActionRegistry.formatKey(persistent, b) catch ""
             else
                 "";
             palette_cmds.append(.{

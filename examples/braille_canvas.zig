@@ -19,7 +19,7 @@ const Model = struct {
     };
 
     pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
-        const c = zz.components.BrailleCanvas.init(ctx.allocator, 50, 12) catch return .quit;
+        const c = zz.components.BrailleCanvas.init(ctx.persistent_allocator, 50, 12) catch return .quit;
         self.* = .{
             .canvas = c,
             .ball_x = 10,

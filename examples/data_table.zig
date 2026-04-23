@@ -36,7 +36,7 @@ const Model = struct {
     };
 
     pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
-        var t = zz.components.DataTable.init(ctx.allocator);
+        var t = zz.components.DataTable.init(ctx.persistent_allocator);
         t.setColumns(&headers) catch return .quit;
         for (rows) |r| t.addRow(r) catch {};
         t.setSize(60, 15);
