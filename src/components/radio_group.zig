@@ -2,6 +2,7 @@
 //! Single-select option group with radio button semantics.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -216,8 +217,8 @@ pub fn RadioGroup(comptime T: type) type {
         }
 
         pub fn view(self: *const Self, allocator: std.mem.Allocator) ![]const u8 {
-            var result = std.array_list.Managed(u8).init(allocator);
-            const writer = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const writer = &result.writer;
 
             var rendered: usize = 0;
             while (rendered < self.height) : (rendered += 1) {

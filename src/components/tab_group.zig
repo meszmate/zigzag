@@ -3,6 +3,7 @@
 //! type-erased view routing for multi-screen applications.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const measure = @import("../layout/measure.zig");
 const style_mod = @import("../style/style.zig");
@@ -762,8 +763,8 @@ pub const TabGroup = struct {
             }
         }
 
-        var out = std.array_list.Managed(u8).init(allocator);
-        const writer = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const writer = &out.writer;
 
         if (start > 0) try writer.writeAll(left_marker);
         for (start..end) |i| {
@@ -794,8 +795,8 @@ pub const TabGroup = struct {
             return renderer(ctx, allocator, tab, state);
         }
 
-        var base = std.array_list.Managed(u8).init(allocator);
-        const writer = base.writer();
+        var base: Writer.Allocating = .init(allocator);
+        const writer = &base.writer;
 
         try writer.writeAll(self.tab_prefix);
         if (self.show_numbers) {
@@ -1055,8 +1056,8 @@ fn rangeWidthWithMarkers(parts: []const []const u8, separator: []const u8, start
 fn joinPieces(allocator: std.mem.Allocator, parts: []const []const u8, separator: []const u8) ![]const u8 {
     if (parts.len == 0) return allocator.dupe(u8, "");
 
-    var out = std.array_list.Managed(u8).init(allocator);
-    const writer = out.writer();
+    var out: Writer.Allocating = .init(allocator);
+    const writer = &out.writer;
     for (parts, 0..) |part, i| {
         if (i > 0) try writer.writeAll(separator);
         try writer.writeAll(part);

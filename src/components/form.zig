@@ -2,6 +2,7 @@
 //! Composes multiple input fields with focus management, labels, and validation.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -205,8 +206,8 @@ pub fn Form(comptime max_fields: usize) type {
 
         /// Render the form.
         pub fn view(self: *const Self, allocator: std.mem.Allocator) ![]const u8 {
-            var result = std.array_list.Managed(u8).init(allocator);
-            const writer = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const writer = &result.writer;
 
             // Title
             if (self.title.len > 0) {

@@ -5,6 +5,7 @@
 //! exposes methods for navigating through the flow.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -133,8 +134,8 @@ pub const Stepper = struct {
     }
 
     fn viewHorizontal(self: *const Stepper, allocator: std.mem.Allocator) ![]const u8 {
-        var out = std.array_list.Managed(u8).init(allocator);
-        const w = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const w = &out.writer;
 
         for (self.steps.items, 0..) |step, i| {
             if (i > 0) {
@@ -170,8 +171,8 @@ pub const Stepper = struct {
     }
 
     fn viewVertical(self: *const Stepper, allocator: std.mem.Allocator) ![]const u8 {
-        var out = std.array_list.Managed(u8).init(allocator);
-        const w = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const w = &out.writer;
 
         for (self.steps.items, 0..) |step, i| {
             if (i > 0) try w.writeByte('\n');

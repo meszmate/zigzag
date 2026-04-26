@@ -2,6 +2,7 @@
 //! Provides horizontal and vertical joining with alignment options.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const measure = @import("measure.zig");
 
 /// Vertical alignment for horizontal joins
@@ -54,8 +55,8 @@ pub fn horizontal(allocator: std.mem.Allocator, valign: VAlign, parts: []const [
     }
 
     // Build result
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     for (0..max_height) |row| {
         if (row > 0) try writer.writeByte('\n');
@@ -110,8 +111,8 @@ pub fn vertical(allocator: std.mem.Allocator, halign: HAlign, parts: []const []c
         max_width = @max(max_width, measure.maxLineWidth(part));
     }
 
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     for (parts, 0..) |part, part_idx| {
         if (part_idx > 0) try writer.writeByte('\n');

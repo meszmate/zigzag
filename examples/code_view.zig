@@ -12,7 +12,7 @@ const zig_source =
     \\    defer _ = gpa.deinit();
     \\
     \\    const allocator = gpa.allocator();
-    \\    var list = std.ArrayList(u32).init(allocator);
+    \\    var list = std.std.array_list.Managed(u32).init(allocator);
     \\    defer list.deinit();
     \\
     \\    // Add some numbers

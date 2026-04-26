@@ -2,6 +2,7 @@
 //! Provides configurable overflow policies: clip, ellipsis, word-wrap, char-wrap.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const measure = @import("../layout/measure.zig");
 
 /// Overflow policy for text that exceeds width constraints.
@@ -28,7 +29,7 @@ pub fn applyOverflow(
 ) ![]const u8 {
     if (policy == .visible or max_width == 0) return text;
 
-    var result = std.array_list.Managed(u8).init(allocator);
+    var result: std.array_list.Managed(u8) = .init(allocator);
 
     var lines = std.mem.splitScalar(u8, text, '\n');
     var first_line = true;
@@ -45,7 +46,7 @@ pub fn applyOverflow(
         }
     }
 
-    return try result.toOwnedSlice();
+    return result.toOwnedSlice();
 }
 
 fn applyClip(result: *std.array_list.Managed(u8), line: []const u8, max_width: u16) !void {

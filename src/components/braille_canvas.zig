@@ -9,6 +9,7 @@
 //! caller already knows pixel coordinates.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -300,8 +301,8 @@ pub const BrailleCanvas = struct {
             }
         }
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const w = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const w = &result.writer;
 
         var row: usize = 0;
         while (row < self.cell_height) : (row += 1) {

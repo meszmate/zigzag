@@ -2,6 +2,7 @@
 //! Three-screen flow: Home → Settings → modal Confirm dialog.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const zz = @import("zigzag");
 
 // ── Home screen ─────────────────────────────────────────────────────────
@@ -161,9 +162,9 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         const view_str = self.stack.view(ctx, ctx.allocator) catch "Error";
 
-        var trail = std.array_list.Managed(u8).init(ctx.allocator);
+        var trail: Writer.Allocating = .init(ctx.allocator);
         defer trail.deinit();
-        const w = trail.writer();
+        const w = &trail.writer;
         w.writeAll("stack: ") catch {};
         for (self.stack.stack.items, 0..) |s, i| {
             if (i > 0) w.writeAll(" › ") catch {};
@@ -173,7 +174,7 @@ const Model = struct {
         var trail_style = zz.Style{};
         trail_style = trail_style.fg(.gray(10));
         trail_style = trail_style.inline_style(true);
-        const trail_str = trail_style.render(ctx.allocator, trail.items) catch "";
+        const trail_str = trail_style.render(ctx.allocator, trail.writer.buffered()) catch "";
 
         return std.fmt.allocPrint(ctx.allocator, "{s}\n\n{s}", .{ trail_str, view_str }) catch view_str;
     }

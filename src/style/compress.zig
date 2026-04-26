@@ -110,8 +110,8 @@ pub const StyleState = struct {
 /// Post-process an ANSI string to remove redundant escape sequences.
 /// Strips consecutive resets and duplicate attribute settings.
 pub fn compressAnsi(allocator: std.mem.Allocator, input: []const u8) ![]const u8 {
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     var i: usize = 0;
     var last_was_reset = false;

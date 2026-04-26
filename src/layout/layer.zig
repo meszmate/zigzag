@@ -3,6 +3,7 @@
 //! into a single output with proper z-ordering and transparency.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const measure = @import("measure.zig");
 
 /// A single layer in the stack.
@@ -81,8 +82,8 @@ pub const LayerStack = struct {
         }
 
         // Render grid to string
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         for (0..h) |row| {
             if (row > 0) writer.writeByte('\n') catch {};
@@ -98,7 +99,7 @@ pub const LayerStack = struct {
             }
         }
 
-        return result.items;
+        return result.toArrayList().items;
     }
 
     fn paintLayer(self: *const LayerStack, grid: []Cell, w: usize, h: usize, layer: Layer) void {

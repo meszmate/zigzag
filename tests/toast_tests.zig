@@ -1,4 +1,5 @@
 const std = @import("std");
+const Writer = std.Io.Writer;
 const testing = std.testing;
 const zz = @import("zigzag");
 
@@ -212,7 +213,7 @@ fn rightEdgeDisplay(line: []const u8) usize {
 }
 
 fn stripAnsi(allocator: std.mem.Allocator, text: []const u8) ![]const u8 {
-    var result = std.array_list.Managed(u8).init(allocator);
+    var result: std.array_list.Managed(u8) = .init(allocator);
     errdefer result.deinit();
 
     var i: usize = 0;

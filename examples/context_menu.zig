@@ -2,6 +2,7 @@
 //! Demonstrates a popup context menu triggered by keyboard.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const zz = @import("zigzag");
 
 const Action = enum { cut, copy, paste, delete, select_all, properties };
@@ -89,8 +90,8 @@ const Model = struct {
         const title = title_style.render(ctx.allocator, "Context Menu Example") catch "Context Menu";
 
         // File list
-        var list_buf = std.array_list.Managed(u8).init(ctx.allocator);
-        const lw = list_buf.writer();
+        var list_buf: Writer.Allocating = .init(ctx.allocator);
+        const lw = &list_buf.writer;
         for (self.items, 0..) |item, i| {
             if (i > 0) lw.writeByte('\n') catch {};
             if (i == self.selected) {

@@ -2,6 +2,7 @@
 //! Provides various border character sets and drawing functions.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const measure = @import("../layout/measure.zig");
 
 /// Border character set
@@ -240,8 +241,8 @@ pub fn drawBorder(
     width: usize,
     height: usize,
 ) ![]const u8 {
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     const inner_width = if (sides.left and sides.right) width -| 2 else if (sides.left or sides.right) width -| 1 else width;
 

@@ -2,6 +2,7 @@
 //! Displays a list of items with selection and optional filtering.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -405,8 +406,8 @@ pub fn List(comptime T: type) type {
 
         /// Render the list
         pub fn view(self: *const Self, allocator: std.mem.Allocator) ![]const u8 {
-            var result = std.array_list.Managed(u8).init(allocator);
-            const writer = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const writer = &result.writer;
 
             // Filter line
             if (self.filter_enabled) {

@@ -2,6 +2,7 @@
 //! Properly handles ANSI escape sequences and Unicode characters.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const unicode = @import("../unicode.zig");
 
 /// Calculate the visible width of a string (excluding ANSI escape sequences)
@@ -141,7 +142,7 @@ pub fn padRight(allocator: std.mem.Allocator, str: []const u8, target_width: usi
     const current_width = width(str);
     if (current_width >= target_width) return try allocator.dupe(u8, str);
 
-    var result = std.array_list.Managed(u8).init(allocator);
+    var result: std.array_list.Managed(u8) = .init(allocator);
     try result.appendSlice(str);
 
     for (0..(target_width - current_width)) |_| {
@@ -156,7 +157,7 @@ pub fn padLeft(allocator: std.mem.Allocator, str: []const u8, target_width: usiz
     const current_width = width(str);
     if (current_width >= target_width) return try allocator.dupe(u8, str);
 
-    var result = std.array_list.Managed(u8).init(allocator);
+    var result: std.array_list.Managed(u8) = .init(allocator);
 
     for (0..(target_width - current_width)) |_| {
         try result.append(' ');
@@ -175,7 +176,7 @@ pub fn center(allocator: std.mem.Allocator, str: []const u8, target_width: usize
     const left_padding = total_padding / 2;
     const right_padding = total_padding - left_padding;
 
-    var result = std.array_list.Managed(u8).init(allocator);
+    var result: std.array_list.Managed(u8) = .init(allocator);
 
     for (0..left_padding) |_| {
         try result.append(' ');
@@ -199,7 +200,7 @@ pub fn truncate(allocator: std.mem.Allocator, str: []const u8, max_width: usize)
         return result;
     }
 
-    var result = std.array_list.Managed(u8).init(allocator);
+    var result: std.array_list.Managed(u8) = .init(allocator);
     var w: usize = 0;
     var i: usize = 0;
     var in_escape = false;

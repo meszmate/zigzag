@@ -2,6 +2,7 @@
 //! Provides structured key binding definitions with matching and help integration.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const Key = keys.Key;
 const KeyEvent = keys.KeyEvent;
@@ -23,8 +24,8 @@ pub const KeyBinding = struct {
 
     /// Get a display string for the key
     pub fn keyDisplay(self: *const KeyBinding, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         if (self.key_event.modifiers.ctrl) try writer.writeAll("ctrl+");
         if (self.key_event.modifiers.alt) try writer.writeAll("alt+");

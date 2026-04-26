@@ -985,8 +985,8 @@ pub const StyleRange = struct {
 
 /// Render text with different styles applied to specific byte ranges
 pub fn renderWithRanges(allocator: std.mem.Allocator, text: []const u8, ranges: []const StyleRange) ![]const u8 {
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     var pos: usize = 0;
     while (pos < text.len) {
@@ -1029,8 +1029,8 @@ pub fn renderWithHighlights(
     highlight_style: Style,
     base_style: Style,
 ) ![]const u8 {
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     var pos: usize = 0;
     var pi: usize = 0; // position index

@@ -3,6 +3,7 @@
 //! and semantic role annotations for terminal UIs.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const Color = @import("style/color.zig").Color;
 
 /// WCAG 2.1 contrast ratio levels.
@@ -119,30 +120,30 @@ pub const AccessibleLabel = struct {
 
     /// Format an accessible description string for screen readers.
     pub fn format(self: AccessibleLabel, allocator: std.mem.Allocator) ![]const u8 {
-        var parts = std.array_list.Managed(u8).init(allocator);
-        const w = parts.writer();
+        var parts: Writer.Allocating = .init(allocator);
+        const w = &parts.writer;
 
         if (self.role != .none) {
             try w.writeAll(self.role.label());
         }
 
         if (self.name.len > 0) {
-            if (parts.items.len > 0) try w.writeAll(": ");
+            if (parts.writer.buffered().len > 0) try w.writeAll(": ");
             try w.writeAll(self.name);
         }
 
         if (self.value.len > 0) {
-            if (parts.items.len > 0) try w.writeAll(", ");
+            if (parts.writer.buffered().len > 0) try w.writeAll(", ");
             try w.writeAll(self.value);
         }
 
         if (self.state.len > 0) {
-            if (parts.items.len > 0) try w.writeAll(", ");
+            if (parts.writer.buffered().len > 0) try w.writeAll(", ");
             try w.writeAll(self.state);
         }
 
         if (self.description.len > 0) {
-            if (parts.items.len > 0) try w.writeAll(" - ");
+            if (parts.writer.buffered().len > 0) try w.writeAll(" - ");
             try w.writeAll(self.description);
         }
 

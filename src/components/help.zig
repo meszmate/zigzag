@@ -2,6 +2,7 @@
 //! Shows keyboard shortcuts and their descriptions.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 const measure = @import("../layout/measure.zig");
@@ -117,8 +118,8 @@ pub const Help = struct {
             return try allocator.dupe(u8, "");
         }
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         var total_width: usize = 0;
 
@@ -180,8 +181,8 @@ pub const Help = struct {
             max_key_width = @max(max_key_width, measure.width(binding.key));
         }
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         for (self.bindings.items, 0..) |binding, i| {
             if (i > 0) try writer.writeByte('\n');

@@ -255,8 +255,8 @@ pub fn Table(comptime num_cols: usize) type {
 
         /// Render the table
         pub fn view(self: *const Self, allocator: std.mem.Allocator) ![]const u8 {
-            var result = std.array_list.Managed(u8).init(allocator);
-            const writer = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const writer = &result.writer;
 
             const widths = self.calculateWidths();
 

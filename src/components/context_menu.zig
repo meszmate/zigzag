@@ -316,8 +316,8 @@ pub fn ContextMenu(comptime Action: type) type {
                         const is_active = (i == self.cursor);
                         const s = if (!a.enabled) self.disabled_style else if (is_active) self.active_style else self.item_style;
 
-                        var line = std.array_list.Managed(u8).init(allocator);
-                        const lw = line.writer();
+                        var line: Writer.Allocating = .init(allocator);
+                        const lw = &line.writer;
                         try lw.writeByte(' ');
                         try lw.writeAll(a.label);
 

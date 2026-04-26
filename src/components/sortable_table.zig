@@ -2,6 +2,7 @@
 //! Extends basic table with column sorting and text filtering.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 const border_mod = @import("../style/border.zig");
@@ -199,8 +200,8 @@ pub fn SortableTable(comptime num_cols: usize) type {
         }
 
         pub fn view(self: *const Self, allocator: std.mem.Allocator) []const u8 {
-            var result = std.array_list.Managed(u8).init(allocator);
-            const writer = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const writer = &result.writer;
 
             // Compute column widths
             var widths: [num_cols]usize = undefined;
@@ -280,7 +281,7 @@ pub fn SortableTable(comptime num_cols: usize) type {
             cs = cs.inline_style(true);
             writer.writeAll(cs.render(allocator, count) catch count) catch {};
 
-            return result.items;
+            return result.toArrayList().items;
         }
 
         fn padTo(allocator: std.mem.Allocator, text: []const u8, target: usize, alignment: Align) []const u8 {

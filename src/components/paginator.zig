@@ -2,6 +2,7 @@
 //! Displays page indicators and handles navigation.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -153,8 +154,8 @@ pub const Paginator = struct {
     }
 
     fn viewDots(self: *const Paginator, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         for (0..self.total_pages) |i| {
             if (i > 0) try writer.writeByte(' ');
@@ -177,8 +178,8 @@ pub const Paginator = struct {
     }
 
     fn viewCompact(self: *const Paginator, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // Show limited range of pages
         const max_visible = 5;

@@ -766,8 +766,8 @@ const CellGrid = struct {
     /// Emits SGR sequences only when the style changes between cells
     /// (like Ratatui's Buffer::diff), producing minimal output.
     fn render(self: *const CellGrid, allocator: std.mem.Allocator) ![]const u8 {
-        var buf = std.array_list.Managed(u8).init(allocator);
-        const wr = buf.writer();
+        var buf: Writer.Allocating = .init(allocator);
+        const wr = &buf.writer;
 
         var prev_style = CellStyle{};
 

@@ -1,6 +1,7 @@
 //! Sparkline component with configurable aggregation and styling.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const charting = @import("charting.zig");
 const progress = @import("progress.zig");
 const style_mod = @import("../style/style.zig");
@@ -110,8 +111,8 @@ pub const Sparkline = struct {
         var visible = try self.bucketValues(allocator);
         defer visible.deinit();
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         if (visible.items.len == 0) {
             for (0..self.display_width) |_| try writer.writeAll(self.empty_char);

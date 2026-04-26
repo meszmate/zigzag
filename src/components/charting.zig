@@ -1,6 +1,7 @@
 //! Shared plotting primitives for chart-like components.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const measure = @import("../layout/measure.zig");
 const style_mod = @import("../style/style.zig");
 
@@ -179,8 +180,8 @@ pub const CellBuffer = struct {
     }
 
     pub fn render(self: *const CellBuffer, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         var glyph_buf: [4]u8 = undefined;
 

@@ -2,6 +2,7 @@
 //! Comprehensive multi-tab application demonstrating ALL framework features.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const zz = @import("zigzag");
 
 const Tab = enum {
@@ -511,8 +512,8 @@ const Model = struct {
     }
 
     fn renderTabBar(self: *const Model, ctx: *const zz.Context) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(ctx.allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(ctx.allocator);
+        const writer = &result.writer;
 
         const tabs = [_]Tab{ .dashboard, .charts, .data, .files, .editor, .unicode };
         for (tabs, 0..) |tab, i| {
@@ -578,15 +579,12 @@ const Model = struct {
         const sparkline_row = try std.fmt.allocPrint(ctx.allocator, "{s}{s}", .{ spark_label, sparkline_view });
 
         // Spinner
-        const spinner_view = if (self.progress.isComplete())
-            blk: {
-                var done_style = zz.Style{};
-                done_style = done_style.fg(.green);
-                done_style = done_style.inline_style(true);
-                break :blk try done_style.render(ctx.allocator, "* All tasks complete!");
-            }
-        else
-            try self.spinner.viewWithTitle(ctx.allocator, "Processing...");
+        const spinner_view = if (self.progress.isComplete()) blk: {
+            var done_style = zz.Style{};
+            done_style = done_style.fg(.green);
+            done_style = done_style.inline_style(true);
+            break :blk try done_style.render(ctx.allocator, "* All tasks complete!");
+        } else try self.spinner.viewWithTitle(ctx.allocator, "Processing...");
 
         // Notifications
         const notif_view = try self.notifications.view(ctx.allocator);

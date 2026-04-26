@@ -2,6 +2,7 @@
 //! Demonstrates mouse tracking, hit testing, and interactive buttons.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const zz = @import("zigzag");
 
 const Model = struct {
@@ -106,8 +107,8 @@ const Model = struct {
         ) catch "";
 
         // Render buttons
-        var buttons_line = std.array_list.Managed(u8).init(ctx.allocator);
-        const bw = buttons_line.writer();
+        var buttons_line: Writer.Allocating = .init(ctx.allocator);
+        const bw = &buttons_line.writer;
         for (&self.buttons, 0..) |*btn, i| {
             if (i > 0) bw.writeAll("  ") catch {};
             var s = zz.Style{};

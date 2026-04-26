@@ -2,6 +2,7 @@
 //! Handles raw mode, alternate screen, mouse tracking, and input/output.
 
 const std = @import("std");
+const FixedWriter = std.Io.Writer.fixed;
 const builtin = @import("builtin");
 pub const ansi = @import("ansi.zig");
 pub const screen = @import("screen.zig");
@@ -261,10 +262,8 @@ pub const Config = struct {
 pub const Terminal = struct {
     state: platform.State,
     config: Config,
-    stdout: std.fs.File,
     stdin: std.fs.File,
-    write_buffer: [4096]u8 = undefined,
-    write_pos: usize = 0,
+    out: Writer,
     pending_input: [8192]u8 = undefined,
     pending_input_len: usize = 0,
     unicode_width_caps: UnicodeWidthCapabilities = .{},
@@ -276,8 +275,8 @@ pub const Terminal = struct {
         var term: Terminal = if (is_wasm) .{
             .state = state,
             .config = config,
-            .stdout = undefined,
             .stdin = undefined,
+            .out = .init({}),
         } else blk: {
             const stdout = config.output orelse std.fs.File.stdout();
             const stdin = config.input orelse std.fs.File.stdin();
@@ -285,17 +284,17 @@ pub const Terminal = struct {
             // Apply custom fd overrides
             if (builtin.os.tag != .windows) {
                 if (config.input) |inp| state.stdin_fd = inp.handle;
-                if (config.output) |out| state.stdout_fd = out.handle;
+                if (config.output) |o| state.stdout_fd = o.handle;
             } else {
                 if (config.input) |inp| state.stdin_handle = inp.handle;
-                if (config.output) |out| state.stdout_handle = out.handle;
+                if (config.output) |o| state.stdout_handle = o.handle;
             }
 
             break :blk .{
                 .state = state,
                 .config = config,
-                .stdout = stdout,
                 .stdin = stdin,
+                .out = .init(stdout),
             };
         };
 
@@ -393,15 +392,9 @@ pub const Terminal = struct {
         platform.disableRawMode(&self.state);
     }
 
-    /// Write bytes to internal buffer
+    /// Write bytes through the buffered terminal writer.
     fn writeBytes(self: *Terminal, bytes: []const u8) !void {
-        for (bytes) |byte| {
-            if (self.write_pos >= self.write_buffer.len) {
-                try self.flush();
-            }
-            self.write_buffer[self.write_pos] = byte;
-            self.write_pos += 1;
-        }
+        try self.writer().writeAll(bytes);
     }
 
     /// Get terminal size
@@ -435,26 +428,15 @@ pub const Terminal = struct {
         return platform.checkResize();
     }
 
-    /// Get a simple writer interface
-    pub fn writer(self: *Terminal) Writer {
-        return Writer{ .terminal = self };
+    /// Get a Writer interface.
+    pub fn writer(self: *Terminal) *std.Io.Writer {
+        self.out.bind();
+        return &self.out.writer;
     }
 
-    /// Flush output buffer
+    /// Flush buffered terminal output to the underlying sink.
     pub fn flush(self: *Terminal) !void {
-        if (self.write_pos > 0) {
-            if (is_wasm) {
-                platform.WasmWriter.write(&platform.wasm_writer_instance, self.write_buffer[0..self.write_pos]) catch {};
-            } else {
-                self.stdout.writeAll(self.write_buffer[0..self.write_pos]) catch |err| {
-                    return switch (err) {
-                        error.WouldBlock => error.WouldBlock,
-                        else => error.BrokenPipe,
-                    };
-                };
-            }
-            self.write_pos = 0;
-        }
+        try self.writer().flush();
     }
 
     /// Clear the screen
@@ -627,8 +609,7 @@ pub const Terminal = struct {
         if (!self.image_caps.kitty_graphics or image_data.len == 0) return false;
 
         var params_buf: [256]u8 = undefined;
-        var stream = std.io.fixedBufferStream(&params_buf);
-        const params_writer = stream.writer();
+        var params_writer = FixedWriter(&params_buf);
 
         try params_writer.print("a=T,t=d,f={d}", .{@intFromEnum(options.format)});
         if (options.quiet) try params_writer.writeAll(",q=2");
@@ -642,7 +623,7 @@ pub const Terminal = struct {
         if (options.pixel_width) |pw| try params_writer.print(",s={d}", .{pw});
         if (options.pixel_height) |ph| try params_writer.print(",v={d}", .{ph});
 
-        try self.sendKittyGraphicsPayload(stream.getWritten(), image_data);
+        try self.sendKittyGraphicsPayload(params_writer.buffered(), image_data);
         return true;
     }
 
@@ -652,8 +633,7 @@ pub const Terminal = struct {
         if (!self.image_caps.kitty_graphics or path.len == 0) return false;
 
         var params_buf: [256]u8 = undefined;
-        var stream = std.io.fixedBufferStream(&params_buf);
-        const params_writer = stream.writer();
+        var params_writer = FixedWriter(&params_buf);
 
         try params_writer.writeAll("a=T,t=f,f=100");
         if (options.quiet) try params_writer.writeAll(",q=2");
@@ -665,7 +645,7 @@ pub const Terminal = struct {
         if (options.z_index) |z| try params_writer.print(",z={d}", .{z});
         if (options.unicode_placeholder) try params_writer.writeAll(",U=1");
 
-        try self.sendKittyGraphicsPayload(stream.getWritten(), path);
+        try self.sendKittyGraphicsPayload(params_writer.buffered(), path);
         return true;
     }
 
@@ -675,8 +655,7 @@ pub const Terminal = struct {
         if (!self.image_caps.kitty_graphics or payload.len == 0) return false;
 
         var params_buf: [256]u8 = undefined;
-        var stream = std.io.fixedBufferStream(&params_buf);
-        const params_writer = stream.writer();
+        var params_writer = FixedWriter(&params_buf);
 
         try params_writer.print("a=t,i={d}", .{options.image_id});
         if (options.quiet) try params_writer.writeAll(",q=2");
@@ -695,7 +674,7 @@ pub const Terminal = struct {
             },
         }
 
-        try self.sendKittyGraphicsPayload(stream.getWritten(), payload);
+        try self.sendKittyGraphicsPayload(params_writer.buffered(), payload);
         return true;
     }
 
@@ -705,13 +684,12 @@ pub const Terminal = struct {
         if (!fileExists(path)) return false;
 
         var params_buf: [256]u8 = undefined;
-        var stream = std.io.fixedBufferStream(&params_buf);
-        const params_writer = stream.writer();
+        var params_writer = FixedWriter(&params_buf);
 
         try params_writer.print("a=t,t=f,f=100,i={d}", .{options.image_id});
         if (options.quiet) try params_writer.writeAll(",q=2");
 
-        try self.sendKittyGraphicsPayload(stream.getWritten(), path);
+        try self.sendKittyGraphicsPayload(params_writer.buffered(), path);
         return true;
     }
 
@@ -720,8 +698,7 @@ pub const Terminal = struct {
         if (!self.image_caps.kitty_graphics) return false;
 
         var params_buf: [256]u8 = undefined;
-        var stream = std.io.fixedBufferStream(&params_buf);
-        const params_writer = stream.writer();
+        var params_writer = FixedWriter(&params_buf);
 
         try params_writer.print("a=p,i={d}", .{options.image_id});
         if (options.quiet) try params_writer.writeAll(",q=2");
@@ -733,7 +710,7 @@ pub const Terminal = struct {
         if (options.unicode_placeholder) try params_writer.writeAll(",U=1");
 
         // Virtual placement has no payload.
-        try ansi.kittyGraphics(self.writer(), stream.getWritten(), "");
+        try ansi.kittyGraphics(self.writer(), params_writer.buffered(), "");
         return true;
     }
 
@@ -742,8 +719,7 @@ pub const Terminal = struct {
         if (!self.image_caps.kitty_graphics) return false;
 
         var params_buf: [128]u8 = undefined;
-        var stream = std.io.fixedBufferStream(&params_buf);
-        const params_writer = stream.writer();
+        var params_writer = FixedWriter(&params_buf);
 
         try params_writer.writeAll("a=d,q=2");
         switch (target) {
@@ -752,7 +728,7 @@ pub const Terminal = struct {
             .all => try params_writer.writeAll(",d=A"),
         }
 
-        try ansi.kittyGraphics(self.writer(), stream.getWritten(), "");
+        try ansi.kittyGraphics(self.writer(), params_writer.buffered(), "");
         return true;
     }
 
@@ -767,8 +743,7 @@ pub const Terminal = struct {
         const stat = try file.stat();
 
         var params_buf: [256]u8 = undefined;
-        var stream = std.io.fixedBufferStream(&params_buf);
-        const params_writer = stream.writer();
+        var params_writer = FixedWriter(&params_buf);
 
         try params_writer.writeAll("inline=1");
         if (options.width_cells) |cols| try params_writer.print(";width={d}", .{cols});
@@ -784,7 +759,7 @@ pub const Terminal = struct {
             try params_writer.print(";name={s}", .{file_name_b64});
         }
 
-        try self.sendIterm2InlineImagePayload(stream.getWritten(), &file, stat.size);
+        try self.sendIterm2InlineImagePayload(params_writer.buffered(), &file, stat.size);
         return true;
     }
 
@@ -794,8 +769,7 @@ pub const Terminal = struct {
         if (!self.image_caps.iterm2_inline_image or data.len == 0) return false;
 
         var params_buf: [256]u8 = undefined;
-        var stream = std.io.fixedBufferStream(&params_buf);
-        const params_writer = stream.writer();
+        var params_writer = FixedWriter(&params_buf);
 
         try params_writer.writeAll("inline=1");
         if (options.width_cells) |cols| try params_writer.print(";width={d}", .{cols});
@@ -804,7 +778,7 @@ pub const Terminal = struct {
         if (!options.move_cursor) try params_writer.writeAll(";doNotMoveCursor=1");
         try params_writer.print(";size={d}", .{data.len});
 
-        try self.sendIterm2InlineImageDataPayload(stream.getWritten(), data);
+        try self.sendIterm2InlineImageDataPayload(params_writer.buffered(), data);
         return true;
     }
 
@@ -1823,18 +1797,64 @@ pub const Terminal = struct {
         return std.mem.indexOf(u8, value, needle) != null;
     }
 
-    /// Simple writer struct for compatibility
+    /// Buffered writer that exposes a `std.Io.Writer` interface and drains to
+    /// the terminal's output sink (stdout file, or the wasm host on wasm).
     pub const Writer = struct {
-        terminal: *Terminal,
+        file: if (is_wasm) void else std.fs.File,
+        buffer: [4096]u8 = undefined,
+        writer: std.Io.Writer,
 
-        pub fn writeAll(self: Writer, bytes: []const u8) !void {
-            try self.terminal.writeBytes(bytes);
+        const vtable: std.Io.Writer.VTable = .{ .drain = drain };
+
+        pub fn init(file: if (is_wasm) void else std.fs.File) Writer {
+            return .{
+                .file = file,
+                .writer = .{ .vtable = &vtable, .buffer = &.{} },
+            };
         }
 
-        pub fn print(self: Writer, comptime fmt: []const u8, args: anytype) !void {
-            var buf: [256]u8 = undefined;
-            const result = std.fmt.bufPrint(&buf, fmt, args) catch return;
-            try self.terminal.writeBytes(result);
+        /// Wires the `std.Io.Writer` to the local buffer. Called by the
+        /// containing `Terminal` whenever it hands the writer out, so the
+        /// buffer pointer stays valid even if the `Terminal` was moved.
+        /// `writer.end` is preserved across moves, so re-binding is safe.
+        pub fn bind(self: *Writer) void {
+            self.writer.buffer = &self.buffer;
+        }
+
+        fn drain(io_w: *std.Io.Writer, data: []const []const u8, splat: usize) std.Io.Writer.Error!usize {
+            const self: *Writer = @fieldParentPtr("writer", io_w);
+
+            const buffered = io_w.buffered();
+            if (buffered.len != 0) {
+                try self.sinkAll(buffered);
+                io_w.end = 0;
+            }
+
+            var consumed: usize = 0;
+            if (data.len > 1) {
+                for (data[0 .. data.len - 1]) |chunk| {
+                    if (chunk.len == 0) continue;
+                    try self.sinkAll(chunk);
+                    consumed += chunk.len;
+                }
+            }
+
+            const pattern = data[data.len - 1];
+            if (pattern.len > 0 and splat > 0) {
+                var i: usize = 0;
+                while (i < splat) : (i += 1) try self.sinkAll(pattern);
+                consumed += pattern.len * splat;
+            }
+
+            return consumed;
+        }
+
+        fn sinkAll(self: *Writer, bytes: []const u8) std.Io.Writer.Error!void {
+            if (is_wasm) {
+                _ = platform.WasmWriter.write(&platform.wasm_writer_instance, bytes) catch return error.WriteFailed;
+            } else {
+                self.file.writeAll(bytes) catch return error.WriteFailed;
+            }
         }
     };
 };

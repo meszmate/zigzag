@@ -2,6 +2,7 @@
 //! Allows browsing directories and selecting files.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const builtin = @import("builtin");
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
@@ -355,8 +356,8 @@ pub const FilePicker = struct {
 
     /// Render the file picker
     pub fn view(self: *const FilePicker, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // Current path header
         const path_styled = try self.path_style.render(allocator, self.current_path.items);

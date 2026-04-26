@@ -398,8 +398,8 @@ pub const Modal = struct {
         const modal_lines = modal_lines_list.items;
 
         // Build full-screen output
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         for (0..term_height) |row| {
             if (row > 0) try writer.writeByte('\n');

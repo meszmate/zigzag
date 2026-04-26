@@ -3,6 +3,7 @@
 //! Fully customizable: styles, labels, symbols, layout.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 const keys = @import("../input/keys.zig");
@@ -185,8 +186,8 @@ pub const Calendar = struct {
     }
 
     pub fn view(self: *const Calendar, allocator: std.mem.Allocator) []const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         const cw: usize = @max(2, self.cell_width);
 
@@ -261,7 +262,7 @@ pub const Calendar = struct {
             }
         }
 
-        return result.items;
+        return result.toArrayList().items;
     }
 
     fn padCenter(allocator: std.mem.Allocator, text: []const u8, target: usize) []const u8 {

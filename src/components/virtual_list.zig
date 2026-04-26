@@ -2,6 +2,7 @@
 //! Only renders items visible in the viewport.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 const keys = @import("../input/keys.zig");
@@ -146,14 +147,14 @@ pub fn VirtualList(comptime T: type) type {
         }
 
         pub fn view(self: *const Self, allocator: std.mem.Allocator) []const u8 {
-            var result = std.array_list.Managed(u8).init(allocator);
-            const writer = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const writer = &result.writer;
             const total = self.items.len;
             const vh: usize = self.viewport_height;
 
             if (total == 0) {
                 writer.writeAll(self.empty_text) catch {};
-                return result.items;
+                return result.toArrayList().items;
             }
 
             const end = @min(self.offset + vh, total);
@@ -199,7 +200,7 @@ pub fn VirtualList(comptime T: type) type {
                 writer.writeAll(cs.render(allocator, count_str) catch count_str) catch {};
             }
 
-            return result.items;
+            return result.toArrayList().items;
         }
 
         fn defaultRender(item: T, index: usize, allocator: std.mem.Allocator) []const u8 {

@@ -2,6 +2,7 @@
 //! Displays unified or side-by-side text diffs with syntax coloring.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -76,8 +77,8 @@ pub const DiffView = struct {
     }
 
     fn renderUnified(self: *const DiffView, allocator: std.mem.Allocator) []const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // Header
         const hdr = std.fmt.allocPrint(allocator, "--- {s}\n+++ {s}", .{ self.old_label, self.new_label }) catch "";
@@ -129,16 +130,17 @@ pub const DiffView = struct {
         }
 
         // Trim trailing newline
-        if (result.items.len > 0 and result.items[result.items.len - 1] == '\n') {
-            _ = result.pop();
+        var array = result.toArrayList();
+        if (array.items.len > 0 and array.items[array.items.len - 1] == '\n') {
+            _ = array.pop();
         }
 
-        return result.items;
+        return array.items;
     }
 
     fn renderSideBySide(self: *const DiffView, allocator: std.mem.Allocator) []const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         const old_lines = splitLines(allocator, self.old_text);
         const new_lines = splitLines(allocator, self.new_text);
@@ -185,11 +187,12 @@ pub const DiffView = struct {
             }
         }
 
-        if (result.items.len > 0 and result.items[result.items.len - 1] == '\n') {
-            _ = result.pop();
+        var array = result.toArrayList();
+        if (array.items.len > 0 and array.items[array.items.len - 1] == '\n') {
+            _ = array.pop();
         }
 
-        return result.items;
+        return array.items;
     }
 
     fn padRight(allocator: std.mem.Allocator, text: []const u8, target: usize) []const u8 {

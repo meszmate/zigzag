@@ -2,6 +2,7 @@
 //! Displays progress with customizable appearance.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -133,8 +134,8 @@ pub const Progress = struct {
 
     /// Render the progress bar
     pub fn view(self: *const Progress, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         const ratio = if (self.total > 0) self.current / self.total else 0;
         const filled_width = @as(usize, @intFromFloat(ratio * @as(f64, @floatFromInt(self.width))));
@@ -190,8 +191,8 @@ pub const Progress = struct {
 
     /// Render with a label
     pub fn viewWithLabel(self: *const Progress, allocator: std.mem.Allocator, label: []const u8) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         try writer.writeAll(label);
         try writer.writeAll(" ");

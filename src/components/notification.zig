@@ -2,6 +2,7 @@
 //! Displays auto-dismissing messages with severity levels.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -101,8 +102,8 @@ pub const Notification = struct {
             return try allocator.dupe(u8, "");
         }
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         const visible_count = @min(self.messages.items.len, self.max_visible);
         const start = if (self.messages.items.len > self.max_visible)

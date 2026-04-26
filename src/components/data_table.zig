@@ -11,6 +11,7 @@
 //! (database results, log fields, CSV files).
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const border_mod = @import("../style/border.zig");
@@ -291,16 +292,16 @@ pub const DataTable = struct {
     }
 
     pub fn view(self: *DataTable, allocator: std.mem.Allocator) ![]const u8 {
-        var out = std.array_list.Managed(u8).init(allocator);
-        const w = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const w = &out.writer;
 
         const visible_cols = try self.computeVisibleColumns(allocator);
         defer allocator.free(visible_cols);
 
         if (self.show_header) {
-            try self.renderRow(allocator, w.any(), null, visible_cols, true);
+            try self.renderRow(allocator, w, null, visible_cols, true);
             try w.writeByte('\n');
-            try self.renderHeaderSeparator(allocator, w.any(), visible_cols);
+            try self.renderHeaderSeparator(allocator, w, visible_cols);
             try w.writeByte('\n');
         }
 
@@ -311,7 +312,7 @@ pub const DataTable = struct {
         for (start..end) |row_idx| {
             if (!first) try w.writeByte('\n');
             first = false;
-            try self.renderRow(allocator, w.any(), row_idx, visible_cols, false);
+            try self.renderRow(allocator, w, row_idx, visible_cols, false);
         }
 
         return out.toOwnedSlice();
@@ -340,7 +341,7 @@ pub const DataTable = struct {
         return list.toOwnedSlice();
     }
 
-    fn renderRow(self: *const DataTable, allocator: std.mem.Allocator, writer: std.io.AnyWriter, row_idx: ?usize, visible_cols: []const usize, is_header: bool) !void {
+    fn renderRow(self: *const DataTable, allocator: std.mem.Allocator, writer: *Writer, row_idx: ?usize, visible_cols: []const usize, is_header: bool) !void {
         for (visible_cols, 0..) |col_idx, i| {
             // Frozen separator.
             if (self.frozen_columns > 0 and i == self.frozen_columns) {
@@ -378,7 +379,7 @@ pub const DataTable = struct {
         }
     }
 
-    fn renderHeaderSeparator(self: *const DataTable, allocator: std.mem.Allocator, writer: std.io.AnyWriter, visible_cols: []const usize) !void {
+    fn renderHeaderSeparator(self: *const DataTable, allocator: std.mem.Allocator, writer: *Writer, visible_cols: []const usize) !void {
         for (visible_cols, 0..) |col_idx, i| {
             if (self.frozen_columns > 0 and i == self.frozen_columns) {
                 const sep = try self.frozen_separator_style.render(allocator, "─┼─");

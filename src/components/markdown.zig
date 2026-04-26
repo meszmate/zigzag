@@ -2,6 +2,7 @@
 //! Converts a subset of markdown to ANSI-styled text.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 const border_mod = @import("../style/border.zig");
@@ -126,8 +127,8 @@ pub const Markdown = struct {
 
     /// Render markdown text to styled terminal output.
     pub fn render(self: *const Markdown, allocator: std.mem.Allocator, source: []const u8) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         var lines_iter = std.mem.splitScalar(u8, source, '\n');
         var in_code_block = false;
@@ -262,8 +263,8 @@ pub const Markdown = struct {
 
     /// Render inline formatting: **bold**, *italic*, `code`, [links](url)
     fn renderInline(self: *const Markdown, allocator: std.mem.Allocator, text: []const u8) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         var i: usize = 0;
         while (i < text.len) {

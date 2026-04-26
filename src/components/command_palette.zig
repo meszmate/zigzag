@@ -7,6 +7,7 @@
 //! back selected().
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -284,9 +285,9 @@ pub const CommandPalette = struct {
     }
 
     pub fn view(self: *const CommandPalette, allocator: std.mem.Allocator) ![]const u8 {
-        var inner = std.array_list.Managed(u8).init(allocator);
+        var inner: Writer.Allocating = .init(allocator);
         defer inner.deinit();
-        const w = inner.writer();
+        const w = &inner.writer;
 
         // Input row.
         const prompt_styled = try self.prompt_style.render(allocator, self.prompt);
@@ -318,7 +319,7 @@ pub const CommandPalette = struct {
                 if (i > start) try w.writeByte('\n');
                 const is_sel = i == self.cursor;
                 const cmd = self.commands.items[self.filtered.items[i]];
-                try self.renderRow(allocator, w.any(), cmd, is_sel);
+                try self.renderRow(allocator, w, cmd, is_sel);
             }
         }
 
@@ -334,7 +335,7 @@ pub const CommandPalette = struct {
     fn renderRow(
         self: *const CommandPalette,
         allocator: std.mem.Allocator,
-        w: std.io.AnyWriter,
+        w: *Writer,
         cmd: Command,
         is_sel: bool,
     ) !void {

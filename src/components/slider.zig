@@ -2,6 +2,7 @@
 //! Interactive numeric range input with keyboard control.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -170,8 +171,8 @@ pub const Slider = struct {
     }
 
     pub fn view(self: *const Slider, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // Label
         if (self.label.len > 0) {

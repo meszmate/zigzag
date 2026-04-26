@@ -1,6 +1,7 @@
 //! Scrollable content viewport component.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const measure = @import("../layout/measure.zig");
 const style = @import("../style/style.zig");
@@ -269,8 +270,8 @@ pub const Viewport = struct {
     }
 
     pub fn view(self: *const Viewport, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         const visible_width = self.visibleWidth();
 
@@ -346,7 +347,7 @@ pub const Viewport = struct {
 
     fn getSubstring(self: *const Viewport, allocator: std.mem.Allocator, line: []const u8, start_col: usize, max_width: usize) ![]const u8 {
         _ = self;
-        var result = std.array_list.Managed(u8).init(allocator);
+        var result: std.array_list.Managed(u8) = .init(allocator);
 
         var col: usize = 0;
         var i: usize = 0;

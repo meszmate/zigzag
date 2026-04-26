@@ -583,8 +583,8 @@ pub fn Dropdown(comptime T: type) type {
 
                 const item_idx = visible[idx];
                 const item = self.items.items[item_idx];
-                var line = std.array_list.Managed(u8).init(allocator);
-                const line_writer = line.writer();
+                var line: Writer.Allocating = .init(allocator);
+                const line_writer = &line.writer;
 
                 try line_writer.writeByte(' ');
 

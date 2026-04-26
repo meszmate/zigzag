@@ -2,6 +2,7 @@
 //! Non-interactive rendering-only list with bullet, numbered, roman, alphabet enumerators.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -76,8 +77,8 @@ pub const StyledList = struct {
 
     /// Render the list
     pub fn view(self: *const StyledList, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // Track counters per depth level
         var counters: [16]usize = .{0} ** 16;
@@ -134,7 +135,7 @@ pub const StyledList = struct {
 pub fn toRoman(allocator: std.mem.Allocator, n: usize) ![]const u8 {
     if (n == 0) return try allocator.dupe(u8, "0");
 
-    var result = std.array_list.Managed(u8).init(allocator);
+    var result: std.array_list.Managed(u8) = .init(allocator);
 
     const values = [_]usize{ 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
     const symbols = [_][]const u8{ "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
@@ -154,7 +155,7 @@ pub fn toRoman(allocator: std.mem.Allocator, n: usize) ![]const u8 {
 pub fn toAlpha(allocator: std.mem.Allocator, n: usize) ![]const u8 {
     if (n == 0) return try allocator.dupe(u8, "?");
 
-    var result = std.array_list.Managed(u8).init(allocator);
+    var result: std.array_list.Managed(u8) = .init(allocator);
     var num = n - 1;
 
     while (true) {

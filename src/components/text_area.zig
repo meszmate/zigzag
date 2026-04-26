@@ -144,7 +144,7 @@ pub const TextArea = struct {
 
     /// Get the content as a string
     pub fn getValue(self: *const TextArea, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
+        var result: std.array_list.Managed(u8) = .init(allocator);
 
         for (self.lines.items, 0..) |line, i| {
             if (i > 0) try result.append('\n');

@@ -2,6 +2,7 @@
 //! Provides various spinner styles and customization options.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -97,8 +98,8 @@ pub const Spinner = struct {
 
     /// Render spinner with title
     pub fn viewWithTitle(self: *const Spinner, allocator: std.mem.Allocator, title: []const u8) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         const rendered_spinner = try self.view(allocator);
         try writer.writeAll(rendered_spinner);

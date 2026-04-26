@@ -2,6 +2,7 @@
 //! Demonstrates the List component with item selection.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const zz = @import("zigzag");
 
 const Model = struct {
@@ -148,8 +149,8 @@ const Model = struct {
         const title = title_style.render(ctx.allocator, "Todo List") catch "Todo List";
 
         // Build todo list display using filtered_indices
-        var list_content = std.array_list.Managed(u8).init(ctx.allocator);
-        const writer = list_content.writer();
+        var list_content: Writer.Allocating = .init(ctx.allocator);
+        const writer = &list_content.writer;
 
         // Show filter if enabled
         if (self.list.filter_enabled) {

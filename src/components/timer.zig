@@ -2,6 +2,7 @@
 //! Displays time in various formats.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -197,8 +198,8 @@ pub const Timer = struct {
             },
         };
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // Choose style based on state
         const active_style = if (self.isDanger())

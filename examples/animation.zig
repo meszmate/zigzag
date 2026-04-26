@@ -2,6 +2,7 @@
 //! Demonstrates tweens with various easing functions.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const zz = @import("zigzag");
 
 const Model = struct {
@@ -91,8 +92,8 @@ const Model = struct {
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "Animation & Easing Demo") catch "Animation";
 
-        var buf = std.array_list.Managed(u8).init(ctx.allocator);
-        const writer = buf.writer();
+        var buf: Writer.Allocating = .init(ctx.allocator);
+        const writer = &buf.writer;
         writer.writeAll(title) catch {};
         writer.writeAll("\n\n") catch {};
 

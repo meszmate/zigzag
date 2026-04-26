@@ -2,6 +2,7 @@
 //! Provides keyword-based highlighting for common languages.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -89,8 +90,8 @@ pub const CodeView = struct {
     };
 
     pub fn view(self: *const CodeView, allocator: std.mem.Allocator) []const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         var lines = std.mem.splitScalar(u8, self.source, '\n');
         var line_num: usize = self.start_line;
@@ -121,14 +122,14 @@ pub const CodeView = struct {
             line_num += 1;
         }
 
-        return result.items;
+        return result.toArrayList().items;
     }
 
     fn highlightLine(self: *const CodeView, allocator: std.mem.Allocator, line: []const u8, in_multiline: *bool) []const u8 {
         if (self.language == .plain) return line;
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         var i: usize = 0;
         while (i < line.len) {
@@ -211,7 +212,7 @@ pub const CodeView = struct {
             i += 1;
         }
 
-        return result.items;
+        return result.toArrayList().items;
     }
 
     fn isLineComment(lang: Language, line: []const u8, pos: usize) bool {

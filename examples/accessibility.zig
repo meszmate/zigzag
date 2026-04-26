@@ -3,6 +3,7 @@
 //! and the suggestForeground helper for picking readable colors.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const zz = @import("zigzag");
 
 const ColorPair = struct {
@@ -48,8 +49,8 @@ const Model = struct {
     }
 
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
-        var result = std.array_list.Managed(u8).init(ctx.allocator);
-        const w = result.writer();
+        var result: Writer.Allocating = .init(ctx.allocator);
+        const w = &result.writer;
 
         // Title
         var title_s = zz.Style{};

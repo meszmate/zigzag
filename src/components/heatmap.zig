@@ -2,6 +2,7 @@
 //! Displays data as a colored grid with configurable color scales.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -139,8 +140,8 @@ pub const Heatmap = struct {
         if (self.rows == 0 or self.cols == 0) return "";
 
         const mm = self.getMinMax();
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // Title
         if (self.title.len > 0) {
@@ -226,7 +227,7 @@ pub const Heatmap = struct {
             writer.writeAll(max_str) catch {};
         }
 
-        return result.items;
+        return result.toArrayList().items;
     }
 
     fn maxLabelWidth(labels: []const []const u8) usize {

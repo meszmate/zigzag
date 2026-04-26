@@ -1,6 +1,7 @@
 //! Cartesian chart widget with axes, legend, and multiple datasets.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const charting = @import("charting.zig");
 const canvas_mod = @import("canvas.zig");
 const join = @import("../layout/join.zig");
@@ -392,8 +393,8 @@ pub const Chart = struct {
 
     fn renderPlotRow(self: *const Chart, allocator: std.mem.Allocator, row_index: usize, plot_line: []const u8, plot_height: usize, y_label_width: usize, y_ticks: *const TickSet) ![]const u8 {
         _ = plot_height;
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         if (self.y_axis.show_labels) {
             const label = y_ticks.labelForRow(row_index) orelse "";
@@ -415,8 +416,8 @@ pub const Chart = struct {
     }
 
     fn renderXAxisLineRow(self: *const Chart, allocator: std.mem.Allocator, plot_width: usize, y_label_width: usize) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         if (self.y_axis.show_labels) {
             for (0..y_label_width) |_| try writer.writeByte(' ');
@@ -574,8 +575,8 @@ const GridOrientation = enum { vertical, horizontal };
 
 fn renderPaddedLabel(allocator: std.mem.Allocator, label: []const u8, width: usize, style: Style) ![]const u8 {
     const label_width = measure.width(label);
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     const padding = width -| label_width;
     for (0..padding) |_| try writer.writeByte(' ');

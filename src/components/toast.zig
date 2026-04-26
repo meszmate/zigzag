@@ -2,6 +2,7 @@
 //! Supports positioning, stacking, icons, borders, and auto-dismiss with countdown.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 const border_mod = @import("../style/border.zig");
@@ -210,9 +211,9 @@ pub const Toast = struct {
             return try allocator.dupe(u8, "");
         }
 
-        var result = std.array_list.Managed(u8).init(allocator);
+        var result: Writer.Allocating = .init(allocator);
         errdefer result.deinit();
-        const writer = result.writer();
+        const writer = &result.writer;
 
         const visible_count = @min(self.messages.items.len, self.max_visible);
 
@@ -280,9 +281,9 @@ pub const Toast = struct {
     fn renderSingleToast(self: *const Toast, allocator: std.mem.Allocator, msg: ToastMessage, current_ns: u64) ![]const u8 {
         const active_style = self.styleForLevel(msg.level);
 
-        var line = std.array_list.Managed(u8).init(allocator);
+        var line: Writer.Allocating = .init(allocator);
         errdefer line.deinit();
-        const lw = line.writer();
+        const lw = &line.writer;
 
         const icon = if (self.show_icons) switch (msg.level) {
             .info => self.info_icon,
@@ -407,9 +408,9 @@ pub const Toast = struct {
 
 fn alignLines(allocator: std.mem.Allocator, content: []const u8, alignment: style_mod.Align) ![]const u8 {
     const target_width = measure.maxLineWidth(content);
-    var result = std.array_list.Managed(u8).init(allocator);
+    var result: Writer.Allocating = .init(allocator);
     errdefer result.deinit();
-    const writer = result.writer();
+    const writer = &result.writer;
 
     var lines = std.mem.splitScalar(u8, content, '\n');
     var first = true;

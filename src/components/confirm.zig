@@ -3,6 +3,7 @@
 
 const std = @import("std");
 const keys = @import("../input/keys.zig");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -118,8 +119,8 @@ pub const Confirm = struct {
             return try allocator.dupe(u8, "");
         }
 
-        var result_buf = std.array_list.Managed(u8).init(allocator);
-        const writer = result_buf.writer();
+        var result_buf: Writer.Allocating = .init(allocator);
+        const writer = &result_buf.writer;
 
         // Prompt
         const styled_prompt = try self.prompt_style.render(allocator, self.prompt_text);

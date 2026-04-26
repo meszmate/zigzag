@@ -9,6 +9,7 @@
 //! is the right widget for a long-running app's persistent log/audit pane.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -262,8 +263,8 @@ pub const RichLog = struct {
     pub fn view(self: *RichLog, allocator: std.mem.Allocator) ![]const u8 {
         try self.refresh();
 
-        var out = std.array_list.Managed(u8).init(allocator);
-        const w = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const w = &out.writer;
 
         const visible = self.visible.items;
         if (visible.len == 0) {
@@ -278,13 +279,13 @@ pub const RichLog = struct {
             if (!first) try w.writeByte('\n');
             first = false;
             const entry = self.entries.items[visible[row_idx]];
-            try self.renderEntry(allocator, w.any(), entry);
+            try self.renderEntry(allocator, w, entry);
         }
 
         return out.toOwnedSlice();
     }
 
-    fn renderEntry(self: *const RichLog, allocator: std.mem.Allocator, w: std.io.AnyWriter, entry: Entry) !void {
+    fn renderEntry(self: *const RichLog, allocator: std.mem.Allocator, w: *Writer, entry: Entry) !void {
         if (self.show_timestamps) {
             const ts = try formatTimestamp(allocator, entry.timestamp_ns);
             defer allocator.free(ts);
@@ -312,7 +313,7 @@ pub const RichLog = struct {
         }
     }
 
-    fn renderHighlighted(self: *const RichLog, allocator: std.mem.Allocator, w: std.io.AnyWriter, text: []const u8) !void {
+    fn renderHighlighted(self: *const RichLog, allocator: std.mem.Allocator, w: *Writer, text: []const u8) !void {
         const term = self.search_term.items;
         var rest = text;
         while (std.mem.indexOf(u8, rest, term)) |pos| {

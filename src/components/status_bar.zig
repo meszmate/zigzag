@@ -6,6 +6,7 @@
 //! position simultaneously.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 const measure = @import("../layout/measure.zig");
@@ -109,8 +110,8 @@ pub const StatusBar = struct {
         const cw = measure.width(center_str);
         const rw = measure.width(right_str);
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         try writer.writeAll(left_str);
 
@@ -120,14 +121,14 @@ pub const StatusBar = struct {
             const target_start = (self.width -| cw) / 2;
             const start = @max(lw, target_start);
             const gap = start -| lw;
-            try self.writeGap(writer.any(), allocator, gap);
+            try self.writeGap(writer, allocator, gap);
             try writer.writeAll(center_str);
             const consumed = lw + gap + cw;
             const trailing = (self.width -| rw) -| consumed;
-            try self.writeGap(writer.any(), allocator, trailing);
+            try self.writeGap(writer, allocator, trailing);
         } else {
             const gap = (self.width -| rw) -| lw;
-            try self.writeGap(writer.any(), allocator, gap);
+            try self.writeGap(writer, allocator, gap);
         }
 
         try writer.writeAll(right_str);
@@ -136,8 +137,8 @@ pub const StatusBar = struct {
     }
 
     fn renderGroup(self: *const StatusBar, allocator: std.mem.Allocator, items: []const Segment) ![]u8 {
-        var out = std.array_list.Managed(u8).init(allocator);
-        const w = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const w = &out.writer;
         for (items, 0..) |seg, i| {
             if (i > 0) {
                 if (self.separator.len > 0) {
@@ -159,7 +160,7 @@ pub const StatusBar = struct {
         return out.toOwnedSlice();
     }
 
-    fn writeGap(self: *const StatusBar, writer: std.io.AnyWriter, allocator: std.mem.Allocator, count: usize) !void {
+    fn writeGap(self: *const StatusBar, writer: *std.Io.Writer, allocator: std.mem.Allocator, count: usize) !void {
         if (count == 0) return;
         const spaces = try allocator.alloc(u8, count);
         defer allocator.free(spaces);

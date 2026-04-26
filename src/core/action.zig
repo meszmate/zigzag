@@ -19,6 +19,7 @@
 //! `handler` callbacks are also supported for fire-and-forget actions.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const KeyEvent = keys.KeyEvent;
 const style_mod = @import("../style/style.zig");
@@ -197,8 +198,8 @@ pub const ActionRegistry = struct {
 
     /// Format a key event for display: "ctrl+s", "esc", "enter", etc.
     pub fn formatKey(allocator: std.mem.Allocator, event: KeyEvent) ![]u8 {
-        var out = std.array_list.Managed(u8).init(allocator);
-        const w = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const w = &out.writer;
         if (event.modifiers.ctrl) try w.writeAll("ctrl+");
         if (event.modifiers.alt) try w.writeAll("alt+");
         if (event.modifiers.shift) try w.writeAll("shift+");
@@ -258,9 +259,9 @@ pub const Footer = struct {
     }
 
     pub fn view(self: *const Footer, allocator: std.mem.Allocator) ![]const u8 {
-        var inner = std.array_list.Managed(u8).init(allocator);
+        var inner: Writer.Allocating = .init(allocator);
         defer inner.deinit();
-        const w = inner.writer();
+        const w = &inner.writer;
 
         var first = true;
         for (self.registry.actions.items) |a| {
@@ -284,8 +285,8 @@ pub const Footer = struct {
         defer allocator.free(text);
         const text_w = measure.width(text);
 
-        var out = std.array_list.Managed(u8).init(allocator);
-        const ow = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const ow = &out.writer;
         try ow.writeAll(text);
         if (text_w < self.width) {
             const pad = self.width - text_w;

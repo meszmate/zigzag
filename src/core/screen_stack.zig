@@ -25,6 +25,7 @@
 //! used for confirm dialogs or command palettes).
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const Context = @import("context.zig").Context;
 const keys = @import("../input/keys.zig");
 const measure = @import("../layout/measure.zig");
@@ -246,8 +247,8 @@ fn compose(allocator: std.mem.Allocator, background: []const u8, overlay: []cons
         while (iter.next()) |line| try ov_lines.append(line);
     }
 
-    var result = std.array_list.Managed(u8).init(allocator);
-    const w = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const w = &result.writer;
 
     var row: usize = 0;
     while (row < bg_lines.items.len) : (row += 1) {

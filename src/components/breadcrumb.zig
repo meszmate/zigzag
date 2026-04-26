@@ -5,6 +5,7 @@
 //! the rendered path would exceed a max width.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 const measure = @import("../layout/measure.zig");
@@ -127,8 +128,8 @@ pub const Breadcrumb = struct {
     }
 
     fn renderTruncated(self: *const Breadcrumb, allocator: std.mem.Allocator, head: usize, tail: usize) ![]u8 {
-        var out = std.array_list.Managed(u8).init(allocator);
-        const w = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const w = &out.writer;
 
         const head_slice = self.crumbs.items[0..head];
         const tail_slice = self.crumbs.items[self.crumbs.items.len - tail ..];
@@ -169,8 +170,8 @@ pub const Breadcrumb = struct {
     }
 
     fn renderCrumbs(self: *const Breadcrumb, allocator: std.mem.Allocator, items: []const Crumb) ![]u8 {
-        var out = std.array_list.Managed(u8).init(allocator);
-        const w = out.writer();
+        var out: Writer.Allocating = .init(allocator);
+        const w = &out.writer;
 
         for (items, 0..) |c, i| {
             if (i > 0) {

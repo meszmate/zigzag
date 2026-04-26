@@ -2,6 +2,7 @@
 //! Supports bar, level meter, and block display styles with thresholds and gradients.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 
@@ -101,8 +102,8 @@ pub const Gauge = struct {
         const bar_width: usize = self.width;
         const filled: usize = @intFromFloat(@as(f64, @floatFromInt(bar_width)) * pct);
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // Label
         if (self.label.len > 0) {
@@ -158,7 +159,7 @@ pub const Gauge = struct {
             }
         }
 
-        return result.items;
+        return result.toArrayList().items;
     }
 
     fn renderLevelMeter(self: *const Gauge, allocator: std.mem.Allocator) []const u8 {
@@ -166,8 +167,8 @@ pub const Gauge = struct {
         const levels: usize = 10;
         const filled: usize = @intFromFloat(@as(f64, @floatFromInt(levels)) * pct);
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         if (self.label.len > 0) {
             writer.writeAll(self.label) catch {};
@@ -194,7 +195,7 @@ pub const Gauge = struct {
             writer.print(" {d:.0}%", .{pct * 100}) catch {};
         }
 
-        return result.items;
+        return result.toArrayList().items;
     }
 
     fn renderBlocks(self: *const Gauge, allocator: std.mem.Allocator) []const u8 {
@@ -205,8 +206,8 @@ pub const Gauge = struct {
         // Use shade characters based on intensity
         const shades = [_][]const u8{ " ", "\xe2\x96\x91", "\xe2\x96\x92", "\xe2\x96\x93", "\xe2\x96\x88" };
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         if (self.label.len > 0) {
             writer.writeAll(self.label) catch {};
@@ -234,7 +235,7 @@ pub const Gauge = struct {
             writer.print(" {d:.0}%", .{pct * 100}) catch {};
         }
 
-        return result.items;
+        return result.toArrayList().items;
     }
 
     fn colorForLevel(self: *const Gauge, level_pct: f64) Color {

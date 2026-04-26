@@ -2,6 +2,7 @@
 //! Provides 2D positioning with horizontal and vertical alignment.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const measure = @import("measure.zig");
 const unicode = @import("../unicode.zig");
 
@@ -36,8 +37,8 @@ pub fn place(
         return try allocator.dupe(u8, content);
     }
 
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     // Calculate vertical offset
     const v_padding = if (height > content_height) height - content_height else 0;
@@ -110,8 +111,8 @@ pub fn placeAt(
     y: usize,
     content: []const u8,
 ) ![]const u8 {
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     var lines = std.mem.splitScalar(u8, content, '\n');
     var content_lines = std.array_list.Managed([]const u8).init(allocator);
@@ -195,8 +196,8 @@ pub fn overlay(
         try content_lines.append(line);
     }
 
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     for (0..base_height) |row| {
         if (row > 0) try writer.writeByte('\n');
@@ -316,8 +317,8 @@ pub fn placeFloat(
         return try allocator.dupe(u8, content);
     }
 
-    var result = std.array_list.Managed(u8).init(allocator);
-    const writer = result.writer();
+    var result: Writer.Allocating = .init(allocator);
+    const writer = &result.writer;
 
     // Calculate offsets from float positions
     const h_space = if (width > content_width) width - content_width else 0;
