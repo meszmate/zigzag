@@ -29,16 +29,8 @@ A delightful TUI framework for Zig, inspired by [Bubble Tea](https://github.com/
 ## Installation
 
 Add ZigZag to your `build.zig.zon`:
-
-```zig
-.dependencies = .{
-    .zigzag = .{
-        .url = "https://github.com/meszmate/zigzag/archive/refs/heads/main.tar.gz",
-        .hash = "...",
-    },
-},
-// To pin a specific version instead:
-// .url = "https://github.com/meszmate/zigzag/archive/refs/tags/v0.1.0.tar.gz",
+```sh
+zig fetch --save https://github.com/meszmate/zigzag/
 ```
 
 Then in your `build.zig`:
@@ -82,14 +74,14 @@ const Model = struct {
     }
 
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
-        const style = (zz.Style{}).bold(true).fg(zz.Color.cyan());
+        const style = zz.newStyle().bold(true).fg(.cyan);
         const text = std.fmt.allocPrint(ctx.allocator, "Count: {d}\n\nPress q to quit", .{self.count}) catch "Error";
         return style.render(ctx.allocator, text) catch text;
     }
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
     defer _ = gpa.deinit();
 
     var program = try zz.Program(Model).init(gpa.allocator());
@@ -168,18 +160,18 @@ return .{ .delete_image = .all };              // Free all cached images
 The styling system is inspired by Lipgloss:
 
 ```zig
-const style = (zz.Style{})
+const style = zz.newStyle()
     .bold(true)
     .italic(true)
-    .fg(zz.Color.cyan())
-    .bg(zz.Color.black())
+    .fg(.cyan)
+    .bg(.black)
     .paddingAll(1)
     .marginAll(2)
-    .marginBackground(zz.Color.gray(3))
-    .borderAll(zz.Border.rounded)
-    .borderForeground(zz.Color.magenta())
-    .borderTopForeground(zz.Color.cyan())    // Per-side border colors
-    .borderBottomForeground(zz.Color.green())
+    .marginBackground(.gray(3))
+    .borderAll(.rounded)
+    .borderForeground(.magenta)
+    .borderTopForeground(.cyan)    // Per-side border colors
+    .borderBottomForeground(.green)
     .tabWidth(4)
     .width(40)
     .alignH(.center);
@@ -188,14 +180,14 @@ const output = try style.render(allocator, "Hello, World!");
 // render() does not append an implicit trailing '\n'
 
 // Text transforms
-const upper_style = (zz.Style{}).transform(zz.transforms.uppercase);
+const upper_style = zz.newStyle().transform(.uppercase);
 const shouting = try upper_style.render(allocator, "hello"); // "HELLO"
 
 // Inline mode is useful when embedding block-styled output in a single line
-const inline = (zz.Style{}).fg(zz.Color.cyan()).inline_style(true);
+const inline = zz.newStyle().fg(.cyan).inline_style(true);
 
 // Whitespace formatting controls
-const ws_style = (zz.Style{})
+const ws_style = zz.newStyle()
     .underline(true)
     .setUnderlineSpaces(true)      // Underline extends through spaces
     .setColorWhitespace(false);     // Don't apply bg color to whitespace
@@ -204,11 +196,11 @@ const ws_style = (zz.Style{})
 const derived = style.unsetBold().unsetPadding().unsetBorder();
 
 // Style inheritance (unset values inherit from parent)
-const child = (zz.Style{}).fg(zz.Color.red()).inherit(style);
+const child = zz.newStyle().fg(.red).inherit(style);
 
 // Style ranges - apply different styles to byte ranges
 const ranges = &[_]zz.StyleRange{
-    .{ .start = 0, .end = 5, .s = (zz.Style{}).bold(true) },
+    .{ .start = 0, .end = 5, .s = zz.newStyle().bold(true) },
 };
 const ranged = try zz.renderWithRanges(allocator, "Hello World", ranges);
 
@@ -220,9 +212,9 @@ const highlighted = try zz.renderWithHighlights(allocator, "hello", &.{0, 2}, hi
 
 ```zig
 // Basic ANSI colors
-zz.Color.red()
-zz.Color.cyan()
-zz.Color.brightGreen()
+zz.Color.red
+zz.Color.cyan
+zz.Color.brightGreen
 
 // 256-color palette
 zz.Color.color256(123)
@@ -234,9 +226,9 @@ zz.Color.hex("#FF8040")
 
 // Adaptive colors (change based on terminal capabilities)
 const adaptive = zz.AdaptiveColor{
-    .true_color = zz.Color.hex("#FF8040"),
-    .color_256 = zz.Color.color256(208),
-    .ansi = zz.Color.red(),
+    .true_color = .hex("#FF8040"),
+    .color_256 = .color256(208),
+    .ansi = .red,
 };
 const resolved = adaptive.resolve(ctx.true_color, ctx.color_256);
 
@@ -245,7 +237,7 @@ const resolved = adaptive.resolve(ctx.true_color, ctx.color_256);
 // ctx.is_dark_background: bool
 
 // Color interpolation (for gradients)
-const mid = zz.interpolateColor(zz.Color.red(), zz.Color.green(), 0.5);
+const mid = zz.interpolateColor(.red, .green, 0.5);
 ```
 
 ### Borders
@@ -314,8 +306,8 @@ try viewport.setContent(long_text);
 viewport.setWrap(true);
 viewport.setScrollbarChars("·", "█");
 viewport.setScrollbarStyle(
-    (zz.Style{}).fg(zz.Color.gray(8)).inline_style(true),
-    (zz.Style{}).fg(zz.Color.cyan()).inline_style(true),
+    zz.newStyle().fg(.gray(8)).inline_style(true),
+    zz.newStyle().fg(.cyan).inline_style(true),
 );
 viewport.handleKey(key_event);  // Supports j/k, Page Up/Down, etc.
 ```
@@ -327,7 +319,7 @@ Progress bar with optional color gradients:
 ```zig
 var progress = zz.Progress.init();
 progress.setWidth(40);
-progress.setGradient(zz.Color.hex("#FF6B6B"), zz.Color.hex("#4ECDC4"));
+progress.setGradient(.hex("#FF6B6B"), .hex("#4ECDC4"));
 progress.setPercent(75);
 const bar = try progress.view(allocator);
 ```
@@ -398,7 +390,7 @@ Mini chart using Unicode block elements with configurable bucketing, ranges, and
 var spark = zz.Sparkline.init(allocator);
 spark.setWidth(20);
 spark.setSummary(.average);
-spark.setGradient(zz.Color.hex("#F97316"), zz.Color.hex("#22C55E"));
+spark.setGradient(.hex("#F97316"), .hex("#22C55E"));
 try spark.push(10.0);
 try spark.push(25.0);
 try spark.push(15.0);
@@ -421,7 +413,7 @@ chart.x_axis = .{ .title = "Time", .tick_count = 5, .show_grid = true };
 chart.y_axis = .{ .title = "CPU", .tick_count = 5, .show_grid = true };
 
 var dataset = try zz.ChartDataset.init(allocator, "load");
-dataset.setStyle((zz.Style{}).fg(zz.Color.cyan()).bold(true));
+dataset.setStyle(zz.newStyle().fg(.cyan).bold(true));
 dataset.setShowPoints(true);
 dataset.setInterpolation(.monotone_cubic);
 dataset.setInterpolationSteps(10);
@@ -443,8 +435,8 @@ Vertical or horizontal bar chart with labels, values, and positive/negative base
 var bars = zz.BarChart.init(allocator);
 bars.setOrientation(.horizontal);
 bars.show_values = true;
-try bars.addBar(try zz.Bar.init(allocator, "api", 31));
-try bars.addBar(try zz.Bar.init(allocator, "db", -12));
+try bars.addBar(try .init(allocator, "api", 31));
+try bars.addBar(try .init(allocator, "db", -12));
 const view = try bars.view(allocator);
 ```
 
@@ -459,8 +451,8 @@ defer canvas.deinit();
 canvas.setSize(24, 10);
 canvas.setMarker(.braille);
 canvas.setRanges(.{ .min = -1, .max = 1 }, .{ .min = -1, .max = 1 });
-try canvas.drawLineStyled(-1, -1, 1, 1, (zz.Style{}).fg(zz.Color.yellow()), null);
-try canvas.drawPointStyled(0.25, 0.7, (zz.Style{}).fg(zz.Color.cyan()), null);
+try canvas.drawLineStyled(-1, -1, 1, 1, zz.newStyle().fg(.yellow), null);
+try canvas.drawPointStyled(0.25, 0.7, zz.newStyle().fg(.cyan), null);
 const view = try canvas.view(allocator);
 ```
 
@@ -578,8 +570,8 @@ gauge.label = "CPU";
 gauge.full_char = "\xe2\x96\x88";   // Customizable fill character
 gauge.empty_char = "\xe2\x96\x91";  // Customizable empty character
 gauge.thresholds = &.{
-    .{ .value = 80, .color = zz.Color.yellow() },
-    .{ .value = 90, .color = zz.Color.red() },
+    .{ .value = 80, .color = .yellow },
+    .{ .value = 90, .color = .red },
 };
 const output = gauge.view(allocator);
 ```
@@ -615,7 +607,7 @@ cal.week_start_monday = true;
 cal.day_headers_mon = .{ "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }; // Customizable
 cal.month_names = .{ "Jan", "Feb", ... };  // Customizable
 cal.prev_symbol = "\xe2\x97\x80"; // Customizable nav symbols
-cal.addMarkedDate(25, zz.Color.red());
+cal.addMarkedDate(25, .red);
 cal.update(key_event);             // Arrows, Enter, PgUp/PgDn, Shift+L/R
 const output = cal.view(allocator);
 ```
@@ -883,9 +875,9 @@ var fg: zz.FocusGroup(3) = .{ .wrap = false };
 
 // Custom focus ring colors
 const fs = zz.FocusStyle{
-    .focused_border_fg = zz.Color.green(),
-    .blurred_border_fg = zz.Color.gray(8),
-    .border_chars = zz.Border.double,
+    .focused_border_fg = .green,
+    .blurred_border_fg = .gray(8),
+    .border_chars = .double,
 };
 ```
 
