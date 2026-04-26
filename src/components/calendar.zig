@@ -58,34 +58,34 @@ pub const Calendar = struct {
     today_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
         s = s.bold(true);
-        s = s.fg(Color.cyan());
+        s = s.fg(.cyan);
         s = s.inline_style(true);
         break :blk s;
     },
     selected_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
         s = s.bold(true);
-        s = s.fg(Color.blue());
+        s = s.fg(.blue);
         s = s.inline_style(true);
         break :blk s;
     },
     cursor_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
         s = s.bold(true);
-        s = s.bg(Color.blue());
-        s = s.fg(Color.white());
+        s = s.bg(.blue);
+        s = s.fg(.white);
         s = s.inline_style(true);
         break :blk s;
     },
     weekend_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.gray(10));
+        s = s.fg(.gray(10));
         s = s.inline_style(true);
         break :blk s;
     },
     header_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.yellow());
+        s = s.fg(.yellow);
         s = s.inline_style(true);
         break :blk s;
     },
@@ -97,7 +97,7 @@ pub const Calendar = struct {
     /// Style for the prev/next symbols in the title.
     nav_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.gray(10));
+        s = s.fg(.gray(10));
         s = s.inline_style(true);
         break :blk s;
     },

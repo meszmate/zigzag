@@ -70,7 +70,7 @@ pub const Tooltip = struct {
 
     // ── Styling ────────────────────────────────────────────────────────
 
-    border_chars: border_mod.BorderChars = border_mod.Border.rounded,
+    border_chars: border_mod.BorderChars = .rounded,
     border_fg: Color = Color.gray(14),
     /// Background for the content area (padding + text) inside the border.
     content_bg: Color = .none,
@@ -79,13 +79,13 @@ pub const Tooltip = struct {
     /// - `.none` — explicitly no bg; with `inherit_bg` the base shows through.
     /// - any color — use that color for borders only.
     border_bg: ?Color = null,
-    text_style: style_mod.Style = makeStyle(.{ .fg_color = Color.gray(20) }),
-    title_style: style_mod.Style = makeStyle(.{ .bold_v = true, .fg_color = Color.white() }),
+    text_style: style_mod.Style = makeStyle(.{ .fg_color = .gray(20) }),
+    title_style: style_mod.Style = makeStyle(.{ .bold_v = true, .fg_color = .white }),
 
     /// Show an arrow pointing from tooltip toward the target.
     show_arrow: bool = true,
     /// Color of the arrow character.
-    arrow_fg: Color = Color.gray(14),
+    arrow_fg: Color = .gray(14),
     /// Background for the arrow character. Three-state via `?Color`:
     /// - `null` (default) — no bg; with `inherit_bg` the base shows through.
     /// - `.none` — explicitly no bg, even when `inherit_bg` is on.
@@ -140,9 +140,9 @@ pub const Tooltip = struct {
     pub fn help(text: []const u8) Tooltip {
         return .{
             .text = text,
-            .text_style = makeStyle(.{ .dim_v = true, .italic_v = true, .fg_color = Color.gray(16) }),
-            .border_fg = Color.gray(10),
-            .arrow_fg = Color.gray(10),
+            .text_style = makeStyle(.{ .dim_v = true, .italic_v = true, .fg_color = .gray(16) }),
+            .border_fg = .gray(10),
+            .arrow_fg = .gray(10),
         };
     }
 
@@ -151,8 +151,8 @@ pub const Tooltip = struct {
         return .{
             .text = key,
             .title = label,
-            .title_style = makeStyle(.{ .fg_color = Color.gray(18) }),
-            .text_style = makeStyle(.{ .bold_v = true, .fg_color = Color.cyan() }),
+            .title_style = makeStyle(.{ .fg_color = .gray(18) }),
+            .text_style = makeStyle(.{ .bold_v = true, .fg_color = .cyan }),
         };
     }
 

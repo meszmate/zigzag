@@ -302,11 +302,11 @@ pub fn FocusGroup(comptime max_items: usize) type {
 /// ```
 pub const FocusStyle = struct {
     /// Border color when focused (default: cyan).
-    focused_border_fg: Color = Color.cyan(),
+    focused_border_fg: Color = .cyan,
     /// Border color when not focused (default: dark gray).
-    blurred_border_fg: Color = Color.gray(12),
+    blurred_border_fg: Color = .gray(12),
     /// Border character set (default: rounded).
-    border_chars: border_mod.BorderChars = border_mod.Border.rounded,
+    border_chars: border_mod.BorderChars = .rounded,
 
     /// Apply focus-aware border styling to `base`.
     /// Returns a new Style with the appropriate border and color.

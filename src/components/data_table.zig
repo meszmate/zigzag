@@ -68,16 +68,16 @@ pub const DataTable = struct {
         cell_s = cell_s.inline_style(true);
 
         var cursor_cell = style_mod.Style{};
-        cursor_cell = cursor_cell.bg(Color.cyan());
-        cursor_cell = cursor_cell.fg(Color.black());
+        cursor_cell = cursor_cell.bg(.cyan);
+        cursor_cell = cursor_cell.fg(.black);
         cursor_cell = cursor_cell.inline_style(true);
 
         var cursor_row = style_mod.Style{};
-        cursor_row = cursor_row.bg(Color.gray(4));
+        cursor_row = cursor_row.bg(.gray(4));
         cursor_row = cursor_row.inline_style(true);
 
         var frozen_sep = style_mod.Style{};
-        frozen_sep = frozen_sep.fg(Color.gray(8));
+        frozen_sep = frozen_sep.fg(.gray(8));
         frozen_sep = frozen_sep.inline_style(true);
 
         return .{
@@ -98,7 +98,7 @@ pub const DataTable = struct {
             .cursor_cell_style = cursor_cell,
             .cursor_row_style = cursor_row,
             .frozen_separator_style = frozen_sep,
-            .border_chars = border_mod.Border.normal,
+            .border_chars = .normal,
         };
     }
 

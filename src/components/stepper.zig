@@ -40,27 +40,27 @@ pub const Stepper = struct {
 
     pub fn init(allocator: std.mem.Allocator) Stepper {
         var completed = style_mod.Style{};
-        completed = completed.fg(Color.green());
+        completed = completed.fg(.green);
         completed = completed.inline_style(true);
 
         var current = style_mod.Style{};
-        current = current.fg(Color.cyan());
+        current = current.fg(.cyan);
         current = current.bold(true);
         current = current.inline_style(true);
 
         var pending = style_mod.Style{};
-        pending = pending.fg(Color.gray(8));
+        pending = pending.fg(.gray(8));
         pending = pending.inline_style(true);
 
         var connector = style_mod.Style{};
-        connector = connector.fg(Color.gray(6));
+        connector = connector.fg(.gray(6));
         connector = connector.inline_style(true);
 
         var title = style_mod.Style{};
         title = title.inline_style(true);
 
         var desc = style_mod.Style{};
-        desc = desc.fg(Color.gray(10));
+        desc = desc.fg(.gray(10));
         desc = desc.inline_style(true);
 
         return .{

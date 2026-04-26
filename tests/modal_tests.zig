@@ -328,8 +328,8 @@ test "backdrop presets render without error" {
         Modal.Backdrop.shade_light,
         Modal.Backdrop.shade_medium,
         Modal.Backdrop.shade_dense,
-        Modal.Backdrop.solid(zz.Color.blue()),
-        Modal.Backdrop.custom("*", zz.Color.red(), zz.Color.black()),
+        Modal.Backdrop.solid(.blue),
+        Modal.Backdrop.custom("*", .red, .black),
     };
 
     for (presets) |preset| {

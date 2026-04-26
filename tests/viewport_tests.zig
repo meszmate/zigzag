@@ -49,7 +49,7 @@ test "viewport slices ANSI styled content without corrupting output" {
     defer viewport.deinit();
 
     var s = zz.Style{};
-    s = s.fg(zz.Color.cyan());
+    s = s.fg(.cyan);
     s = s.inline_style(true);
     const styled = try s.render(allocator, "abcdef");
     defer allocator.free(styled);

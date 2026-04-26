@@ -34,7 +34,7 @@ pub const Sparkline = struct {
             .retention_limit = 40,
             .spark_style = blk: {
                 var s = Style{};
-                s = s.fg(Color.green());
+                s = s.fg(.green);
                 break :blk charting.inlineStyle(s);
             },
             .empty_char = " ",
@@ -179,7 +179,7 @@ pub const Sparkline = struct {
         for (0..width) |bucket_index| {
             const start = @min(self.data.items.len, @as(usize, @intFromFloat(@floor(@as(f64, @floatFromInt(bucket_index)) * data_len_f / width_f))));
             const end = @min(self.data.items.len, @as(usize, @intFromFloat(@floor(@as(f64, @floatFromInt(bucket_index + 1)) * data_len_f / width_f))));
-            const slice = if (end > start) self.data.items[start..end] else self.data.items[start .. @min(self.data.items.len, start + 1)];
+            const slice = if (end > start) self.data.items[start..end] else self.data.items[start..@min(self.data.items.len, start + 1)];
             try buckets.append(summarize(slice, self.summary));
         }
 

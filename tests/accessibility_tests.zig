@@ -3,7 +3,7 @@ const testing = std.testing;
 const zz = @import("zigzag");
 
 test "checkContrast white on black is AAA" {
-    const level = zz.a11y.checkContrast(zz.Color.white(), zz.Color.black());
+    const level = zz.a11y.checkContrast(.white, .black);
     try testing.expectEqual(zz.ContrastLevel.aaa, level);
 }
 
@@ -15,25 +15,25 @@ test "checkContrast similar colors fail" {
 }
 
 test "meetsAA white on dark blue" {
-    const fg = zz.Color.white();
+    const fg = zz.Color.white;
     const bg = zz.Color.fromRgb(0, 0, 100);
     try testing.expect(zz.a11y.meetsAA(fg, bg));
 }
 
 test "meetsAAA white on black" {
-    try testing.expect(zz.a11y.meetsAAA(zz.Color.white(), zz.Color.black()));
+    try testing.expect(zz.a11y.meetsAAA(.white, .black));
 }
 
 test "suggestForeground picks white for dark bg" {
     const bg = zz.Color.fromRgb(20, 20, 20);
     const suggested = zz.a11y.suggestForeground(bg);
-    try testing.expectEqual(zz.Color.white(), suggested);
+    try testing.expectEqual(zz.Color.white, suggested);
 }
 
 test "suggestForeground picks black for light bg" {
     const bg = zz.Color.fromRgb(240, 240, 240);
     const suggested = zz.a11y.suggestForeground(bg);
-    try testing.expectEqual(zz.Color.black(), suggested);
+    try testing.expectEqual(zz.Color.black, suggested);
 }
 
 test "Role label" {

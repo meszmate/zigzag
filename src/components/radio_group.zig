@@ -70,7 +70,7 @@ pub fn RadioGroup(comptime T: type) type {
                 },
                 .selected_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.cyan());
+                    s = s.fg(.cyan);
                     s = s.bold(true);
                     s = s.inline_style(true);
                     break :blk s;
@@ -78,14 +78,14 @@ pub fn RadioGroup(comptime T: type) type {
                 .cursor_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
-                    s = s.fg(Color.magenta());
+                    s = s.fg(.magenta);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .disabled_style = blk: {
                     var s = style_mod.Style{};
                     s = s.dim(true);
-                    s = s.fg(Color.gray(10));
+                    s = s.fg(.gray(10));
                     s = s.inline_style(true);
                     break :blk s;
                 },

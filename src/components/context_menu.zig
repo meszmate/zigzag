@@ -59,39 +59,39 @@ pub fn ContextMenu(comptime Action: type) type {
                 .y = 0,
                 .item_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.gray(18));
+                    s = s.fg(.gray(18));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .active_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
-                    s = s.fg(Color.white());
-                    s = s.bg(Color.cyan());
+                    s = s.fg(.white);
+                    s = s.bg(.cyan);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .disabled_style = blk: {
                     var s = style_mod.Style{};
                     s = s.dim(true);
-                    s = s.fg(Color.gray(10));
+                    s = s.fg(.gray(10));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .separator_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.gray(8));
+                    s = s.fg(.gray(8));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .shortcut_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.gray(12));
+                    s = s.fg(.gray(12));
                     s = s.inline_style(true);
                     break :blk s;
                 },
-                .border_chars = border_mod.Border.rounded,
-                .border_fg = Color.gray(14),
+                .border_chars = .rounded,
+                .border_fg = .gray(14),
             };
         }
 

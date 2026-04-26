@@ -86,23 +86,23 @@ pub const RichLog = struct {
 
     pub fn init(allocator: std.mem.Allocator, capacity: usize) RichLog {
         var ts = Style{};
-        ts = ts.fg(Color.gray(8));
+        ts = ts.fg(.gray(8));
         ts = ts.inline_style(true);
 
         var trace_s = Style{};
-        trace_s = trace_s.fg(Color.gray(6));
+        trace_s = trace_s.fg(.gray(6));
         trace_s = trace_s.inline_style(true);
         var debug_s = Style{};
-        debug_s = debug_s.fg(Color.gray(10));
+        debug_s = debug_s.fg(.gray(10));
         debug_s = debug_s.inline_style(true);
         var info_s = Style{};
-        info_s = info_s.fg(Color.cyan());
+        info_s = info_s.fg(.cyan);
         info_s = info_s.inline_style(true);
         var warn_s = Style{};
-        warn_s = warn_s.fg(Color.yellow());
+        warn_s = warn_s.fg(.yellow);
         warn_s = warn_s.inline_style(true);
         var err_s = Style{};
-        err_s = err_s.fg(Color.red());
+        err_s = err_s.fg(.red);
         err_s = err_s.bold(true);
         err_s = err_s.inline_style(true);
 
@@ -110,8 +110,8 @@ pub const RichLog = struct {
         text = text.inline_style(true);
 
         var hi = Style{};
-        hi = hi.bg(Color.yellow());
-        hi = hi.fg(Color.black());
+        hi = hi.bg(.yellow);
+        hi = hi.fg(.black);
         hi = hi.inline_style(true);
 
         return .{

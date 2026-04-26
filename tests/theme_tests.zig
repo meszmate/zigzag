@@ -32,7 +32,7 @@ test "Palette all presets are valid" {
 }
 
 test "Theme fromPalette derives component themes" {
-    const t = zz.Theme.fromPalette(zz.Palette.dracula);
+    const t = zz.Theme.fromPalette(.dracula);
 
     // Text theme inherits from palette
     const p = zz.Palette.dracula;
@@ -63,7 +63,7 @@ test "AdaptivePalette resolves correctly" {
 }
 
 test "Theme styleWith creates inline style" {
-    const s = zz.Theme.styleWith(zz.Color.red());
+    const s = zz.Theme.styleWith(.red);
 
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
@@ -73,7 +73,7 @@ test "Theme styleWith creates inline style" {
 }
 
 test "Theme boldStyleWith creates bold inline style" {
-    const s = zz.Theme.boldStyleWith(zz.Color.green());
+    const s = zz.Theme.boldStyleWith(.green);
 
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();
@@ -111,27 +111,27 @@ test "ThemeManager setPalette with custom palette" {
     var tm = zz.ThemeManager.init();
 
     const custom = zz.Palette{
-        .primary = zz.Color.red(),
-        .secondary = zz.Color.blue(),
-        .accent = zz.Color.green(),
-        .background = zz.Color.black(),
-        .surface = zz.Color.black(),
-        .overlay = zz.Color.black(),
-        .foreground = zz.Color.white(),
-        .muted = zz.Color.gray(14),
-        .subtle = zz.Color.gray(10),
-        .success = zz.Color.green(),
-        .warning = zz.Color.yellow(),
-        .danger = zz.Color.red(),
-        .info = zz.Color.cyan(),
-        .border_color = zz.Color.gray(12),
-        .border_focus = zz.Color.red(),
-        .highlight = zz.Color.gray(5),
-        .highlight_text = zz.Color.white(),
+        .primary = .red,
+        .secondary = .blue,
+        .accent = .green,
+        .background = .black,
+        .surface = .black,
+        .overlay = .black,
+        .foreground = .white,
+        .muted = .gray(14),
+        .subtle = .gray(10),
+        .success = .green,
+        .warning = .yellow,
+        .danger = .red,
+        .info = .cyan,
+        .border_color = .gray(12),
+        .border_focus = .red,
+        .highlight = .gray(5),
+        .highlight_text = .white,
     };
 
     tm.setPalette(custom);
-    try testing.expectEqual(zz.Color.red(), tm.current.palette.primary);
+    try testing.expectEqual(zz.Color.red, tm.current.palette.primary);
 }
 
 test "ThemeManager builtinCount" {
@@ -159,8 +159,8 @@ test "Theme can be overridden per-component" {
     var t = zz.Theme.fromPalette(zz.Palette.nord);
 
     // Override list cursor color
-    t.list.cursor_fg = zz.Color.red();
-    try testing.expectEqual(zz.Color.red(), t.list.cursor_fg);
+    t.list.cursor_fg = zz.Color.red;
+    try testing.expectEqual(zz.Color.red, t.list.cursor_fg);
 
     // Other fields unchanged
     try testing.expectEqual(zz.Palette.nord.foreground, t.list.item_fg);

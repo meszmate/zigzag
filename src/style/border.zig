@@ -17,10 +17,7 @@ pub const BorderChars = struct {
     middle_top: []const u8,
     middle_bottom: []const u8,
     cross: []const u8,
-};
 
-/// Predefined border styles
-pub const Border = struct {
     /// No border
     pub const none = BorderChars{
         .top_left = "",

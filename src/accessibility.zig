@@ -39,8 +39,8 @@ pub fn meetsAAA(fg: Color, bg: Color) bool {
 /// Suggest a foreground color (white or black) that has better contrast
 /// against the given background.
 pub fn suggestForeground(bg: Color) Color {
-    const white = Color.white();
-    const black = Color.black();
+    const white = Color.white;
+    const black = Color.black;
     const white_ratio = white.contrastRatio(bg);
     const black_ratio = black.contrastRatio(bg);
     return if (white_ratio >= black_ratio) white else black;

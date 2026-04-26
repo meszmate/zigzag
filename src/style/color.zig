@@ -26,56 +26,24 @@ pub const Color = union(enum) {
     };
 
     // Basic ANSI colors
-    pub fn black() Color {
-        return .{ .ansi = .black };
-    }
-    pub fn red() Color {
-        return .{ .ansi = .red };
-    }
-    pub fn green() Color {
-        return .{ .ansi = .green };
-    }
-    pub fn yellow() Color {
-        return .{ .ansi = .yellow };
-    }
-    pub fn blue() Color {
-        return .{ .ansi = .blue };
-    }
-    pub fn magenta() Color {
-        return .{ .ansi = .magenta };
-    }
-    pub fn cyan() Color {
-        return .{ .ansi = .cyan };
-    }
-    pub fn white() Color {
-        return .{ .ansi = .white };
-    }
+    pub const black: Color = .{ .ansi = .black };
+    pub const red: Color = .{ .ansi = .red };
+    pub const green: Color = .{ .ansi = .green };
+    pub const yellow: Color = .{ .ansi = .yellow };
+    pub const blue: Color = .{ .ansi = .blue };
+    pub const magenta: Color = .{ .ansi = .magenta };
+    pub const cyan: Color = .{ .ansi = .cyan };
+    pub const white: Color = .{ .ansi = .white };
 
     // Bright ANSI colors
-    pub fn brightBlack() Color {
-        return .{ .ansi = .bright_black };
-    }
-    pub fn brightRed() Color {
-        return .{ .ansi = .bright_red };
-    }
-    pub fn brightGreen() Color {
-        return .{ .ansi = .bright_green };
-    }
-    pub fn brightYellow() Color {
-        return .{ .ansi = .bright_yellow };
-    }
-    pub fn brightBlue() Color {
-        return .{ .ansi = .bright_blue };
-    }
-    pub fn brightMagenta() Color {
-        return .{ .ansi = .bright_magenta };
-    }
-    pub fn brightCyan() Color {
-        return .{ .ansi = .bright_cyan };
-    }
-    pub fn brightWhite() Color {
-        return .{ .ansi = .bright_white };
-    }
+    pub const brightBlack: Color = .{ .ansi = .bright_black };
+    pub const brightRed: Color = .{ .ansi = .bright_red };
+    pub const brightGreen: Color = .{ .ansi = .bright_green };
+    pub const brightYellow: Color = .{ .ansi = .bright_yellow };
+    pub const brightBlue: Color = .{ .ansi = .bright_blue };
+    pub const brightMagenta: Color = .{ .ansi = .bright_magenta };
+    pub const brightCyan: Color = .{ .ansi = .bright_cyan };
+    pub const brightWhite: Color = .{ .ansi = .bright_white };
 
     /// Create a color from RGB values
     pub fn fromRgb(r: u8, g: u8, b: u8) Color {

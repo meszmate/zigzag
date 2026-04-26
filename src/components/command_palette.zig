@@ -61,7 +61,7 @@ pub const CommandPalette = struct {
 
     pub fn init(allocator: std.mem.Allocator) !CommandPalette {
         var prompt_s = style_mod.Style{};
-        prompt_s = prompt_s.fg(Color.cyan());
+        prompt_s = prompt_s.fg(.cyan);
         prompt_s = prompt_s.bold(true);
         prompt_s = prompt_s.inline_style(true);
 
@@ -69,32 +69,32 @@ pub const CommandPalette = struct {
         input_s = input_s.inline_style(true);
 
         var placeholder_s = style_mod.Style{};
-        placeholder_s = placeholder_s.fg(Color.gray(8));
+        placeholder_s = placeholder_s.fg(.gray(8));
         placeholder_s = placeholder_s.inline_style(true);
 
         var label_s = style_mod.Style{};
         label_s = label_s.inline_style(true);
 
         var desc_s = style_mod.Style{};
-        desc_s = desc_s.fg(Color.gray(10));
+        desc_s = desc_s.fg(.gray(10));
         desc_s = desc_s.inline_style(true);
 
         var shortcut_s = style_mod.Style{};
-        shortcut_s = shortcut_s.fg(Color.gray(8));
+        shortcut_s = shortcut_s.fg(.gray(8));
         shortcut_s = shortcut_s.inline_style(true);
 
         var selected_s = style_mod.Style{};
-        selected_s = selected_s.bg(Color.gray(4));
+        selected_s = selected_s.bg(.gray(4));
         selected_s = selected_s.inline_style(true);
 
         var selected_label_s = style_mod.Style{};
-        selected_label_s = selected_label_s.bg(Color.gray(4));
-        selected_label_s = selected_label_s.fg(Color.cyan());
+        selected_label_s = selected_label_s.bg(.gray(4));
+        selected_label_s = selected_label_s.fg(.cyan);
         selected_label_s = selected_label_s.bold(true);
         selected_label_s = selected_label_s.inline_style(true);
 
         var empty_s = style_mod.Style{};
-        empty_s = empty_s.fg(Color.gray(8));
+        empty_s = empty_s.fg(.gray(8));
         empty_s = empty_s.italic(true);
         empty_s = empty_s.inline_style(true);
 
@@ -108,7 +108,7 @@ pub const CommandPalette = struct {
             .width = 60,
             .prompt = "> ",
             .placeholder = "Type a command…",
-            .border_chars = border_mod.Border.rounded,
+            .border_chars = .rounded,
             .prompt_style = prompt_s,
             .input_style = input_s,
             .placeholder_style = placeholder_s,

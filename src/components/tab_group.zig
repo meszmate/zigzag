@@ -204,30 +204,30 @@ pub const TabGroup = struct {
 
     pub fn init(allocator: std.mem.Allocator) Self {
         var tab_style = style_mod.Style{};
-        tab_style = tab_style.fg(Color.gray(15));
+        tab_style = tab_style.fg(.gray(15));
         tab_style = tab_style.inline_style(true);
 
         var active_style = style_mod.Style{};
-        active_style = active_style.fg(Color.cyan());
+        active_style = active_style.fg(.cyan);
         active_style = active_style.bold(true);
         active_style = active_style.inline_style(true);
 
         var focused_style = style_mod.Style{};
-        focused_style = focused_style.fg(Color.yellow());
+        focused_style = focused_style.fg(.yellow);
         focused_style = focused_style.bold(true);
         focused_style = focused_style.inline_style(true);
 
         var disabled_style = style_mod.Style{};
-        disabled_style = disabled_style.fg(Color.gray(9));
+        disabled_style = disabled_style.fg(.gray(9));
         disabled_style = disabled_style.dim(true);
         disabled_style = disabled_style.inline_style(true);
 
         var sep_style = style_mod.Style{};
-        sep_style = sep_style.fg(Color.gray(11));
+        sep_style = sep_style.fg(.gray(11));
         sep_style = sep_style.inline_style(true);
 
         var overflow_style = style_mod.Style{};
-        overflow_style = overflow_style.fg(Color.gray(12));
+        overflow_style = overflow_style.fg(.gray(12));
         overflow_style = overflow_style.inline_style(true);
 
         return .{

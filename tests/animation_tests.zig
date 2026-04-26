@@ -22,8 +22,8 @@ test "Easing ease_out ends slow" {
 
 test "Easing boundaries" {
     const easings = [_]zz.Easing{
-        .linear,     .ease_in,         .ease_out,
-        .ease_in_out, .ease_in_cubic, .ease_out_cubic,
+        .linear,            .ease_in,       .ease_out,
+        .ease_in_out,       .ease_in_cubic, .ease_out_cubic,
         .ease_in_out_cubic, .bounce,
     };
     for (easings) |e| {
@@ -148,7 +148,7 @@ test "lerp clamps t" {
 }
 
 test "tweenColor interpolates" {
-    const c = zz.tweenColor(zz.Color.red(), zz.Color.blue(), 0.5);
+    const c = zz.tweenColor(.red, .blue, 0.5);
     const rgb = c.toRgb();
     try testing.expect(rgb != null);
 }

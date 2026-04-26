@@ -22,10 +22,10 @@ test "Color.hex parsing" {
 }
 
 test "Color basic colors" {
-    const red = zz.Color.red();
+    const red = zz.Color.red;
     try testing.expect(red == .ansi);
 
-    const cyan = zz.Color.cyan();
+    const cyan = zz.Color.cyan;
     try testing.expect(cyan == .ansi);
 
     const rgb = zz.Color.fromRgb(100, 150, 200);
@@ -38,8 +38,8 @@ test "Color basic colors" {
 test "Style builder pattern" {
     var style = zz.Style{};
     style = style.bold(true);
-    style = style.fg(zz.Color.red());
-    style = style.bg(zz.Color.black());
+    style = style.fg(.red);
+    style = style.bg(.black);
     style = style.paddingAll(1);
     style = style.marginAll(2);
 
@@ -55,7 +55,7 @@ test "Style render" {
 
     var style = zz.Style{};
     style = style.bold(true);
-    style = style.fg(zz.Color.cyan());
+    style = style.fg(.cyan);
 
     const result = try style.render(allocator, "Hello");
     defer allocator.free(result);
@@ -70,7 +70,7 @@ test "Style render keeps internal newlines but no trailing newline" {
     const allocator = testing.allocator;
 
     var style = zz.Style{};
-    style = style.fg(zz.Color.cyan());
+    style = style.fg(.cyan);
 
     const result = try style.render(allocator, "A\nB");
     defer allocator.free(result);
@@ -80,18 +80,18 @@ test "Style render keeps internal newlines but no trailing newline" {
 }
 
 test "Border styles exist" {
-    _ = zz.Border.normal;
-    _ = zz.Border.rounded;
-    _ = zz.Border.double;
-    _ = zz.Border.thick;
-    _ = zz.Border.ascii;
-    _ = zz.Border.none;
+    _ = zz.border.BorderChars.normal;
+    _ = zz.border.BorderChars.rounded;
+    _ = zz.border.BorderChars.double;
+    _ = zz.border.BorderChars.thick;
+    _ = zz.border.BorderChars.ascii;
+    _ = zz.border.BorderChars.none;
 }
 
 test "Style with border" {
     var style = zz.Style{};
-    style = style.borderAll(zz.Border.rounded);
-    style = style.borderForeground(zz.Color.cyan());
+    style = style.borderAll(.rounded);
+    style = style.borderForeground(.cyan);
 
     try testing.expect(style.border_sides.top);
     try testing.expect(style.border_sides.bottom);

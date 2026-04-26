@@ -60,20 +60,20 @@ pub const Slider = struct {
             .filled_char = "━",
             .track_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.gray(8));
+                s = s.fg(.gray(8));
                 s = s.inline_style(true);
                 break :blk s;
             },
             .filled_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .thumb_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.white());
+                s = s.fg(.white);
                 s = s.inline_style(true);
                 break :blk s;
             },
@@ -85,7 +85,7 @@ pub const Slider = struct {
             },
             .value_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },

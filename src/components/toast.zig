@@ -82,40 +82,40 @@ pub const Toast = struct {
             .show_icons = true,
             .show_border = true,
             .show_countdown = false,
-            .border_chars = border_mod.Border.rounded,
+            .border_chars = .rounded,
             .info_icon = "\u{2139}  ",
             .success_icon = "\u{2713} ",
             .warning_icon = "\u{26a0} ",
             .err_icon = "\u{2717} ",
             .info_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .success_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.green());
+                s = s.fg(.green);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .warning_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.yellow());
+                s = s.fg(.yellow);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .err_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.red());
+                s = s.fg(.red);
                 s = s.inline_style(true);
                 break :blk s;
             },
-            .info_border_fg = Color.cyan(),
-            .success_border_fg = Color.green(),
-            .warning_border_fg = Color.yellow(),
-            .err_border_fg = Color.red(),
+            .info_border_fg = .cyan,
+            .success_border_fg = .green,
+            .warning_border_fg = .yellow,
+            .err_border_fg = .red,
         };
     }
 
@@ -239,7 +239,7 @@ pub const Toast = struct {
             const overflow_text = try std.fmt.allocPrint(allocator, "  +{d} more", .{total - self.max_visible});
             defer allocator.free(overflow_text);
             var dim_style = style_mod.Style{};
-            dim_style = dim_style.fg(Color.gray(10));
+            dim_style = dim_style.fg(.gray(10));
             dim_style = dim_style.inline_style(true);
             const styled = try dim_style.render(allocator, overflow_text);
             defer allocator.free(styled);
@@ -327,7 +327,7 @@ pub const Toast = struct {
         // Countdown
         if (countdown_text.len > 0) {
             var dim_style = style_mod.Style{};
-            dim_style = dim_style.fg(Color.gray(10));
+            dim_style = dim_style.fg(.gray(10));
             dim_style = dim_style.inline_style(true);
             const styled_cd = try dim_style.render(allocator, countdown_text);
             defer allocator.free(styled_cd);

@@ -39,28 +39,28 @@ pub const Checkbox = struct {
             },
             .checked_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.bold(true);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .unchecked_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.gray(12));
+                s = s.fg(.gray(12));
                 s = s.inline_style(true);
                 break :blk s;
             },
             .focused_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.magenta());
+                s = s.fg(.magenta);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .disabled_style = blk: {
                 var s = style_mod.Style{};
                 s = s.dim(true);
-                s = s.fg(Color.gray(10));
+                s = s.fg(.gray(10));
                 s = s.inline_style(true);
                 break :blk s;
             },
@@ -197,21 +197,21 @@ pub fn CheckboxGroup(comptime T: type) type {
                 },
                 .checked_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.cyan());
+                    s = s.fg(.cyan);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .cursor_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
-                    s = s.fg(Color.magenta());
+                    s = s.fg(.magenta);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .disabled_style = blk: {
                     var s = style_mod.Style{};
                     s = s.dim(true);
-                    s = s.fg(Color.gray(10));
+                    s = s.fg(.gray(10));
                     s = s.inline_style(true);
                     break :blk s;
                 },

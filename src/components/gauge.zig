@@ -25,9 +25,9 @@ pub const Gauge = struct {
     /// Thresholds for color changes.
     thresholds: []const Threshold = &.{},
     /// Base color (used when below all thresholds).
-    base_color: Color = Color.green(),
+    base_color: Color = .green,
     /// Empty/background color.
-    empty_color: Color = Color.gray(6),
+    empty_color: Color = .gray(6),
     /// Label style.
     label_style: style_mod.Style = .{},
     /// Value/percent label style.

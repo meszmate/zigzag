@@ -236,14 +236,14 @@ pub const Footer = struct {
 
     pub fn init(registry: *const ActionRegistry) Footer {
         var key_s = style_mod.Style{};
-        key_s = key_s.fg(Color.cyan());
+        key_s = key_s.fg(.cyan);
         key_s = key_s.bold(true);
         key_s = key_s.inline_style(true);
         var label_s = style_mod.Style{};
-        label_s = label_s.fg(Color.gray(12));
+        label_s = label_s.fg(.gray(12));
         label_s = label_s.inline_style(true);
         var base = style_mod.Style{};
-        base = base.bg(Color.gray(3));
+        base = base.bg(.gray(3));
         base = base.inline_style(true);
         return .{
             .registry = registry,

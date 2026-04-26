@@ -32,7 +32,7 @@ pub const Markdown = struct {
             .h1_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.magenta());
+                s = s.fg(.magenta);
                 s = s.underline(true);
                 s = s.inline_style(true);
                 break :blk s;
@@ -40,14 +40,14 @@ pub const Markdown = struct {
             .h2_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .h3_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.green());
+                s = s.fg(.green);
                 s = s.inline_style(true);
                 break :blk s;
             },
@@ -65,26 +65,26 @@ pub const Markdown = struct {
             },
             .code_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.yellow());
-                s = s.bg(Color.fromRgb(40, 40, 40));
+                s = s.fg(.yellow);
+                s = s.bg(.fromRgb(40, 40, 40));
                 s = s.inline_style(true);
                 break :blk s;
             },
             .code_block_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.green());
+                s = s.fg(.green);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .code_block_border = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.gray(8));
+                s = s.fg(.gray(8));
                 s = s.inline_style(true);
                 break :blk s;
             },
             .link_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.underline(true);
                 s = s.inline_style(true);
                 break :blk s;
@@ -92,25 +92,25 @@ pub const Markdown = struct {
             .blockquote_style = blk: {
                 var s = style_mod.Style{};
                 s = s.italic(true);
-                s = s.fg(Color.gray(14));
+                s = s.fg(.gray(14));
                 s = s.inline_style(true);
                 break :blk s;
             },
             .blockquote_bar = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.gray(10));
+                s = s.fg(.gray(10));
                 s = s.inline_style(true);
                 break :blk s;
             },
             .list_bullet_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .hr_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.gray(8));
+                s = s.fg(.gray(8));
                 s = s.inline_style(true);
                 break :blk s;
             },

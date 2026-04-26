@@ -99,7 +99,7 @@ test "Slider view renders" {
 test "Slider view with gradient" {
     var s = zz.Slider.init(0, 100);
     s.setValue(50);
-    s.setGradient(zz.Color.red(), zz.Color.green());
+    s.setGradient(.red, .green);
 
     var arena = std.heap.ArenaAllocator.init(testing.allocator);
     defer arena.deinit();

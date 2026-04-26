@@ -123,14 +123,14 @@ pub fn Dropdown(comptime T: type) type {
                 },
                 .trigger_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.white());
+                    s = s.fg(.white);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .trigger_focused_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
-                    s = s.fg(Color.cyan());
+                    s = s.fg(.cyan);
                     s = s.inline_style(true);
                     break :blk s;
                 },
@@ -142,31 +142,31 @@ pub fn Dropdown(comptime T: type) type {
                 .cursor_item_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
-                    s = s.fg(Color.cyan());
+                    s = s.fg(.cyan);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .selected_item_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.green());
+                    s = s.fg(.green);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .disabled_style = blk: {
                     var s = style_mod.Style{};
                     s = s.dim(true);
-                    s = s.fg(Color.gray(10));
+                    s = s.fg(.gray(10));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .filter_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.yellow());
+                    s = s.fg(.yellow);
                     s = s.inline_style(true);
                     break :blk s;
                 },
-                .border_chars = border_mod.Border.rounded,
-                .border_fg = Color.gray(14),
+                .border_chars = .rounded,
+                .border_fg = .gray(14),
             };
         }
 

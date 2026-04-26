@@ -31,16 +31,16 @@ pub const Breadcrumb = struct {
 
     pub fn init(allocator: std.mem.Allocator) Breadcrumb {
         var seg = style_mod.Style{};
-        seg = seg.fg(Color.gray(12));
+        seg = seg.fg(.gray(12));
         seg = seg.inline_style(true);
 
         var active = style_mod.Style{};
-        active = active.fg(Color.cyan());
+        active = active.fg(.cyan);
         active = active.bold(true);
         active = active.inline_style(true);
 
         var sep = style_mod.Style{};
-        sep = sep.fg(Color.gray(8));
+        sep = sep.fg(.gray(8));
         sep = sep.inline_style(true);
 
         return .{

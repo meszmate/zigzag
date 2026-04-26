@@ -78,59 +78,59 @@ pub fn MenuBar(comptime Action: type) type {
                 .selected_action = null,
                 .bar_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.bg(Color.fromRgb(40, 40, 50));
+                    s = s.bg(.fromRgb(40, 40, 50));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .bar_item_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.gray(18));
+                    s = s.fg(.gray(18));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .bar_active_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
-                    s = s.fg(Color.white());
-                    s = s.bg(Color.fromRgb(60, 60, 80));
+                    s = s.fg(.white);
+                    s = s.bg(.fromRgb(60, 60, 80));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .item_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.gray(18));
+                    s = s.fg(.gray(18));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .item_active_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
-                    s = s.fg(Color.white());
-                    s = s.bg(Color.cyan());
+                    s = s.fg(.white);
+                    s = s.bg(.cyan);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .item_disabled_style = blk: {
                     var s = style_mod.Style{};
                     s = s.dim(true);
-                    s = s.fg(Color.gray(10));
+                    s = s.fg(.gray(10));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .separator_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.gray(10));
+                    s = s.fg(.gray(10));
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .shortcut_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.gray(12));
+                    s = s.fg(.gray(12));
                     s = s.inline_style(true);
                     break :blk s;
                 },
-                .border_chars = border_mod.Border.normal,
-                .border_fg = Color.gray(14),
+                .border_chars = .normal,
+                .border_fg = .gray(14),
                 .gap = 2,
             };
         }

@@ -67,24 +67,24 @@ pub fn Form(comptime max_fields: usize) type {
                 },
                 .required_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.red());
+                    s = s.fg(.red);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .error_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.red());
+                    s = s.fg(.red);
                     s = s.inline_style(true);
                     break :blk s;
                 },
-                .border_chars = border_mod.Border.rounded,
-                .border_fg = Color.gray(10),
-                .border_focus_fg = Color.cyan(),
+                .border_chars = .rounded,
+                .border_fg = .gray(10),
+                .border_focus_fg = .cyan,
                 .title = "",
                 .title_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
-                    s = s.fg(Color.cyan());
+                    s = s.fg(.cyan);
                     s = s.inline_style(true);
                     break :blk s;
                 },
@@ -256,7 +256,7 @@ pub fn Form(comptime max_fields: usize) type {
             // Footer
             try writer.writeAll("\n\n");
             var hint_style = style_mod.Style{};
-            hint_style = hint_style.fg(Color.gray(12));
+            hint_style = hint_style.fg(.gray(12));
             hint_style = hint_style.inline_style(true);
             const hint = try hint_style.render(allocator, "Tab: next field | Ctrl+Enter: submit | Esc: cancel");
             try writer.writeAll(hint);
