@@ -1851,7 +1851,7 @@ pub const Terminal = struct {
 
         fn sinkAll(self: *Writer, bytes: []const u8) std.Io.Writer.Error!void {
             if (is_wasm) {
-                _ = platform.WasmWriter.write(&platform.wasm_writer_instance, bytes) catch return error.WriteFailed;
+                try platform.wasm_writer_instance.writer.writeAll(bytes);
             } else {
                 self.file.writeAll(bytes) catch return error.WriteFailed;
             }

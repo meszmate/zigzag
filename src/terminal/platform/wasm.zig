@@ -144,18 +144,31 @@ export fn zigzagPushInput(len: usize) void {
     input_write_pos = @min(len, input_ring.len);
 }
 
-/// Writer adapter that sends bytes to the JS host.
+/// Unbuffered `std.Io.Writer` adapter that drains bytes to the JS host.
 pub const WasmWriter = struct {
-    pub const Error = error{};
+    writer: Writer,
 
-    pub fn write(_: *const WasmWriter, bytes: []const u8) Error!usize {
-        jsWrite(bytes.ptr, bytes.len);
-        return bytes.len;
+    const vtable: Writer.VTable = .{ .drain = drain };
+
+    pub fn init() WasmWriter {
+        return .{ .writer = .{ .vtable = &vtable, .buffer = &.{} } };
     }
 
-    pub fn writer(self: *const WasmWriter) std.io.GenericWriter(*const WasmWriter, Error, write) {
-        return .{ .context = self };
+    fn drain(_: *Writer, data: []const []const u8, splat: usize) Writer.Error!usize {
+        var consumed: usize = 0;
+        if (data.len > 1) for (data[0 .. data.len - 1]) |chunk| {
+            if (chunk.len == 0) continue;
+            jsWrite(chunk.ptr, chunk.len);
+            consumed += chunk.len;
+        };
+        const pattern = data[data.len - 1];
+        if (pattern.len > 0 and splat > 0) {
+            var i: usize = 0;
+            while (i < splat) : (i += 1) jsWrite(pattern.ptr, pattern.len);
+            consumed += pattern.len * splat;
+        }
+        return consumed;
     }
 };
 
-pub const wasm_writer_instance = WasmWriter{};
+pub var wasm_writer_instance: WasmWriter = .init();
