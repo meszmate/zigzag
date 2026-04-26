@@ -76,14 +76,14 @@ const Model = struct {
         // Title
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.cyan());
+        title_style = title_style.fg(.cyan);
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "ZigZag Text Editor") catch "Text Editor";
 
         // Editor with border
         var editor_style = zz.Style{};
-        editor_style = editor_style.borderAll(zz.Border.rounded);
-        editor_style = editor_style.borderForeground(zz.Color.gray(12));
+        editor_style = editor_style.borderAll(.rounded);
+        editor_style = editor_style.borderForeground(.gray(12));
 
         const editor_content = self.editor.view(ctx.allocator) catch "";
         const editor_box = editor_style.render(ctx.allocator, editor_content) catch editor_content;
@@ -96,19 +96,19 @@ const Model = struct {
         ) catch "";
 
         var status_style = zz.Style{};
-        status_style = status_style.fg(zz.Color.gray(18));
+        status_style = status_style.fg(.gray(18));
         status_style = status_style.inline_style(true);
         const status = status_style.render(ctx.allocator, cursor_info) catch "";
 
         // Status message
         var msg_style = zz.Style{};
-        msg_style = msg_style.fg(zz.Color.green());
+        msg_style = msg_style.fg(.green);
         msg_style = msg_style.inline_style(true);
         const msg = msg_style.render(ctx.allocator, self.status_message) catch "";
 
         // Help
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(
             ctx.allocator,

@@ -85,14 +85,14 @@ const Model = struct {
                             self.modal.body = "This is a fully customized modal.\nWith multiple lines of content.\nAnd custom buttons below.";
                             self.modal.footer = "Use Tab/arrows to navigate, Enter to select";
                             self.modal.width = .{ .fixed = 50 };
-                            self.modal.border_chars = zz.Border.double;
-                            self.modal.border_fg = zz.Color.magenta();
+                            self.modal.border_chars = .double;
+                            self.modal.border_fg = .magenta;
                             self.modal.title_style = blk: {
                                 var s = zz.Style{};
-                                s = s.bold(true).fg(zz.Color.magenta()).inline_style(true);
+                                s = s.bold(true).fg(.magenta).inline_style(true);
                                 break :blk s;
                             };
-                            self.modal.content_bg = zz.Color.gray(2);
+                            self.modal.content_bg = .gray(2);
                             self.modal.backdrop = .{};
                             self.modal.addButton("Save", .{ .char = 's' });
                             self.modal.addButton("Discard", .{ .char = 'd' });
@@ -120,16 +120,16 @@ const Model = struct {
 
         // Main view
         var title_s = zz.Style{};
-        title_s = title_s.bold(true).fg(zz.Color.hex("#FF6B6B")).inline_style(true);
+        title_s = title_s.bold(true).fg(.hex("#FF6B6B")).inline_style(true);
 
         var hint_s = zz.Style{};
-        hint_s = hint_s.fg(zz.Color.gray(14)).inline_style(true);
+        hint_s = hint_s.fg(.gray(14)).inline_style(true);
 
         var result_s = zz.Style{};
-        result_s = result_s.fg(zz.Color.cyan()).inline_style(true);
+        result_s = result_s.fg(.cyan).inline_style(true);
 
         var status_s = zz.Style{};
-        status_s = status_s.fg(zz.Color.gray(12)).inline_style(true);
+        status_s = status_s.fg(.gray(12)).inline_style(true);
 
         const title = title_s.render(alloc, "Modal Component Demo") catch "Modal Component Demo";
         const hint = hint_s.render(alloc, "1: Info  2: Confirm  3: Warning  4: Error  5: Custom  q: Quit") catch "";

@@ -153,15 +153,15 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.cyan());
+        title_style = title_style.fg(.cyan);
         title_style = title_style.inline_style(true);
 
         var info_style = zz.Style{};
-        info_style = info_style.fg(zz.Color.gray(16));
+        info_style = info_style.fg(.gray(16));
         info_style = info_style.inline_style(true);
 
         var hint_style = zz.Style{};
-        hint_style = hint_style.fg(zz.Color.gray(12));
+        hint_style = hint_style.fg(.gray(12));
         hint_style = hint_style.inline_style(true);
 
         const title = title_style.render(ctx.allocator, "OSC 52 Clipboard Demo") catch "OSC 52 Clipboard Demo";

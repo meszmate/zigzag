@@ -311,7 +311,7 @@ pub const Markdown = struct {
                             const styled_text = try self.link_style.render(allocator, link_text);
                             try writer.writeAll(styled_text);
                             var dim = style_mod.Style{};
-                            dim = dim.fg(Color.gray(10));
+                            dim = dim.fg(.gray(10));
                             dim = dim.inline_style(true);
                             const url_str = try std.fmt.allocPrint(allocator, " ({s})", .{url});
                             const styled_url = try dim.render(allocator, url_str);

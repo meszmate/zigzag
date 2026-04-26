@@ -30,7 +30,7 @@ pub fn SortableTable(comptime num_cols: usize) type {
         col_aligns: [num_cols]Align = .{.left} ** num_cols,
         show_header: bool = true,
         show_border: bool = true,
-        border_chars: border_mod.BorderChars = border_mod.Border.normal,
+        border_chars: border_mod.BorderChars = .normal,
 
         // Interactive
         cursor_row: usize = 0,
@@ -52,8 +52,8 @@ pub fn SortableTable(comptime num_cols: usize) type {
         },
         cursor_row_style: style_mod.Style = blk: {
             var s = style_mod.Style{};
-            s = s.bg(Color.blue());
-            s = s.fg(Color.white());
+            s = s.bg(.blue);
+            s = s.fg(.white);
             s = s.inline_style(true);
             break :blk s;
         },
@@ -276,7 +276,7 @@ pub fn SortableTable(comptime num_cols: usize) type {
             writer.writeByte('\n') catch {};
             const count = std.fmt.allocPrint(allocator, " {d}/{d} rows", .{ self.view_indices.items.len, self.rows.items.len }) catch "";
             var cs = style_mod.Style{};
-            cs = cs.fg(Color.gray(10));
+            cs = cs.fg(.gray(10));
             cs = cs.inline_style(true);
             writer.writeAll(cs.render(allocator, count) catch count) catch {};
 

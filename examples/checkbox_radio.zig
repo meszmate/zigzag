@@ -83,12 +83,12 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.magenta());
+        title_style = title_style.fg(.magenta);
         title_style = title_style.inline_style(true);
 
         var section_style = zz.Style{};
         section_style = section_style.bold(true);
-        section_style = section_style.fg(zz.Color.cyan());
+        section_style = section_style.fg(.cyan);
         section_style = section_style.inline_style(true);
 
         const title = title_style.render(ctx.allocator, "Checkbox & Radio Example") catch "Title";
@@ -112,7 +112,7 @@ const Model = struct {
             "None selected";
 
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(ctx.allocator, "Tab: switch focus | Space/Enter: toggle/select | q: quit") catch "";
 

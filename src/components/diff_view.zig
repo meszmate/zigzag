@@ -27,38 +27,38 @@ pub const DiffView = struct {
     // Styles
     add_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.green());
+        s = s.fg(.green);
         s = s.inline_style(true);
         break :blk s;
     },
     remove_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.red());
+        s = s.fg(.red);
         s = s.inline_style(true);
         break :blk s;
     },
     context_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.gray(12));
+        s = s.fg(.gray(12));
         s = s.inline_style(true);
         break :blk s;
     },
     header_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.cyan());
+        s = s.fg(.cyan);
         s = s.bold(true);
         s = s.inline_style(true);
         break :blk s;
     },
     line_num_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.gray(8));
+        s = s.fg(.gray(8));
         s = s.inline_style(true);
         break :blk s;
     },
     separator_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.gray(6));
+        s = s.fg(.gray(6));
         s = s.inline_style(true);
         break :blk s;
     },

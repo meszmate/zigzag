@@ -94,20 +94,20 @@ pub fn List(comptime T: type) type {
                 },
                 .selected_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.cyan());
+                    s = s.fg(.cyan);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .cursor_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
-                    s = s.fg(Color.magenta());
+                    s = s.fg(.magenta);
                     s = s.inline_style(true);
                     break :blk s;
                 },
                 .filter_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.yellow());
+                    s = s.fg(.yellow);
                     s = s.inline_style(true);
                     break :blk s;
                 },

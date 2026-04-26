@@ -106,7 +106,7 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.magenta());
+        title_style = title_style.fg(.magenta);
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "Toast Notifications") catch "Toast";
 
@@ -119,7 +119,7 @@ const Model = struct {
         };
 
         var info_style = zz.Style{};
-        info_style = info_style.fg(zz.Color.cyan());
+        info_style = info_style.fg(.cyan);
         info_style = info_style.inline_style(true);
         const info = std.fmt.allocPrint(
             ctx.allocator,
@@ -139,7 +139,7 @@ const Model = struct {
         const styled_info = info_style.render(ctx.allocator, info) catch info;
 
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(ctx.allocator,
             \\Quick start: press p to move the toast around the screen.
@@ -191,9 +191,9 @@ const Model = struct {
     fn cycleBorderStyle(self: *Model) void {
         self.border_style_idx = (self.border_style_idx + 1) % 3;
         self.toast.border_chars = switch (self.border_style_idx) {
-            0 => zz.Border.rounded,
-            1 => zz.Border.normal,
-            2 => zz.Border.thick,
+            0 => .rounded,
+            1 => .normal,
+            2 => .thick,
             else => unreachable,
         };
     }

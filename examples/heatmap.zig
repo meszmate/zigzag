@@ -66,7 +66,7 @@ const Model = struct {
         const load_view = load.view(alloc);
 
         var help_s = zz.Style{};
-        help_s = help_s.fg(zz.Color.gray(10));
+        help_s = help_s.fg(.gray(10));
         help_s = help_s.inline_style(true);
 
         const content = std.fmt.allocPrint(alloc, "{s}\n\n\n{s}\n\n{s}", .{

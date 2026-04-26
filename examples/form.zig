@@ -60,7 +60,7 @@ const Model = struct {
         const form_view = self.form.view(ctx.allocator) catch "error";
 
         var status_style = zz.Style{};
-        status_style = status_style.fg(zz.Color.green());
+        status_style = status_style.fg(.green);
         status_style = status_style.bold(true);
         status_style = status_style.inline_style(true);
         const styled_status = status_style.render(ctx.allocator, self.status) catch self.status;

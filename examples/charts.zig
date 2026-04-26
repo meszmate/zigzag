@@ -33,18 +33,18 @@ const Model = struct {
         };
 
         var cpu = zz.ChartDataset.init(ctx.persistent_allocator, "CPU") catch unreachable;
-        cpu.setStyle((zz.Style{}).fg(zz.Color.cyan()).bold(true));
+        cpu.setStyle((zz.Style{}).fg(.cyan).bold(true));
         cpu.setShowPoints(true);
         cpu.setInterpolation(.monotone_cubic);
         cpu.setInterpolationSteps(10);
 
         var mem = zz.ChartDataset.init(ctx.persistent_allocator, "Memory") catch unreachable;
-        mem.setStyle((zz.Style{}).fg(zz.Color.magenta()));
+        mem.setStyle((zz.Style{}).fg(.magenta));
         mem.setInterpolation(.catmull_rom);
         mem.setInterpolationSteps(10);
 
         var backlog = zz.ChartDataset.init(ctx.persistent_allocator, "Backlog") catch unreachable;
-        backlog.setStyle((zz.Style{}).fg(zz.Color.yellow()));
+        backlog.setStyle((zz.Style{}).fg(.yellow));
         backlog.setGraphType(.area);
         backlog.setInterpolation(.step_center);
         backlog.setFillBaseline(18.0);
@@ -65,10 +65,10 @@ const Model = struct {
         self.bars.setBarWidth(1);
         self.bars.setGap(0);
         self.bars.show_values = false;
-        self.bars.label_style = (zz.Style{}).fg(zz.Color.gray(18)).inline_style(true);
-        self.bars.positive_style = (zz.Style{}).fg(zz.Color.green()).inline_style(true);
-        self.bars.negative_style = (zz.Style{}).fg(zz.Color.red()).inline_style(true);
-        self.bars.axis_style = (zz.Style{}).fg(zz.Color.gray(10)).inline_style(true);
+        self.bars.label_style = (zz.Style{}).fg(.gray(18)).inline_style(true);
+        self.bars.positive_style = (zz.Style{}).fg(.green).inline_style(true);
+        self.bars.negative_style = (zz.Style{}).fg(.red).inline_style(true);
+        self.bars.axis_style = (zz.Style{}).fg(.gray(10)).inline_style(true);
         self.bars.addBar(zz.Bar.init(ctx.persistent_allocator, "api", 31) catch unreachable) catch unreachable;
         self.bars.addBar(zz.Bar.init(ctx.persistent_allocator, "db", -12) catch unreachable) catch unreachable;
         self.bars.addBar(zz.Bar.init(ctx.persistent_allocator, "queue", 22) catch unreachable) catch unreachable;
@@ -78,7 +78,7 @@ const Model = struct {
         self.spark.setWidth(22);
         self.spark.setSummary(.average);
         self.spark.setRetentionLimit(120);
-        self.spark.setGradient(zz.Color.hex("#F97316"), zz.Color.hex("#22C55E"));
+        self.spark.setGradient(.hex("#F97316"), .hex("#22C55E"));
 
         for (0..60) |i| {
             const x = @as(f64, @floatFromInt(i));
@@ -225,7 +225,7 @@ const Model = struct {
         canvas.setRanges(.{ .min = -1.2, .max = 1.2 }, .{ .min = -1.2, .max = 1.2 });
 
         var point_style = zz.Style{};
-        point_style = point_style.fg(zz.Color.yellow());
+        point_style = point_style.fg(.yellow);
         point_style = point_style.inline_style(true);
 
         for (0..64) |i| {
@@ -251,7 +251,7 @@ const Model = struct {
         chart.y_axis = .{ .title = if (compact) "" else "Revenue", .tick_count = if (ultra) 3 else 4, .show_grid = !ultra };
 
         var actual = try zz.ChartDataset.init(ctx.allocator, "Actual");
-        actual.setStyle((zz.Style{}).fg(zz.Color.hex("#22C55E")).bold(true));
+        actual.setStyle((zz.Style{}).fg(.hex("#22C55E")).bold(true));
         actual.setInterpolation(.monotone_cubic);
         actual.setInterpolationSteps(10);
         actual.setShowPoints(true);
@@ -263,7 +263,7 @@ const Model = struct {
         });
 
         var forecast = try zz.ChartDataset.init(ctx.allocator, "Forecast");
-        forecast.setStyle((zz.Style{}).fg(zz.Color.hex("#38BDF8")));
+        forecast.setStyle((zz.Style{}).fg(.hex("#38BDF8")));
         forecast.setInterpolation(.step_end);
         try forecast.setPoints(&.{
             .{ .x = 1, .y = 16 },
@@ -280,13 +280,13 @@ const Model = struct {
 
 fn box(ctx: *const zz.Context, title: []const u8, body: []const u8) ![]const u8 {
     var style = zz.Style{};
-    style = style.borderAll(zz.Border.rounded);
-    style = style.borderForeground(zz.Color.gray(12));
+    style = style.borderAll(.rounded);
+    style = style.borderForeground(.gray(12));
     style = style.paddingLeft(1).paddingRight(1);
 
     var header_style = zz.Style{};
     header_style = header_style.bold(true);
-    header_style = header_style.fg(zz.Color.cyan());
+    header_style = header_style.fg(.cyan);
     header_style = header_style.inline_style(true);
     const header = try header_style.render(ctx.allocator, title);
 
@@ -296,13 +296,13 @@ fn box(ctx: *const zz.Context, title: []const u8, body: []const u8) ![]const u8 
 
 fn inlineStat(ctx: *const zz.Context, label: []const u8, value: []const u8) ![]const u8 {
     var label_style = zz.Style{};
-    label_style = label_style.fg(zz.Color.gray(15));
+    label_style = label_style.fg(.gray(15));
     label_style = label_style.inline_style(true);
     const rendered_label = try label_style.render(ctx.allocator, label);
 
     var value_style = zz.Style{};
     value_style = value_style.bold(true);
-    value_style = value_style.fg(zz.Color.white());
+    value_style = value_style.fg(.white);
     value_style = value_style.inline_style(true);
     const rendered_value = try value_style.render(ctx.allocator, value);
 

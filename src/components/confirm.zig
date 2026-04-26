@@ -39,13 +39,13 @@ pub const Confirm = struct {
             .active_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .inactive_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.gray(12));
+                s = s.fg(.gray(12));
                 s = s.inline_style(true);
                 break :blk s;
             },

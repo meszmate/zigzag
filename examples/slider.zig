@@ -27,7 +27,7 @@ const Model = struct {
         self.brightness.label = "Brightness:";
         self.brightness.value = 75;
         self.brightness.show_value = true;
-        self.brightness.setGradient(zz.Color.fromRgb(50, 50, 50), zz.Color.yellow());
+        self.brightness.setGradient(.fromRgb(50, 50, 50), .yellow);
 
         // Thin style with decimal precision
         self.temperature = zz.SliderStyle.thin();
@@ -79,7 +79,7 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.magenta());
+        title_style = title_style.fg(.magenta);
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "Slider Example") catch "Slider Example";
 
@@ -89,7 +89,7 @@ const Model = struct {
         const spd = self.progress_slider.view(ctx.allocator) catch "error";
 
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(
             ctx.allocator,

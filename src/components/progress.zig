@@ -41,13 +41,13 @@ pub const Progress = struct {
             .head_char = null,
             .full_style = blk: {
                 var s = style.Style{};
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .empty_style = blk: {
                 var s = style.Style{};
-                s = s.fg(Color.gray(8));
+                s = s.fg(.gray(8));
                 s = s.inline_style(true);
                 break :blk s;
             },
@@ -239,11 +239,11 @@ pub const ProgressStyle = struct {
     pub fn colored() Progress {
         var p = Progress.init();
         var full_s = style.Style{};
-        full_s = full_s.fg(Color.green());
+        full_s = full_s.fg(.green);
         full_s = full_s.inline_style(true);
         p.full_style = full_s;
         var empty_s = style.Style{};
-        empty_s = empty_s.fg(Color.red());
+        empty_s = empty_s.fg(.red);
         empty_s = empty_s.inline_style(true);
         p.empty_style = empty_s;
         return p;
@@ -259,5 +259,5 @@ pub fn interpolateColor(start: Color, end: Color, t: f64) Color {
     const g: u8 = @intFromFloat(@as(f64, @floatFromInt(start_rgb.g)) * (1.0 - t) + @as(f64, @floatFromInt(end_rgb.g)) * t);
     const b: u8 = @intFromFloat(@as(f64, @floatFromInt(start_rgb.b)) * (1.0 - t) + @as(f64, @floatFromInt(end_rgb.b)) * t);
 
-    return Color.fromRgb(r, g, b);
+    return .fromRgb(r, g, b);
 }

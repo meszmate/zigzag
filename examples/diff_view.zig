@@ -63,7 +63,7 @@ const Model = struct {
 
         var title_s = zz.Style{};
         title_s = title_s.bold(true);
-        title_s = title_s.fg(zz.Color.cyan());
+        title_s = title_s.fg(.cyan);
         title_s = title_s.inline_style(true);
 
         var dv = zz.components.diff_view.DiffView{};
@@ -74,8 +74,8 @@ const Model = struct {
         dv.mode = if (self.side_by_side) .side_by_side else .unified;
 
         var box_s = zz.Style{};
-        box_s = box_s.borderAll(zz.Border.rounded);
-        box_s = box_s.borderForeground(zz.Color.gray(10));
+        box_s = box_s.borderAll(.rounded);
+        box_s = box_s.borderForeground(.gray(10));
         box_s = box_s.paddingAll(1);
 
         const diff_output = dv.view(alloc);
@@ -84,7 +84,7 @@ const Model = struct {
         const mode_label: []const u8 = if (self.side_by_side) "side-by-side" else "unified";
 
         var help_s = zz.Style{};
-        help_s = help_s.fg(zz.Color.gray(10));
+        help_s = help_s.fg(.gray(10));
         help_s = help_s.inline_style(true);
 
         return std.fmt.allocPrint(alloc, "{s}  [{s}]\n\n{s}\n\n{s}", .{

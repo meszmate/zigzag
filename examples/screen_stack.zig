@@ -171,7 +171,7 @@ const Model = struct {
         }
 
         var trail_style = zz.Style{};
-        trail_style = trail_style.fg(zz.Color.gray(10));
+        trail_style = trail_style.fg(.gray(10));
         trail_style = trail_style.inline_style(true);
         const trail_str = trail_style.render(ctx.allocator, trail.items) catch "";
 

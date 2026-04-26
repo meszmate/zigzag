@@ -88,7 +88,7 @@ const Model = struct {
         // Title
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.cyan());
+        title_style = title_style.fg(.cyan);
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "File Browser") catch "File Browser";
 
@@ -99,13 +99,13 @@ const Model = struct {
         var preview_section: []const u8 = "";
         if (self.file_picker.getSelected()) |path| {
             var path_style = zz.Style{};
-            path_style = path_style.fg(zz.Color.green());
+            path_style = path_style.fg(.green);
             path_style = path_style.inline_style(true);
             const path_display = path_style.render(ctx.allocator, path) catch path;
 
             var preview_style = zz.Style{};
-            preview_style = preview_style.borderAll(zz.Border.normal);
-            preview_style = preview_style.borderForeground(zz.Color.gray(12));
+            preview_style = preview_style.borderAll(.normal);
+            preview_style = preview_style.borderForeground(.gray(12));
 
             const preview_content = if (self.preview.items.len > 0)
                 self.preview.items
@@ -125,7 +125,7 @@ const Model = struct {
 
         // Help
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(
             ctx.allocator,

@@ -71,7 +71,7 @@ pub const Tooltip = struct {
     // ── Styling ────────────────────────────────────────────────────────
 
     border_chars: border_mod.BorderChars = .rounded,
-    border_fg: Color = Color.gray(14),
+    border_fg: Color = .gray(14),
     /// Background for the content area (padding + text) inside the border.
     content_bg: Color = .none,
     /// Background for border characters. Three-state via `?Color`:

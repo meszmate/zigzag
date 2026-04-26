@@ -82,7 +82,7 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.magenta());
+        title_style = title_style.fg(.magenta);
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "Dropdown Example") catch "Dropdown Example";
 
@@ -99,7 +99,7 @@ const Model = struct {
         const topping_info = std.fmt.allocPrint(ctx.allocator, "Selected toppings: {d}", .{topping_count}) catch "?";
 
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(
             ctx.allocator,

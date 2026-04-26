@@ -24,9 +24,9 @@ const Model = struct {
 
     pub fn init(self: *Model, _: *zz.Context) zz.Cmd(Msg) {
         self.buttons = .{
-            .{ .label = "  Click Me  ", .color = zz.Color.cyan(), .mouse = .{} },
-            .{ .label = "  Count++   ", .color = zz.Color.green(), .mouse = .{} },
-            .{ .label = "   Reset    ", .color = zz.Color.red(), .mouse = .{} },
+            .{ .label = "  Click Me  ", .color = .cyan, .mouse = .{} },
+            .{ .label = "  Count++   ", .color = .green, .mouse = .{} },
+            .{ .label = "   Reset    ", .color = .red, .mouse = .{} },
         };
         self.click_count = 0;
         self.last_event = "Move the mouse or click a button";
@@ -89,7 +89,7 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.white());
+        title_style = title_style.fg(.white);
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "Mouse Demo") catch "Mouse Demo";
 
@@ -111,9 +111,9 @@ const Model = struct {
         for (&self.buttons, 0..) |*btn, i| {
             if (i > 0) bw.writeAll("  ") catch {};
             var s = zz.Style{};
-            s = s.borderAll(zz.Border.rounded);
+            s = s.borderAll(.rounded);
             if (btn.mouse.hover) {
-                s = s.borderForeground(zz.Color.white());
+                s = s.borderForeground(.white);
                 s = s.bold(true);
             } else {
                 s = s.borderForeground(btn.color);
@@ -126,7 +126,7 @@ const Model = struct {
         const buttons = buttons_line.toOwnedSlice() catch "";
 
         var help_s = zz.Style{};
-        help_s = help_s.fg(zz.Color.gray(12));
+        help_s = help_s.fg(.gray(12));
         help_s = help_s.inline_style(true);
         const help = help_s.render(ctx.allocator, "Click the buttons above | q: quit") catch "";
 

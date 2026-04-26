@@ -124,7 +124,7 @@ const Model = struct {
         const body = self.tabs.viewWithContent(ctx.allocator, "No active route") catch "render error";
 
         var hint_style = zz.Style{};
-        hint_style = hint_style.fg(zz.Color.gray(12));
+        hint_style = hint_style.fg(.gray(12));
         hint_style = hint_style.inline_style(true);
         const help = hint_style.render(ctx.allocator, "q: quit | ←/→: switch | 1..9: jump | +/- or ↑/↓: counter actions") catch "";
 

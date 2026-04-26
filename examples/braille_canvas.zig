@@ -77,7 +77,7 @@ const Model = struct {
 
         // Faint grid: dotted border + crosshair through the centre.
         var grid_style = zz.Style{};
-        grid_style = grid_style.fg(zz.Color.gray(6));
+        grid_style = grid_style.fg(.gray(6));
         grid_style = grid_style.inline_style(true);
 
         const w = c.pixelWidth();
@@ -91,12 +91,12 @@ const Model = struct {
         const ty: i32 = @intFromFloat(self.ball_y);
 
         var trail_style = zz.Style{};
-        trail_style = trail_style.fg(zz.Color.cyan());
+        trail_style = trail_style.fg(.cyan);
         trail_style = trail_style.inline_style(true);
         c.drawCircleStyled(tx, ty, 3, trail_style);
 
         var ball_style = zz.Style{};
-        ball_style = ball_style.fg(zz.Color.magenta());
+        ball_style = ball_style.fg(.magenta);
         ball_style = ball_style.bold(true);
         ball_style = ball_style.inline_style(true);
         c.drawCircleStyled(tx, ty, 1, ball_style);
@@ -105,17 +105,17 @@ const Model = struct {
 
         var title = zz.Style{};
         title = title.bold(true);
-        title = title.fg(zz.Color.cyan());
+        title = title.fg(.cyan);
         title = title.inline_style(true);
         const t = title.render(alloc, "BrailleCanvas — bouncing ball") catch "";
 
         var box = zz.Style{};
-        box = box.borderAll(zz.Border.rounded);
-        box = box.borderForeground(zz.Color.gray(8));
+        box = box.borderAll(.rounded);
+        box = box.borderForeground(.gray(8));
         const boxed = box.render(alloc, canvas_view) catch canvas_view;
 
         var help = zz.Style{};
-        help = help.fg(zz.Color.gray(10));
+        help = help.fg(.gray(10));
         help = help.inline_style(true);
         const status = if (self.paused) "PAUSED  " else "        ";
         const help_text = std.fmt.allocPrint(

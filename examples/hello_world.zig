@@ -203,20 +203,20 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.cyan());
+        title_style = title_style.fg(.cyan);
         title_style = title_style.inline_style(true);
 
         var subtitle_style = zz.Style{};
-        subtitle_style = subtitle_style.fg(zz.Color.gray(18));
+        subtitle_style = subtitle_style.fg(.gray(18));
         subtitle_style = subtitle_style.inline_style(true);
 
         var hint_style = zz.Style{};
         hint_style = hint_style.italic(true);
-        hint_style = hint_style.fg(zz.Color.gray(12));
+        hint_style = hint_style.fg(.gray(12));
         hint_style = hint_style.inline_style(true);
 
         var image_hint_style = zz.Style{};
-        image_hint_style = image_hint_style.fg(zz.Color.gray(16));
+        image_hint_style = image_hint_style.fg(.gray(16));
         image_hint_style = image_hint_style.inline_style(true);
 
         const title = title_style.render(ctx.allocator, "Hello, ZigZag!") catch "Hello, ZigZag!";

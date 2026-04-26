@@ -77,7 +77,7 @@ const Model = struct {
         const content = self.viewport.view(ctx.allocator) catch "error";
 
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(ctx.allocator, "j/k or Up/Down: scroll | q: quit") catch "";
 

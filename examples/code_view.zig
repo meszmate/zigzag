@@ -75,7 +75,7 @@ const Model = struct {
 
         var title_s = zz.Style{};
         title_s = title_s.bold(true);
-        title_s = title_s.fg(zz.Color.cyan());
+        title_s = title_s.fg(.cyan);
         title_s = title_s.inline_style(true);
 
         var cv = zz.components.code_view.CodeView{};
@@ -91,15 +91,15 @@ const Model = struct {
         }
 
         var box_s = zz.Style{};
-        box_s = box_s.borderAll(zz.Border.rounded);
-        box_s = box_s.borderForeground(zz.Color.gray(10));
+        box_s = box_s.borderAll(.rounded);
+        box_s = box_s.borderForeground(.gray(10));
         box_s = box_s.paddingAll(1);
 
         const code_output = cv.view(alloc);
         const boxed = box_s.render(alloc, code_output) catch code_output;
 
         var help_s = zz.Style{};
-        help_s = help_s.fg(zz.Color.gray(10));
+        help_s = help_s.fg(.gray(10));
         help_s = help_s.inline_style(true);
 
         const header = std.fmt.allocPrint(alloc, "{s}  [{s}]", .{

@@ -66,7 +66,7 @@ const Model = struct {
 
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.cyan());
+        title_style = title_style.fg(.cyan);
         title_style = title_style.inline_style(true);
         const title = title_style.render(alloc, "DataTable — frozen columns + cell cursor") catch "";
 
@@ -74,7 +74,7 @@ const Model = struct {
         const table_view = table_mut.view(alloc) catch "";
 
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(10));
+        help_style = help_style.fg(.gray(10));
         help_style = help_style.inline_style(true);
         const help_text = std.fmt.allocPrint(
             alloc,

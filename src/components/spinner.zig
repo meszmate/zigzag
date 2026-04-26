@@ -44,7 +44,7 @@ pub const Spinner = struct {
             .fps = 10,
             .spinner_style = blk: {
                 var s = style.Style{};
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },

@@ -29,8 +29,8 @@ pub const StatusBar = struct {
 
     pub fn init(allocator: std.mem.Allocator) StatusBar {
         var base = style_mod.Style{};
-        base = base.bg(Color.gray(4));
-        base = base.fg(Color.gray(14));
+        base = base.bg(.gray(4));
+        base = base.fg(.gray(14));
         base = base.inline_style(true);
 
         return .{

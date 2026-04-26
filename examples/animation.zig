@@ -87,7 +87,7 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.magenta());
+        title_style = title_style.fg(.magenta);
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "Animation & Easing Demo") catch "Animation";
 
@@ -100,7 +100,7 @@ const Model = struct {
         for (&self.tweens, self.easing_names) |*tw, name| {
             // Label
             var label_style = zz.Style{};
-            label_style = label_style.fg(zz.Color.cyan());
+            label_style = label_style.fg(.cyan);
             label_style = label_style.inline_style(true);
             const label = std.fmt.allocPrint(ctx.allocator, "{s:>20}: ", .{name}) catch "";
             const styled_label = label_style.render(ctx.allocator, label) catch label;
@@ -111,14 +111,14 @@ const Model = struct {
             for (0..30) |i| {
                 if (i == pos) {
                     var dot_style = zz.Style{};
-                    dot_style = dot_style.fg(zz.Color.green());
+                    dot_style = dot_style.fg(.green);
                     dot_style = dot_style.bold(true);
                     dot_style = dot_style.inline_style(true);
                     const dot = dot_style.render(ctx.allocator, "●") catch "o";
                     writer.writeAll(dot) catch {};
                 } else {
                     var track_style = zz.Style{};
-                    track_style = track_style.fg(zz.Color.gray(6));
+                    track_style = track_style.fg(.gray(6));
                     track_style = track_style.inline_style(true);
                     const track = track_style.render(ctx.allocator, "─") catch "-";
                     writer.writeAll(track) catch {};
@@ -130,13 +130,13 @@ const Model = struct {
         // Color tween demo
         writer.writeAll("\n") catch {};
         var color_label_style = zz.Style{};
-        color_label_style = color_label_style.fg(zz.Color.cyan());
+        color_label_style = color_label_style.fg(.cyan);
         color_label_style = color_label_style.inline_style(true);
         const color_label = color_label_style.render(ctx.allocator, "     Color tween: ") catch "";
         writer.writeAll(color_label) catch {};
 
         const ct = self.color_tween.value();
-        const color = zz.tweenColor(zz.Color.red(), zz.Color.cyan(), ct);
+        const color = zz.tweenColor(.red, .cyan, ct);
         var cs = zz.Style{};
         cs = cs.fg(color);
         cs = cs.bold(true);
@@ -147,7 +147,7 @@ const Model = struct {
         // Help
         writer.writeAll("\n\n") catch {};
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(ctx.allocator, "r: restart animations | q: quit") catch "";
         writer.writeAll(help) catch {};

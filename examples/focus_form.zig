@@ -85,13 +85,13 @@ const Model = struct {
         // Title
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.hex("#FF6B6B"));
+        title_style = title_style.fg(.hex("#FF6B6B"));
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "Contact Form") catch "Contact Form";
 
         // Subtitle
         var sub_style = zz.Style{};
-        sub_style = sub_style.fg(zz.Color.gray(15));
+        sub_style = sub_style.fg(.gray(15));
         sub_style = sub_style.inline_style(true);
         const subtitle = sub_style.render(ctx.allocator, "Tab/Shift+Tab to navigate • Enter to submit • Esc to quit") catch "";
 
@@ -102,7 +102,7 @@ const Model = struct {
 
         var focused_label = zz.Style{};
         focused_label = focused_label.bold(true);
-        focused_label = focused_label.fg(zz.Color.cyan());
+        focused_label = focused_label.fg(.cyan);
         focused_label = focused_label.inline_style(true);
 
         // Render each field with focus indicator
@@ -135,7 +135,7 @@ const Model = struct {
         const status = if (self.submitted) blk: {
             var success_style = zz.Style{};
             success_style = success_style.bold(true);
-            success_style = success_style.fg(zz.Color.green());
+            success_style = success_style.fg(.green);
             success_style = success_style.inline_style(true);
 
             const name_val = self.name_input.getValue();
@@ -154,7 +154,7 @@ const Model = struct {
             break :blk success_style.render(ctx.allocator, text) catch text;
         } else blk: {
             var hint_style = zz.Style{};
-            hint_style = hint_style.fg(zz.Color.gray(12));
+            hint_style = hint_style.fg(.gray(12));
             hint_style = hint_style.inline_style(true);
             const field_name = switch (self.focus_group.focused()) {
                 0 => "Name",

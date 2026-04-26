@@ -122,13 +122,13 @@ const Model = struct {
         const log_view = log_mut.view(alloc) catch "";
 
         var box = zz.Style{};
-        box = box.borderAll(zz.Border.rounded);
-        box = box.borderForeground(zz.Color.gray(8));
+        box = box.borderAll(.rounded);
+        box = box.borderForeground(.gray(8));
         const boxed = box.render(alloc, log_view) catch log_view;
 
         var title = zz.Style{};
         title = title.bold(true);
-        title = title.fg(zz.Color.cyan());
+        title = title.fg(.cyan);
         title = title.inline_style(true);
         const t = title.render(alloc, "RichLog — append-only with level filter & search") catch "";
 
@@ -146,12 +146,12 @@ const Model = struct {
             ) catch "";
 
         var status_style = zz.Style{};
-        status_style = status_style.fg(zz.Color.gray(12));
+        status_style = status_style.fg(.gray(12));
         status_style = status_style.inline_style(true);
         const status_str = status_style.render(alloc, status) catch "";
 
         var help = zz.Style{};
-        help = help.fg(zz.Color.gray(10));
+        help = help.fg(.gray(10));
         help = help.inline_style(true);
         const help_text = "↑↓ scroll · g/G top/bottom · / search · c clear · l cycle level · q quit";
         const help_str = help.render(alloc, help_text) catch "";

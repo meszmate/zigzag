@@ -49,7 +49,7 @@ pub const SplitPane = struct {
 
     pub fn init(orientation: Orientation) SplitPane {
         var ds = style_mod.Style{};
-        ds = ds.fg(Color.gray(6));
+        ds = ds.fg(.gray(6));
         ds = ds.inline_style(true);
         return .{
             .orientation = orientation,

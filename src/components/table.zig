@@ -57,7 +57,7 @@ pub fn Table(comptime num_cols: usize) type {
                 .rows = std.array_list.Managed([num_cols][]const u8).init(allocator),
                 .col_widths = .{null} ** num_cols,
                 .col_aligns = .{.left} ** num_cols,
-                .border_chars = border_mod.Border.normal,
+                .border_chars = .normal,
                 .show_header = true,
                 .show_border = true,
                 .header_style = blk: {
@@ -73,7 +73,7 @@ pub fn Table(comptime num_cols: usize) type {
                 },
                 .border_style = blk: {
                     var s = style_mod.Style{};
-                    s = s.fg(Color.gray(12));
+                    s = s.fg(.gray(12));
                     s = s.inline_style(true);
                     break :blk s;
                 },
@@ -441,7 +441,7 @@ pub const DynamicTableType = struct {
             .allocator = allocator,
             .headers = std.array_list.Managed([]const u8).init(allocator),
             .rows = std.array_list.Managed(std.array_list.Managed([]const u8)).init(allocator),
-            .border_chars = border_mod.Border.normal,
+            .border_chars = .normal,
             .show_header = true,
             .show_border = true,
         };

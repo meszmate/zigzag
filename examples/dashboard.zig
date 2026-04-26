@@ -85,7 +85,7 @@ const Model = struct {
         // Title
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.hex("#FF6B6B"));
+        title_style = title_style.fg(.hex("#FF6B6B"));
         title_style = title_style.inline_style(true);
         const title = title_style.render(ctx.allocator, "Dashboard") catch "Dashboard";
 
@@ -104,7 +104,7 @@ const Model = struct {
 
         // Help
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(
             ctx.allocator,
@@ -141,23 +141,23 @@ const Model = struct {
 
     fn renderStats(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var box_style = zz.Style{};
-        box_style = box_style.borderAll(zz.Border.rounded);
-        box_style = box_style.borderForeground(zz.Color.cyan());
+        box_style = box_style.borderAll(.rounded);
+        box_style = box_style.borderForeground(.cyan);
         box_style = box_style.paddingAll(1);
         box_style = box_style.width(25);
 
         var header_style = zz.Style{};
         header_style = header_style.bold(true);
-        header_style = header_style.fg(zz.Color.cyan());
+        header_style = header_style.fg(.cyan);
         header_style = header_style.inline_style(true);
 
         var value_style = zz.Style{};
         value_style = value_style.bold(true);
-        value_style = value_style.fg(zz.Color.white());
+        value_style = value_style.fg(.white);
         value_style = value_style.inline_style(true);
 
         var label_style = zz.Style{};
-        label_style = label_style.fg(zz.Color.gray(15));
+        label_style = label_style.fg(.gray(15));
         label_style = label_style.inline_style(true);
 
         const header = try header_style.render(ctx.allocator, "Statistics");
@@ -182,28 +182,28 @@ const Model = struct {
 
     fn renderProgress(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var box_style = zz.Style{};
-        box_style = box_style.borderAll(zz.Border.rounded);
-        box_style = box_style.borderForeground(zz.Color.magenta());
+        box_style = box_style.borderAll(.rounded);
+        box_style = box_style.borderForeground(.magenta);
         box_style = box_style.paddingAll(1);
         box_style = box_style.width(40);
 
         var header_style = zz.Style{};
         header_style = header_style.bold(true);
-        header_style = header_style.fg(zz.Color.magenta());
+        header_style = header_style.fg(.magenta);
         header_style = header_style.inline_style(true);
         const header = try header_style.render(ctx.allocator, "Progress");
 
         const progress_bar = try self.progress.view(ctx.allocator);
 
         var timer_label_style = zz.Style{};
-        timer_label_style = timer_label_style.fg(zz.Color.gray(15));
+        timer_label_style = timer_label_style.fg(.gray(15));
         timer_label_style = timer_label_style.inline_style(true);
         const timer_label = timer_label_style.render(ctx.allocator, "Elapsed: ") catch "";
         const timer_view = try self.timer.view(ctx.allocator);
 
         // Show paused indicator
         var paused_style = zz.Style{};
-        paused_style = paused_style.fg(zz.Color.yellow());
+        paused_style = paused_style.fg(.yellow);
         paused_style = paused_style.inline_style(true);
         const paused_indicator = if (!self.timer.running)
             paused_style.render(ctx.allocator, " (PAUSED)") catch ""
@@ -221,22 +221,22 @@ const Model = struct {
 
     fn renderActivity(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var box_style = zz.Style{};
-        box_style = box_style.borderAll(zz.Border.rounded);
-        box_style = box_style.borderForeground(zz.Color.green());
+        box_style = box_style.borderAll(.rounded);
+        box_style = box_style.borderForeground(.green);
         box_style = box_style.paddingAll(1);
 
         var header_style = zz.Style{};
         header_style = header_style.bold(true);
-        header_style = header_style.fg(zz.Color.green());
+        header_style = header_style.fg(.green);
         header_style = header_style.inline_style(true);
         const header = try header_style.render(ctx.allocator, "Activity");
 
         var complete_style = zz.Style{};
-        complete_style = complete_style.fg(zz.Color.green());
+        complete_style = complete_style.fg(.green);
         complete_style = complete_style.inline_style(true);
 
         var progress_style = zz.Style{};
-        progress_style = progress_style.fg(zz.Color.yellow());
+        progress_style = progress_style.fg(.yellow);
         progress_style = progress_style.inline_style(true);
 
         const is_complete = self.task_progress >= 100;

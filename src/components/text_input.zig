@@ -61,7 +61,7 @@ pub const TextInput = struct {
             },
             .placeholder_style = blk: {
                 var s = style.Style{};
-                s = s.fg(Color.gray(12));
+                s = s.fg(.gray(12));
                 s = s.inline_style(true);
                 break :blk s;
             },

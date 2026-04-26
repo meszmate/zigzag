@@ -137,12 +137,12 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
-        title_style = title_style.fg(zz.Color.cyan());
+        title_style = title_style.fg(.cyan);
         title_style = title_style.inline_style(true);
 
         var box_style = zz.Style{};
-        box_style = box_style.borderAll(zz.Border.rounded);
-        box_style = box_style.borderForeground(zz.Color.gray(15));
+        box_style = box_style.borderAll(.rounded);
+        box_style = box_style.borderForeground(.gray(15));
         box_style = box_style.paddingAll(1);
 
         const title = title_style.render(ctx.allocator, "Todo List") catch "Todo List";
@@ -154,7 +154,7 @@ const Model = struct {
         // Show filter if enabled
         if (self.list.filter_enabled) {
             var filter_style = zz.Style{};
-            filter_style = filter_style.fg(zz.Color.yellow());
+            filter_style = filter_style.fg(.yellow);
             filter_style = filter_style.inline_style(true);
             const filter_text = std.fmt.allocPrint(ctx.allocator, "Filter: {s}", .{self.list.filter_text.items}) catch "Filter:";
             const styled_filter = filter_style.render(ctx.allocator, filter_text) catch filter_text;
@@ -187,14 +187,14 @@ const Model = struct {
             if (item.value.done) {
                 var done_style = zz.Style{};
                 done_style = done_style.strikethrough(true);
-                done_style = done_style.fg(zz.Color.gray(12));
+                done_style = done_style.fg(.gray(12));
                 done_style = done_style.inline_style(true);
                 const styled = done_style.render(ctx.allocator, item.title) catch item.title;
                 writer.writeAll(styled) catch {};
             } else if (i == self.list.cursor) {
                 var selected_style = zz.Style{};
                 selected_style = selected_style.bold(true);
-                selected_style = selected_style.fg(zz.Color.magenta());
+                selected_style = selected_style.fg(.magenta);
                 selected_style = selected_style.inline_style(true);
                 const styled = selected_style.render(ctx.allocator, item.title) catch item.title;
                 writer.writeAll(styled) catch {};
@@ -214,7 +214,7 @@ const Model = struct {
 
         // Help
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help_text = if (self.input_mode)
             "Enter: Add  Esc: Cancel"

@@ -37,25 +37,25 @@ pub const Notification = struct {
             .max_visible = 5,
             .info_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .success_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.green());
+                s = s.fg(.green);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .warning_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.yellow());
+                s = s.fg(.yellow);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .err_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.red());
+                s = s.fg(.red);
                 s = s.inline_style(true);
                 break :blk s;
             },

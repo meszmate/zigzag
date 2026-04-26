@@ -63,7 +63,7 @@ const Model = struct {
 
         var title = zz.Style{};
         title = title.bold(true);
-        title = title.fg(zz.Color.cyan());
+        title = title.fg(.cyan);
         title = title.inline_style(true);
         const t = title.render(alloc, "DevConsole — log streamer") catch "";
 
@@ -85,13 +85,13 @@ const Model = struct {
         ) catch "";
 
         var box = zz.Style{};
-        box = box.borderAll(zz.Border.rounded);
-        box = box.borderForeground(zz.Color.gray(8));
+        box = box.borderAll(.rounded);
+        box = box.borderForeground(.gray(8));
         box = box.paddingAll(1);
         const boxed = box.render(alloc, body) catch body;
 
         var help = zz.Style{};
-        help = help.fg(zz.Color.gray(10));
+        help = help.fg(.gray(10));
         help = help.inline_style(true);
         const help_str = help.render(alloc, "space warn · r reset · q quit") catch "";
 

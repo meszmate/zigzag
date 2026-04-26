@@ -91,7 +91,7 @@ const Model = struct {
 
         // Border preview
         var box_style = zz.Style{};
-        box_style = box_style.borderAll(zz.Border.rounded);
+        box_style = box_style.borderAll(.rounded);
         box_style = box_style.borderForeground(p.border_focus);
         box_style = box_style.paddingAll(1);
         box_style = box_style.fg(p.foreground);
@@ -100,7 +100,7 @@ const Model = struct {
 
         // Surface/overlay preview
         var surface_style = zz.Style{};
-        surface_style = surface_style.borderAll(zz.Border.normal);
+        surface_style = surface_style.borderAll(.normal);
         surface_style = surface_style.borderForeground(p.border_color);
         surface_style = surface_style.bg(p.surface);
         surface_style = surface_style.fg(p.foreground);
@@ -108,7 +108,7 @@ const Model = struct {
         const surface_box = surface_style.render(ctx.allocator, "Surface") catch "Surface";
 
         var overlay_style = zz.Style{};
-        overlay_style = overlay_style.borderAll(zz.Border.normal);
+        overlay_style = overlay_style.borderAll(.normal);
         overlay_style = overlay_style.borderForeground(p.border_color);
         overlay_style = overlay_style.bg(p.overlay);
         overlay_style = overlay_style.fg(p.foreground);

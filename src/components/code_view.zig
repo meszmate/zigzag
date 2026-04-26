@@ -21,7 +21,7 @@ pub const CodeView = struct {
     /// Operator style.
     operator_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.white());
+        s = s.fg(.white);
         s = s.inline_style(true);
         break :blk s;
     },
@@ -29,52 +29,52 @@ pub const CodeView = struct {
     // Styles
     keyword_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.magenta());
+        s = s.fg(.magenta);
         s = s.bold(true);
         s = s.inline_style(true);
         break :blk s;
     },
     string_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.green());
+        s = s.fg(.green);
         s = s.inline_style(true);
         break :blk s;
     },
     comment_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.gray(10));
+        s = s.fg(.gray(10));
         s = s.italic(true);
         s = s.inline_style(true);
         break :blk s;
     },
     number_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.cyan());
+        s = s.fg(.cyan);
         s = s.inline_style(true);
         break :blk s;
     },
     type_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.yellow());
+        s = s.fg(.yellow);
         s = s.inline_style(true);
         break :blk s;
     },
     builtin_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.cyan());
+        s = s.fg(.cyan);
         s = s.bold(true);
         s = s.inline_style(true);
         break :blk s;
     },
     line_number_style: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.fg(Color.gray(8));
+        s = s.fg(.gray(8));
         s = s.inline_style(true);
         break :blk s;
     },
     highlight_bg: style_mod.Style = blk: {
         var s = style_mod.Style{};
-        s = s.bg(Color.fromRgb(40, 40, 60));
+        s = s.bg(.fromRgb(40, 40, 60));
         s = s.inline_style(true);
         break :blk s;
     },

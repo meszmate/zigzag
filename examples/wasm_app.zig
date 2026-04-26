@@ -59,12 +59,12 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         var title_s = zz.Style{};
         title_s = title_s.bold(true);
-        title_s = title_s.fg(zz.Color.cyan());
+        title_s = title_s.fg(.cyan);
         title_s = title_s.inline_style(true);
         const title = title_s.render(ctx.allocator, "ZigZag WASM Demo") catch "ZigZag WASM";
 
         var count_s = zz.Style{};
-        count_s = count_s.fg(zz.Color.green());
+        count_s = count_s.fg(.green);
         count_s = count_s.bold(true);
         count_s = count_s.inline_style(true);
         const count_text = std.fmt.allocPrint(ctx.allocator, "{d}", .{self.count}) catch "?";
@@ -77,7 +77,7 @@ const Model = struct {
         ) catch "";
 
         var help_s = zz.Style{};
-        help_s = help_s.fg(zz.Color.gray(12));
+        help_s = help_s.fg(.gray(12));
         help_s = help_s.inline_style(true);
         const help = help_s.render(ctx.allocator, "Up/Down: change count | q: quit") catch "";
 

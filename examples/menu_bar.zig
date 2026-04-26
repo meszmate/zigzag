@@ -127,7 +127,7 @@ const Model = struct {
         const menu_view = self.menu.view(ctx.allocator, ctx.width) catch "error";
 
         var content_style = zz.Style{};
-        content_style = content_style.fg(zz.Color.gray(16));
+        content_style = content_style.fg(.gray(16));
         content_style = content_style.inline_style(true);
 
         const content = content_style.render(
@@ -136,14 +136,14 @@ const Model = struct {
         ) catch "";
 
         var status_style = zz.Style{};
-        status_style = status_style.fg(zz.Color.cyan());
+        status_style = status_style.fg(.cyan);
         status_style = status_style.bold(true);
         status_style = status_style.inline_style(true);
         const status = std.fmt.allocPrint(ctx.allocator, "Status: {s}", .{self.status}) catch "?";
         const styled_status = status_style.render(ctx.allocator, status) catch status;
 
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(ctx.allocator, "F9: activate menu | Alt+letter: open menu | q/Esc: quit") catch "";
 

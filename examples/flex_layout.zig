@@ -58,14 +58,14 @@ const Model = struct {
         // -- Render each panel into styled boxes --
 
         // Header
-        const header = renderPanel(alloc, "Dashboard", rows[0].width, rows[0].height, zz.Color.cyan(), true);
+        const header = renderPanel(alloc, "Dashboard", rows[0].width, rows[0].height, .cyan, true);
 
         // Sidebar
         const sidebar_items =
             "  [1] Overview\n" ++
             "  [2] Metrics\n" ++
             "  [3] Settings";
-        const sidebar = renderPanel(alloc, sidebar_items, cols[0].width, cols[0].height, zz.Color.magenta(), self.selected_panel == 0);
+        const sidebar = renderPanel(alloc, sidebar_items, cols[0].width, cols[0].height, .magenta, self.selected_panel == 0);
 
         // Main content area
         const main_text = switch (self.selected_panel) {
@@ -74,14 +74,14 @@ const Model = struct {
             2 => "Theme: Dark\nRefresh: 5s\nNotifications: On",
             else => "",
         };
-        const main_panel = renderPanel(alloc, main_text, cols[1].width, cols[1].height, zz.Color.green(), self.selected_panel == 1);
+        const main_panel = renderPanel(alloc, main_text, cols[1].width, cols[1].height, .green, self.selected_panel == 1);
 
         // Footer
         var help_style = zz.Style{};
-        help_style = help_style.fg(zz.Color.gray(12));
+        help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const footer_text = help_style.render(alloc, "Tab: cycle panels  1/2/3: select panel  q: quit") catch "Tab: cycle  q: quit";
-        const footer = renderPanel(alloc, footer_text, rows[2].width, rows[2].height, zz.Color.gray(8), false);
+        const footer = renderPanel(alloc, footer_text, rows[2].width, rows[2].height, .gray(8), false);
 
         // Compose the body row: sidebar | main
         const body = zz.join.horizontal(alloc, .top, &.{ sidebar, main_panel }) catch main_panel;
@@ -92,11 +92,11 @@ const Model = struct {
 
     fn renderPanel(alloc: std.mem.Allocator, content: []const u8, w: u16, h: u16, border_color: zz.Color, highlight: bool) []const u8 {
         var s = zz.Style{};
-        s = s.borderAll(zz.Border.rounded);
+        s = s.borderAll(.rounded);
         if (highlight) {
             s = s.borderForeground(border_color);
         } else {
-            s = s.borderForeground(zz.Color.gray(6));
+            s = s.borderForeground(.gray(6));
         }
         // Account for border (2 cells each side)
         const inner_w: u16 = if (w > 4) w - 4 else 1;

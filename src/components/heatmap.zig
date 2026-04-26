@@ -104,33 +104,33 @@ pub const Heatmap = struct {
     fn scaleColor(self: *const Heatmap, t: f64) Color {
         return switch (self.color_scale) {
             .green_scale => {
-                if (t < 0.01) return Color.gray(2);
+                if (t < 0.01) return .gray(2);
                 const g: u8 = @intFromFloat(80 + 175 * t);
-                return Color.fromRgb(0, g, 0);
+                return .fromRgb(0, g, 0);
             },
             .cool_to_hot => {
                 if (t < 0.25) {
                     const lt = t * 4;
-                    return Color.fromRgb(0, @intFromFloat(lt * 255), 255);
+                    return .fromRgb(0, @intFromFloat(lt * 255), 255);
                 } else if (t < 0.5) {
                     const lt = (t - 0.25) * 4;
-                    return Color.fromRgb(0, 255, @intFromFloat(255 - lt * 255));
+                    return .fromRgb(0, 255, @intFromFloat(255 - lt * 255));
                 } else if (t < 0.75) {
                     const lt = (t - 0.5) * 4;
-                    return Color.fromRgb(@intFromFloat(lt * 255), 255, 0);
+                    return .fromRgb(@intFromFloat(lt * 255), 255, 0);
                 } else {
                     const lt = (t - 0.75) * 4;
-                    return Color.fromRgb(255, @intFromFloat(255 - lt * 255), 0);
+                    return .fromRgb(255, @intFromFloat(255 - lt * 255), 0);
                 }
             },
             .grayscale => {
                 const v: u8 = @intFromFloat(t * 255);
-                return Color.fromRgb(v, v, v);
+                return .fromRgb(v, v, v);
             },
             .blue_red => {
                 const r: u8 = @intFromFloat(t * 255);
                 const b: u8 = @intFromFloat((1 - t) * 255);
-                return Color.fromRgb(r, 0, b);
+                return .fromRgb(r, 0, b);
             },
         };
     }
@@ -196,7 +196,7 @@ pub const Heatmap = struct {
                     const val_str = std.fmt.allocPrint(allocator, "{d:.0}", .{val}) catch " ";
                     const padded = padCenter(allocator, val_str, self.cell_width);
                     // Choose foreground for contrast
-                    cs = cs.fg(if (t > 0.5) Color.black() else Color.white());
+                    cs = cs.fg(if (t > 0.5) .black else .white);
                     writer.writeAll(cs.render(allocator, padded) catch padded) catch {};
                 } else {
                     var cell_buf: [8]u8 = undefined;

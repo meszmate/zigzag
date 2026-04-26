@@ -51,7 +51,7 @@ const Model = struct {
 
         // Background layer (z=0)
         var bg_style = zz.Style{};
-        bg_style = bg_style.fg(zz.Color.gray(8));
+        bg_style = bg_style.fg(.gray(8));
         bg_style = bg_style.inline_style(true);
 
         var bg_content = std.array_list.Managed(u8).init(alloc);
@@ -66,8 +66,8 @@ const Model = struct {
 
         // Main info panel (z=1)
         var info_style = zz.Style{};
-        info_style = info_style.borderAll(zz.Border.rounded);
-        info_style = info_style.borderForeground(zz.Color.cyan());
+        info_style = info_style.borderAll(.rounded);
+        info_style = info_style.borderForeground(.cyan);
         info_style = info_style.paddingAll(1);
         info_style = info_style.width(40);
         info_style = info_style.height(8);
@@ -79,8 +79,8 @@ const Model = struct {
         // Popup (z=10)
         if (self.show_popup) {
             var popup_style = zz.Style{};
-            popup_style = popup_style.borderAll(zz.Border.double);
-            popup_style = popup_style.borderForeground(zz.Color.yellow());
+            popup_style = popup_style.borderAll(.double);
+            popup_style = popup_style.borderForeground(.yellow);
             popup_style = popup_style.paddingAll(1);
             popup_style = popup_style.width(30);
             popup_style = popup_style.height(5);
@@ -95,8 +95,8 @@ const Model = struct {
         // Tooltip (z=20)
         if (self.show_tooltip) {
             var tt_style = zz.Style{};
-            tt_style = tt_style.borderAll(zz.Border.normal);
-            tt_style = tt_style.borderForeground(zz.Color.green());
+            tt_style = tt_style.borderAll(.normal);
+            tt_style = tt_style.borderForeground(.green);
             tt_style = tt_style.width(20);
 
             const tt = tt_style.render(alloc, "Tooltip z=20") catch "tooltip";

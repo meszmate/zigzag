@@ -120,12 +120,12 @@ const Model = struct {
 
         // Title
         var title_s = zz.Style{};
-        title_s = title_s.bold(true).fg(zz.Color.hex("#FF6B6B")).inline_style(true);
+        title_s = title_s.bold(true).fg(.hex("#FF6B6B")).inline_style(true);
         const title = title_s.render(alloc, "Tooltip Component Demo") catch "Tooltip Component Demo";
 
         // Status
         var status_s = zz.Style{};
-        status_s = status_s.fg(zz.Color.gray(12)).inline_style(true);
+        status_s = status_s.fg(.gray(12)).inline_style(true);
         const status = status_s.render(alloc, self.status) catch "";
 
         // Button labels
@@ -141,7 +141,7 @@ const Model = struct {
 
         // Render buttons in a row
         var btn_s = zz.Style{};
-        btn_s = btn_s.fg(zz.Color.white()).inline_style(true);
+        btn_s = btn_s.fg(.white).inline_style(true);
 
         var btn_parts: [7][]const u8 = undefined;
         for (labels, 0..) |label, i| {

@@ -78,7 +78,7 @@ pub const FilePicker = struct {
             .dir_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.blue());
+                s = s.fg(.blue);
                 s = s.inline_style(true);
                 break :blk s;
             },
@@ -90,20 +90,20 @@ pub const FilePicker = struct {
             .cursor_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.cyan());
+                s = s.fg(.cyan);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .size_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.gray(12));
+                s = s.fg(.gray(12));
                 s = s.inline_style(true);
                 break :blk s;
             },
             .path_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.yellow());
+                s = s.fg(.yellow);
                 s = s.inline_style(true);
                 break :blk s;
             },

@@ -91,13 +91,13 @@ pub const TextArea = struct {
             },
             .line_number_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.gray(12));
+                s = s.fg(.gray(12));
                 s = s.inline_style(true);
                 break :blk s;
             },
             .placeholder_style = blk: {
                 var s = style_mod.Style{};
-                s = s.fg(Color.gray(12));
+                s = s.fg(.gray(12));
                 s = s.inline_style(true);
                 break :blk s;
             },

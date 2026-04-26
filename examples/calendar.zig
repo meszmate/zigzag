@@ -22,9 +22,9 @@ const Model = struct {
             .today_year = 2026,
         };
         // Mark some dates
-        self.cal.addMarkedDate(25, zz.Color.red());
-        self.cal.addMarkedDate(1, zz.Color.green());
-        self.cal.addMarkedDate(14, zz.Color.magenta());
+        self.cal.addMarkedDate(25, .red);
+        self.cal.addMarkedDate(1, .green);
+        self.cal.addMarkedDate(14, .magenta);
         return .none;
     }
 
@@ -47,12 +47,12 @@ const Model = struct {
 
         var title_s = zz.Style{};
         title_s = title_s.bold(true);
-        title_s = title_s.fg(zz.Color.cyan());
+        title_s = title_s.fg(.cyan);
         title_s = title_s.inline_style(true);
 
         var box_style = zz.Style{};
-        box_style = box_style.borderAll(zz.Border.rounded);
-        box_style = box_style.borderForeground(zz.Color.cyan());
+        box_style = box_style.borderAll(.rounded);
+        box_style = box_style.borderForeground(.cyan);
         box_style = box_style.paddingAll(1);
 
         const cal_view = self.cal.view(alloc);
@@ -63,7 +63,7 @@ const Model = struct {
         }) catch "";
 
         var help_s = zz.Style{};
-        help_s = help_s.fg(zz.Color.gray(10));
+        help_s = help_s.fg(.gray(10));
         help_s = help_s.inline_style(true);
 
         const content = std.fmt.allocPrint(alloc,

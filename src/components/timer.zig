@@ -54,14 +54,14 @@ pub const Timer = struct {
             .warning_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.yellow());
+                s = s.fg(.yellow);
                 s = s.inline_style(true);
                 break :blk s;
             },
             .danger_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
-                s = s.fg(Color.red());
+                s = s.fg(.red);
                 s = s.inline_style(true);
                 break :blk s;
             },
