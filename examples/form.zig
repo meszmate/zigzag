@@ -31,7 +31,7 @@ const Model = struct {
         self.form.addField("Terms", &self.agree_checkbox, .{});
         self.form.initFocus();
 
-        self.status = "Fill out the form and press Ctrl+Enter to submit";
+        self.status = "Fill out the form and press Ctrl+S to submit (Ctrl+Enter also works in capable terminals)";
 
         return .none;
     }

@@ -9,6 +9,19 @@ const Color = @import("../style/color.zig").Color;
 const border_mod = @import("../style/border.zig");
 const focus_mod = @import("focus.zig");
 
+/// Universally-supported submit bindings. Ctrl+S works in every terminal
+/// (no encoding ambiguity). Ctrl+Enter is included for terminals that
+/// implement the Kitty keyboard protocol — most don't (notably macOS
+/// Terminal.app, basic xterm), so it's a bonus, not the primary binding.
+const default_submit_keys = [_]keys.KeyEvent{
+    keys.KeyEvent.ctrl('s'),
+    .{ .key = .enter, .modifiers = .{ .ctrl = true } },
+};
+
+const default_cancel_keys = [_]keys.KeyEvent{
+    .{ .key = .escape },
+};
+
 pub fn Form(comptime max_fields: usize) type {
     return struct {
         // Fields
@@ -26,6 +39,17 @@ pub fn Form(comptime max_fields: usize) type {
         label_width: u16,
         spacing: u16,
         show_required_marker: bool,
+
+        // Submit bindings. Multiple keys can submit the form. Default
+        // includes Ctrl+S (works in every terminal) and Ctrl+Enter (only
+        // works in terminals that implement the Kitty keyboard protocol —
+        // Terminal.app and most basic xterms cannot tell Ctrl+Enter from
+        // plain Enter, so we don't rely on it).
+        submit_keys: []const keys.KeyEvent,
+        cancel_keys: []const keys.KeyEvent,
+        /// Human-readable description of submit/cancel bindings shown in the
+        /// footer hint. Override if you change submit_keys/cancel_keys.
+        hint_text: []const u8,
 
         // Styling
         label_style: style_mod.Style,
@@ -60,6 +84,9 @@ pub fn Form(comptime max_fields: usize) type {
                 .label_width = 15,
                 .spacing = 1,
                 .show_required_marker = true,
+                .submit_keys = &default_submit_keys,
+                .cancel_keys = &default_cancel_keys,
+                .hint_text = "Tab: next field | Ctrl+S: submit | Esc: cancel",
                 .label_style = blk: {
                     var s = style_mod.Style{};
                     s = s.bold(true);
@@ -173,18 +200,22 @@ pub fn Form(comptime max_fields: usize) type {
 
         /// Handle key events.
         pub fn handleKey(self: *Self, key: keys.KeyEvent) bool {
-            // Ctrl+Enter to submit
-            if (key.modifiers.ctrl and key.key == .enter) {
-                if (self.validate()) {
-                    self.submitted = true;
+            // Submit on any configured submit key.
+            for (self.submit_keys) |sk| {
+                if (sk.eql(key)) {
+                    if (self.validate()) {
+                        self.submitted = true;
+                    }
+                    return true;
                 }
-                return true;
             }
 
-            // Escape to cancel
-            if (key.key == .escape) {
-                self.cancelled = true;
-                return true;
+            // Cancel on any configured cancel key.
+            for (self.cancel_keys) |ck| {
+                if (ck.eql(key)) {
+                    self.cancelled = true;
+                    return true;
+                }
             }
 
             // Tab/Shift+Tab for focus cycling
@@ -259,7 +290,7 @@ pub fn Form(comptime max_fields: usize) type {
             var hint_style = style_mod.Style{};
             hint_style = hint_style.fg(.gray(12));
             hint_style = hint_style.inline_style(true);
-            const hint = try hint_style.render(allocator, "Tab: next field | Ctrl+Enter: submit | Esc: cancel");
+            const hint = try hint_style.render(allocator, self.hint_text);
             try writer.writeAll(hint);
 
             return result.toOwnedSlice();
