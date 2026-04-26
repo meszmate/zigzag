@@ -2,6 +2,7 @@
 //! Supports column headers, alignment, and styling.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const border_mod = @import("../style/border.zig");
 const Color = @import("../style/color.zig").Color;
@@ -323,7 +324,7 @@ pub fn Table(comptime num_cols: usize) type {
 
         fn writeRow(
             self: *const Self,
-            writer: anytype,
+            writer: *Writer,
             allocator: std.mem.Allocator,
             row: [num_cols][]const u8,
             widths: [num_cols]usize,
@@ -381,7 +382,7 @@ pub fn Table(comptime num_cols: usize) type {
 
         fn writeBorderLine(
             self: *const Self,
-            writer: anytype,
+            writer: *Writer,
             allocator: std.mem.Allocator,
             widths: [num_cols]usize,
             pos: BorderPosition,

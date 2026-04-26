@@ -2,6 +2,7 @@
 //! Horizontal menu bar with dropdown menus and keyboard navigation.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -390,12 +391,12 @@ pub fn MenuBar(comptime Action: type) type {
         // ── Rendering ───────────────────────────────
 
         pub fn view(self: *const Self, allocator: std.mem.Allocator, term_width: usize) ![]const u8 {
-            var result = std.array_list.Managed(u8).init(allocator);
-            const writer = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const writer = &result.writer;
 
             // Render menu bar
-            var bar_content = std.array_list.Managed(u8).init(allocator);
-            const bar_writer = bar_content.writer();
+            var bar_content: Writer.Allocating = .init(allocator);
+            const bar_writer = &bar_content.writer;
 
             try bar_writer.writeAll(" ");
 
@@ -437,8 +438,8 @@ pub fn MenuBar(comptime Action: type) type {
         }
 
         fn renderDropdown(self: *const Self, allocator: std.mem.Allocator, menu: Menu) ![]const u8 {
-            var result = std.array_list.Managed(u8).init(allocator);
-            const w = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const w = &result.writer;
 
             // Calculate width
             var max_label_width: usize = 0;
@@ -489,8 +490,8 @@ pub fn MenuBar(comptime Action: type) type {
                         const s = if (!a.enabled) self.item_disabled_style else if (is_active) self.item_active_style else self.item_style;
 
                         // Build line content
-                        var line = std.array_list.Managed(u8).init(allocator);
-                        const lw = line.writer();
+                        var line: Writer.Allocating = .init(allocator);
+                        const lw = &line.writer;
 
                         try lw.writeByte(' ');
 
@@ -537,7 +538,7 @@ pub fn MenuBar(comptime Action: type) type {
         const BorderPos = enum { top, middle, bottom };
         const BorderSide = enum { left, right };
 
-        fn writeBorder(self: *const Self, writer: anytype, allocator: std.mem.Allocator, width: usize, pos: BorderPos) !void {
+        fn writeBorder(self: *const Self, writer: *Writer, allocator: std.mem.Allocator, width: usize, pos: BorderPos) !void {
             var bs = style_mod.Style{};
             bs = bs.fg(self.border_fg);
             bs = bs.inline_style(true);
@@ -561,7 +562,7 @@ pub fn MenuBar(comptime Action: type) type {
             try writer.writeAll(try bs.render(allocator, cr));
         }
 
-        fn writeBorderChar(self: *const Self, writer: anytype, allocator: std.mem.Allocator, side: BorderSide) !void {
+        fn writeBorderChar(self: *const Self, writer: *Writer, allocator: std.mem.Allocator, side: BorderSide) !void {
             var bs = style_mod.Style{};
             bs = bs.fg(self.border_fg);
             bs = bs.inline_style(true);

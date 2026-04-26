@@ -2,6 +2,7 @@
 //! Provides a builder pattern for composing styles.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const color_mod = @import("color.zig");
 const border_mod = @import("border.zig");
 const ansi = @import("../terminal/ansi.zig");
@@ -572,20 +573,21 @@ pub const Style = struct {
 
     /// Render styled text
     pub fn render(self: Self, allocator: std.mem.Allocator, text: []const u8) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        defer result.deinit();
+        var buf: Writer.Allocating = .init(allocator);
+        defer buf.deinit();
 
         // Preprocess tabs if tab_width is set
         var processed_text = text;
         if (self.tab_width_val) |tw| {
-            var buf = std.array_list.Managed(u8).init(allocator);
             for (text) |c| {
                 if (c == '\t') {
                     for (0..tw) |_| {
-                        try buf.append(' ');
+                        try buf.writer.writeByte(' ');
                     }
                 } else {
-                    try buf.append(c);
+                    try buf.writer.writeByte(c);
                 }
             }
             processed_text = try buf.toOwnedSlice();
@@ -629,43 +631,45 @@ pub const Style = struct {
 
         // Write margin top
         for (0..self.margin_val.top) |_| {
-            try self.writeMarginLeft(writer);
+            try self.writeMarginLeft(&result.writer);
             if (!self.margin_bg.isNone()) {
-                try self.margin_bg.writeBg(writer);
+                try self.margin_bg.writeBg(&result.writer);
                 for (0..target_width) |_| {
-                    try writer.writeByte(' ');
+                    try result.writer.writeByte(' ');
                 }
-                try self.writeMarginRight(writer, target_width);
-                try writer.writeAll(ansi.reset);
+                try self.writeMarginRight(&result.writer, target_width);
+                try result.writer.writeAll(ansi.reset);
             }
-            try writer.writeByte('\n');
+            try result.writer.writeByte('\n');
         }
 
         // Build styled content
-        try self.writeStyledContent(writer, processed_text, target_width, target_height);
+        try self.writeStyledContent(&result.writer, processed_text, target_width, target_height);
 
         // Write margin bottom
         for (0..self.margin_val.bottom) |_| {
-            try writer.writeByte('\n');
-            try self.writeMarginLeft(writer);
+            try result.writer.writeByte('\n');
+            try self.writeMarginLeft(&result.writer);
             if (!self.margin_bg.isNone()) {
-                try self.margin_bg.writeBg(writer);
+                try self.margin_bg.writeBg(&result.writer);
                 for (0..target_width) |_| {
-                    try writer.writeByte(' ');
+                    try result.writer.writeByte(' ');
                 }
-                try self.writeMarginRight(writer, target_width);
-                try writer.writeAll(ansi.reset);
+                try self.writeMarginRight(&result.writer, target_width);
+                try result.writer.writeAll(ansi.reset);
             }
         }
 
-        if (!self.inline_mode and result.items.len > 0 and result.items[result.items.len - 1] == '\n') {
-            _ = result.pop();
-        }
+        var array = result.toArrayList();
+        if (!self.inline_mode and
+            array.items.len > 0 and
+            array.items[array.items.len - 1] == '\n')
+            _ = array.pop();
 
-        return result.toOwnedSlice();
+        return array.toOwnedSlice(allocator);
     }
 
-    fn writeStyledContent(self: Self, writer: anytype, text: []const u8, target_width: usize, target_height: usize) !void {
+    fn writeStyledContent(self: Self, writer: *Writer, text: []const u8, target_width: usize, target_height: usize) !void {
         const inner_width = target_width -|
             self.padding_val.left -| self.padding_val.right -|
             @as(usize, if (self.border_sides.left) 1 else 0) -|
@@ -732,7 +736,7 @@ pub const Style = struct {
             (self.strikethrough_spaces and (self.strikethrough_attr orelse false));
     }
 
-    fn writeContentLine(self: Self, writer: anytype, line: []const u8, inner_width: usize) !void {
+    fn writeContentLine(self: Self, writer: *Writer, line: []const u8, inner_width: usize) !void {
         try self.writeMarginLeft(writer);
 
         // Left border
@@ -826,7 +830,7 @@ pub const Style = struct {
     }
 
     /// Write text with per-character whitespace attribute control
-    fn writeWithWhitespaceControl(self: Self, writer: anytype, text: []const u8) !void {
+    fn writeWithWhitespaceControl(self: Self, writer: *Writer, text: []const u8) !void {
         var i: usize = 0;
         while (i < text.len) {
             const byte_len = std.unicode.utf8ByteSequenceLength(text[i]) catch 1;
@@ -874,7 +878,7 @@ pub const Style = struct {
     }
 
     /// Write N spaces with whitespace control
-    fn writeSpacesWithControl(self: Self, writer: anytype, count: usize) !void {
+    fn writeSpacesWithControl(self: Self, writer: *Writer, count: usize) !void {
         if (count == 0) return;
         if (!self.color_whitespace and !self.background.isNone()) {
             try writer.writeAll(ansi.reset);
@@ -895,7 +899,7 @@ pub const Style = struct {
         }
     }
 
-    fn writeMarginLeft(self: Self, writer: anytype) !void {
+    fn writeMarginLeft(self: Self, writer: *Writer) !void {
         if (!self.margin_bg.isNone() and self.margin_val.left > 0) {
             try self.margin_bg.writeBg(writer);
         }
@@ -907,7 +911,7 @@ pub const Style = struct {
         }
     }
 
-    fn writeMarginRight(self: Self, writer: anytype, content_width: usize) !void {
+    fn writeMarginRight(self: Self, writer: *Writer, content_width: usize) !void {
         _ = content_width;
         if (self.margin_val.right > 0) {
             if (!self.margin_bg.isNone()) {
@@ -922,7 +926,7 @@ pub const Style = struct {
         }
     }
 
-    fn writeStyleStart(self: Self, writer: anytype) !void {
+    fn writeStyleStart(self: Self, writer: *Writer) !void {
         if (self.bold_attr orelse false) try writer.print(ansi.CSI ++ "{d}m", .{ansi.SGR.bold});
         if (self.dim_attr orelse false) try writer.print(ansi.CSI ++ "{d}m", .{ansi.SGR.dim});
         if (self.italic_attr orelse false) try writer.print(ansi.CSI ++ "{d}m", .{ansi.SGR.italic});
@@ -937,7 +941,7 @@ pub const Style = struct {
 
     const BorderSide = enum { top, right, bottom, left };
 
-    fn writeBorderColorSide(self: Self, writer: anytype, side: BorderSide) !void {
+    fn writeBorderColorSide(self: Self, writer: *Writer, side: BorderSide) !void {
         const side_fg = switch (side) {
             .top => self.border_top_fg,
             .right => self.border_right_fg,
@@ -956,7 +960,7 @@ pub const Style = struct {
         try resolved_bg.writeBg(writer);
     }
 
-    fn writeBorderColor(self: Self, writer: anytype) !void {
+    fn writeBorderColor(self: Self, writer: *Writer) !void {
         try self.border_fg.writeFg(writer);
         try self.border_bg.writeBg(writer);
     }

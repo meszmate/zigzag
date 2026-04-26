@@ -2,6 +2,7 @@
 //! Provides double-buffering to minimize flickering and optimize updates.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const ansi = @import("ansi.zig");
 const unicode = @import("../unicode.zig");
 
@@ -161,7 +162,7 @@ pub const Screen = struct {
     }
 
     /// Render screen differences to the writer
-    pub fn renderDiff(self: *const Screen, prev: *const Screen, writer: anytype) !void {
+    pub fn renderDiff(self: *const Screen, prev: *const Screen, writer: *Writer) !void {
         var last_x: u16 = 0;
         var last_y: u16 = 0;
         var need_move = true;
@@ -215,7 +216,7 @@ pub const Screen = struct {
     }
 
     /// Render entire screen to writer
-    pub fn render(self: *const Screen, writer: anytype) !void {
+    pub fn render(self: *const Screen, writer: *Writer) !void {
         try writer.writeAll(ansi.cursor_home);
         try writer.writeAll(ansi.reset);
 
@@ -252,7 +253,7 @@ pub const Screen = struct {
         try writer.writeAll(ansi.reset);
     }
 
-    fn applyStyle(writer: anytype, current: *Cell, new: Cell) !void {
+    fn applyStyle(writer: *Writer, current: *Cell, new: Cell) !void {
         var needs_reset = false;
 
         // Check if we need to reset (turning off attributes)

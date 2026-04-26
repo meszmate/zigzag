@@ -2,6 +2,7 @@
 //! Provides cursor navigation, text editing, and optional validation.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -377,8 +378,8 @@ pub const TextInput = struct {
 
     /// Render the input to a string
     pub fn view(self: *const TextInput, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // Write prompt
         if (self.prompt.len > 0) {
@@ -422,7 +423,7 @@ pub const TextInput = struct {
         return result.toOwnedSlice();
     }
 
-    fn renderWithCursor(self: *const TextInput, writer: anytype, allocator: std.mem.Allocator) !void {
+    fn renderWithCursor(self: *const TextInput, writer: *Writer, allocator: std.mem.Allocator) !void {
         // Text before cursor
         if (self.cursor > 0) {
             const before = try self.text_style.render(allocator, self.value.items[0..self.cursor]);

@@ -4,6 +4,7 @@
 //! or similar browser-based terminal emulator.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const ansi = @import("../ansi.zig");
 
 pub const TerminalError = error{
@@ -67,28 +68,28 @@ pub fn disableRawMode(state: *State) void {
 }
 
 /// Enter alternate screen buffer.
-pub fn enterAltScreen(state: *State, writer: anytype) !void {
+pub fn enterAltScreen(state: *State, writer: *Writer) !void {
     if (state.in_alt_screen) return;
     try writer.writeAll(ansi.alt_screen_enter);
     state.in_alt_screen = true;
 }
 
 /// Exit alternate screen buffer.
-pub fn exitAltScreen(state: *State, writer: anytype) !void {
+pub fn exitAltScreen(state: *State, writer: *Writer) !void {
     if (!state.in_alt_screen) return;
     try writer.writeAll(ansi.alt_screen_exit);
     state.in_alt_screen = false;
 }
 
 /// Enable mouse tracking.
-pub fn enableMouse(state: *State, writer: anytype) !void {
+pub fn enableMouse(state: *State, writer: *Writer) !void {
     if (state.mouse_enabled) return;
     try writer.writeAll("\x1b[?1003h\x1b[?1006h");
     state.mouse_enabled = true;
 }
 
 /// Disable mouse tracking.
-pub fn disableMouse(state: *State, writer: anytype) !void {
+pub fn disableMouse(state: *State, writer: *Writer) !void {
     if (!state.mouse_enabled) return;
     try writer.writeAll("\x1b[?1006l\x1b[?1003l");
     state.mouse_enabled = false;

@@ -2,6 +2,7 @@
 //! Provides functions to generate standard terminal control sequences.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 
 /// ANSI escape codes
 pub const ESC = "\x1b";
@@ -62,98 +63,98 @@ pub const kitty_keyboard_enable = CSI ++ ">1u";
 pub const kitty_keyboard_disable = CSI ++ "<u";
 
 /// Move cursor to position (1-indexed)
-pub fn cursorTo(writer: anytype, row: u16, col: u16) !void {
+pub fn cursorTo(writer: *Writer, row: u16, col: u16) !void {
     try writer.print(CSI ++ "{d};{d}H", .{ row, col });
 }
 
 /// Move cursor to position (0-indexed)
-pub fn cursorTo0(writer: anytype, row: u16, col: u16) !void {
+pub fn cursorTo0(writer: *Writer, row: u16, col: u16) !void {
     try writer.print(CSI ++ "{d};{d}H", .{ row + 1, col + 1 });
 }
 
 /// Move cursor up
-pub fn cursorUp(writer: anytype, n: u16) !void {
+pub fn cursorUp(writer: *Writer, n: u16) !void {
     if (n > 0) try writer.print(CSI ++ "{d}A", .{n});
 }
 
 /// Move cursor down
-pub fn cursorDown(writer: anytype, n: u16) !void {
+pub fn cursorDown(writer: *Writer, n: u16) !void {
     if (n > 0) try writer.print(CSI ++ "{d}B", .{n});
 }
 
 /// Move cursor forward (right)
-pub fn cursorForward(writer: anytype, n: u16) !void {
+pub fn cursorForward(writer: *Writer, n: u16) !void {
     if (n > 0) try writer.print(CSI ++ "{d}C", .{n});
 }
 
 /// Move cursor backward (left)
-pub fn cursorBack(writer: anytype, n: u16) !void {
+pub fn cursorBack(writer: *Writer, n: u16) !void {
     if (n > 0) try writer.print(CSI ++ "{d}D", .{n});
 }
 
 /// Move cursor to column (1-indexed)
-pub fn cursorToCol(writer: anytype, col: u16) !void {
+pub fn cursorToCol(writer: *Writer, col: u16) !void {
     try writer.print(CSI ++ "{d}G", .{col});
 }
 
 /// Move cursor to column (0-indexed)
-pub fn cursorToCol0(writer: anytype, col: u16) !void {
+pub fn cursorToCol0(writer: *Writer, col: u16) !void {
     try writer.print(CSI ++ "{d}G", .{col + 1});
 }
 
 /// Request cursor position (response: ESC[row;colR)
-pub fn requestCursorPos(writer: anytype) !void {
+pub fn requestCursorPos(writer: *Writer) !void {
     try writer.writeAll(CSI ++ "6n");
 }
 
 /// Set scrolling region
-pub fn setScrollRegion(writer: anytype, top: u16, bottom: u16) !void {
+pub fn setScrollRegion(writer: *Writer, top: u16, bottom: u16) !void {
     try writer.print(CSI ++ "{d};{d}r", .{ top, bottom });
 }
 
 /// Reset scrolling region
-pub fn resetScrollRegion(writer: anytype) !void {
+pub fn resetScrollRegion(writer: *Writer) !void {
     try writer.writeAll(CSI ++ "r");
 }
 
 /// Scroll up (content moves up, blank lines at bottom)
-pub fn scrollUp(writer: anytype, n: u16) !void {
+pub fn scrollUp(writer: *Writer, n: u16) !void {
     if (n > 0) try writer.print(CSI ++ "{d}S", .{n});
 }
 
 /// Scroll down (content moves down, blank lines at top)
-pub fn scrollDown(writer: anytype, n: u16) !void {
+pub fn scrollDown(writer: *Writer, n: u16) !void {
     if (n > 0) try writer.print(CSI ++ "{d}T", .{n});
 }
 
 /// Erase n characters from cursor position
-pub fn eraseChars(writer: anytype, n: u16) !void {
+pub fn eraseChars(writer: *Writer, n: u16) !void {
     try writer.print(CSI ++ "{d}X", .{n});
 }
 
 /// Insert n blank lines at cursor position
-pub fn insertLines(writer: anytype, n: u16) !void {
+pub fn insertLines(writer: *Writer, n: u16) !void {
     if (n > 0) try writer.print(CSI ++ "{d}L", .{n});
 }
 
 /// Delete n lines at cursor position
-pub fn deleteLines(writer: anytype, n: u16) !void {
+pub fn deleteLines(writer: *Writer, n: u16) !void {
     if (n > 0) try writer.print(CSI ++ "{d}M", .{n});
 }
 
 /// Set window title
-pub fn setTitle(writer: anytype, title: []const u8) !void {
+pub fn setTitle(writer: *Writer, title: []const u8) !void {
     try writer.print(OSC ++ "0;{s}\x07", .{title});
 }
 
-fn writeOscTerminator(writer: anytype, terminator: OscTerminator) !void {
+fn writeOscTerminator(writer: *Writer, terminator: OscTerminator) !void {
     switch (terminator) {
         .bel => try writer.writeAll("\x07"),
         .st => try writer.writeAll(ST),
     }
 }
 
-fn writeEscapedForDcs(writer: anytype, bytes: []const u8) !void {
+fn writeEscapedForDcs(writer: *Writer, bytes: []const u8) !void {
     var start: usize = 0;
     for (bytes, 0..) |byte, idx| {
         if (byte != 0x1b) continue;
@@ -173,7 +174,7 @@ fn writeEscapedForDcs(writer: anytype, bytes: []const u8) !void {
 /// Start an OSC 52 sequence and write the fixed header:
 /// `OSC 52 ; <target> ;`
 pub fn osc52Start(
-    writer: anytype,
+    writer: *Writer,
     target: []const u8,
     passthrough: Osc52Passthrough,
 ) !void {
@@ -199,7 +200,7 @@ pub fn osc52Start(
 }
 
 /// Finish an OSC 52 sequence started by `osc52Start`.
-pub fn osc52End(writer: anytype, terminator: OscTerminator, passthrough: Osc52Passthrough) !void {
+pub fn osc52End(writer: *Writer, terminator: OscTerminator, passthrough: Osc52Passthrough) !void {
     switch (passthrough) {
         .none => try writeOscTerminator(writer, terminator),
         .tmux, .dcs => {
@@ -214,7 +215,7 @@ pub fn osc52End(writer: anytype, terminator: OscTerminator, passthrough: Osc52Pa
 
 /// Write a complete OSC 52 sequence with a pre-encoded base64 payload.
 pub fn osc52Encoded(
-    writer: anytype,
+    writer: *Writer,
     target: []const u8,
     payload_b64: []const u8,
     terminator: OscTerminator,
@@ -290,7 +291,7 @@ pub const SGR = struct {
 };
 
 /// Generate SGR sequence
-pub fn sgr(writer: anytype, codes: []const u8) !void {
+pub fn sgr(writer: *Writer, codes: []const u8) !void {
     try writer.writeAll(CSI);
     for (codes, 0..) |code, i| {
         if (i > 0) try writer.writeByte(';');
@@ -300,32 +301,32 @@ pub fn sgr(writer: anytype, codes: []const u8) !void {
 }
 
 /// Generate 256-color foreground
-pub fn fg256(writer: anytype, color: u8) !void {
+pub fn fg256(writer: *Writer, color: u8) !void {
     try writer.print(CSI ++ "38;5;{d}m", .{color});
 }
 
 /// Generate 256-color background
-pub fn bg256(writer: anytype, color: u8) !void {
+pub fn bg256(writer: *Writer, color: u8) !void {
     try writer.print(CSI ++ "48;5;{d}m", .{color});
 }
 
 /// Generate true color (24-bit) foreground
-pub fn fgRgb(writer: anytype, r: u8, g: u8, b: u8) !void {
+pub fn fgRgb(writer: *Writer, r: u8, g: u8, b: u8) !void {
     try writer.print(CSI ++ "38;2;{d};{d};{d}m", .{ r, g, b });
 }
 
 /// Generate true color (24-bit) background
-pub fn bgRgb(writer: anytype, r: u8, g: u8, b: u8) !void {
+pub fn bgRgb(writer: *Writer, r: u8, g: u8, b: u8) !void {
     try writer.print(CSI ++ "48;2;{d};{d};{d}m", .{ r, g, b });
 }
 
 /// Hyperlink (OSC 8)
-pub fn hyperlink(writer: anytype, url: []const u8, text: []const u8) !void {
+pub fn hyperlink(writer: *Writer, url: []const u8, text: []const u8) !void {
     try writer.print(OSC ++ "8;;{s}\x07{s}" ++ OSC ++ "8;;\x07", .{ url, text });
 }
 
 /// Kitty graphics protocol command (APC G ... ST)
-pub fn kittyGraphics(writer: anytype, params: []const u8, payload: []const u8) !void {
+pub fn kittyGraphics(writer: *Writer, params: []const u8, payload: []const u8) !void {
     try writer.writeAll(APC ++ "G");
     try writer.writeAll(params);
     try writer.writeAll(";");
@@ -334,7 +335,7 @@ pub fn kittyGraphics(writer: anytype, params: []const u8, payload: []const u8) !
 }
 
 /// iTerm2 inline image command (OSC 1337;File=...:... BEL)
-pub fn iterm2InlineImage(writer: anytype, params: []const u8, payload: []const u8) !void {
+pub fn iterm2InlineImage(writer: *Writer, params: []const u8, payload: []const u8) !void {
     try writer.writeAll(OSC ++ "1337;File=");
     try writer.writeAll(params);
     try writer.writeAll(":");
@@ -344,28 +345,28 @@ pub fn iterm2InlineImage(writer: anytype, params: []const u8, payload: []const u
 
 test "osc52Encoded direct BEL" {
     var buf: [128]u8 = undefined;
-    var stream = std.io.fixedBufferStream(&buf);
-    try osc52Encoded(stream.writer(), "c", "YQ==", .bel, .none);
-    try std.testing.expectEqualStrings("\x1b]52;c;YQ==\x07", stream.getWritten());
+    var writer: Writer = .fixed(&buf);
+    try osc52Encoded(&writer, "c", "YQ==", .bel, .none);
+    try std.testing.expectEqualStrings("\x1b]52;c;YQ==\x07", writer.buffered());
 }
 
 test "osc52Encoded direct ST" {
     var buf: [128]u8 = undefined;
-    var stream = std.io.fixedBufferStream(&buf);
-    try osc52Encoded(stream.writer(), "c", "YQ==", .st, .none);
-    try std.testing.expectEqualStrings("\x1b]52;c;YQ==\x1b\\", stream.getWritten());
+    var writer: Writer = .fixed(&buf);
+    try osc52Encoded(&writer, "c", "YQ==", .st, .none);
+    try std.testing.expectEqualStrings("\x1b]52;c;YQ==\x1b\\", writer.buffered());
 }
 
 test "osc52Encoded tmux passthrough BEL" {
     var buf: [256]u8 = undefined;
-    var stream = std.io.fixedBufferStream(&buf);
-    try osc52Encoded(stream.writer(), "c", "YQ==", .bel, .tmux);
-    try std.testing.expectEqualStrings("\x1bPtmux;\x1b\x1b]52;c;YQ==\x07\x1b\\", stream.getWritten());
+    var writer: Writer = .fixed(&buf);
+    try osc52Encoded(&writer, "c", "YQ==", .bel, .tmux);
+    try std.testing.expectEqualStrings("\x1bPtmux;\x1b\x1b]52;c;YQ==\x07\x1b\\", writer.buffered());
 }
 
 test "osc52Encoded tmux passthrough ST" {
     var buf: [256]u8 = undefined;
-    var stream = std.io.fixedBufferStream(&buf);
-    try osc52Encoded(stream.writer(), "c", "YQ==", .st, .tmux);
-    try std.testing.expectEqualStrings("\x1bPtmux;\x1b\x1b]52;c;YQ==\x1b\x1b\\\x1b\\", stream.getWritten());
+    var writer: Writer = .fixed(&buf);
+    try osc52Encoded(&writer, "c", "YQ==", .st, .tmux);
+    try std.testing.expectEqualStrings("\x1bPtmux;\x1b\x1b]52;c;YQ==\x1b\x1b\\\x1b\\", writer.buffered());
 }

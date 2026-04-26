@@ -17,6 +17,7 @@
 //! The console is safe to call from any thread; writes are mutex-guarded.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 
 pub const Level = enum {
     trace,
@@ -224,22 +225,21 @@ pub const DevConsole = struct {
     }
 
     fn format(self: *const DevConsole, buf: []u8, level: Level, comptime fmt: []const u8, args: anytype) ![]u8 {
-        var fbs = std.io.fixedBufferStream(buf);
-        const w = fbs.writer();
+        var writer: Writer = .fixed(buf);
         if (self.show_timestamps) {
             const now = std.time.timestamp();
             const epoch = std.time.epoch.EpochSeconds{ .secs = @intCast(now) };
             const day = epoch.getDaySeconds();
-            try w.print("[{d:0>2}:{d:0>2}:{d:0>2}] ", .{
+            try writer.print("[{d:0>2}:{d:0>2}:{d:0>2}] ", .{
                 day.getHoursIntoDay(),
                 day.getMinutesIntoHour(),
                 day.getSecondsIntoMinute(),
             });
         }
-        try w.print("{s} ", .{level.label()});
-        try w.print(fmt, args);
-        try w.writeByte('\n');
-        return fbs.getWritten();
+        try writer.print("{s} ", .{level.label()});
+        try writer.print(fmt, args);
+        try writer.writeByte('\n');
+        return writer.buffered();
     }
 
     // Convenience wrappers.

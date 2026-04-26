@@ -2,6 +2,7 @@
 //! Reduces ANSI escape sequence overhead by tracking terminal state and emitting only diffs.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const ansi = @import("../terminal/ansi.zig");
 
 /// Tracks the current terminal style state for efficient transitions
@@ -30,7 +31,7 @@ pub const StyleState = struct {
     }
 
     /// Emit only the ANSI escape sequences needed to transition to the target state
-    pub fn transitionTo(self: *StyleState, writer: anytype, target: StyleState) !void {
+    pub fn transitionTo(self: *StyleState, writer: *Writer, target: StyleState) !void {
         // If target is fully default, just emit reset
         if (!target.bold and !target.dim and !target.italic and !target.underline and
             !target.blink and !target.reverse and !target.strikethrough and

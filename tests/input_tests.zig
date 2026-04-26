@@ -1,6 +1,7 @@
 //! Input handling tests
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const testing = std.testing;
 const zz = @import("zigzag");
 
@@ -138,11 +139,11 @@ test "KeyEvent format" {
         .modifiers = .{ .ctrl = true },
     };
 
-    var buf = std.array_list.Managed(u8).init(allocator);
+    var buf: Writer.Allocating = .init(allocator);
     defer buf.deinit();
 
-    try event.format("", .{}, buf.writer());
-    try testing.expectEqualStrings("ctrl+a", buf.items);
+    try event.format("", .{}, &buf.writer);
+    try testing.expectEqualStrings("ctrl+a", buf.written());
 }
 
 test "parseAll multiple keys" {

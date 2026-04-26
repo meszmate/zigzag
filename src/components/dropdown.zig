@@ -3,6 +3,7 @@
 
 const std = @import("std");
 const keys = @import("../input/keys.zig");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
 const border_mod = @import("../style/border.zig");
@@ -485,8 +486,8 @@ pub fn Dropdown(comptime T: type) type {
         // ── Rendering ───────────────────────────────────
 
         pub fn view(self: *const Self, allocator: std.mem.Allocator) ![]const u8 {
-            var result = std.array_list.Managed(u8).init(allocator);
-            const writer = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const writer = &result.writer;
 
             // Label
             if (self.label.len > 0) {
@@ -667,7 +668,7 @@ pub fn Dropdown(comptime T: type) type {
         const BorderPos = enum { top, middle, bottom };
         const BorderSide = enum { left, right };
 
-        fn writeBorderLine(self: *const Self, writer: anytype, allocator: std.mem.Allocator, width: usize, pos: BorderPos) !void {
+        fn writeBorderLine(self: *const Self, writer: *Writer, allocator: std.mem.Allocator, width: usize, pos: BorderPos) !void {
             const bc = self.border_chars;
             var border_style = style_mod.Style{};
             border_style = border_style.fg(self.border_fg);
@@ -696,7 +697,7 @@ pub fn Dropdown(comptime T: type) type {
             try writer.writeAll(styled_r);
         }
 
-        fn writeBorderSide(self: *const Self, writer: anytype, allocator: std.mem.Allocator, side: BorderSide) !void {
+        fn writeBorderSide(self: *const Self, writer: *Writer, allocator: std.mem.Allocator, side: BorderSide) !void {
             var border_style = style_mod.Style{};
             border_style = border_style.fg(self.border_fg);
             border_style = border_style.inline_style(true);
@@ -709,7 +710,7 @@ pub fn Dropdown(comptime T: type) type {
             try writer.writeAll(styled);
         }
 
-        fn writePadding(_: *const Self, writer: anytype, count: usize) !void {
+        fn writePadding(_: *const Self, writer: *Writer, count: usize) !void {
             for (0..count) |_| {
                 try writer.writeByte(' ');
             }

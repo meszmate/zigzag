@@ -2,6 +2,7 @@
 //! Popup menu triggered by keyboard shortcut or mouse, positioned at a target location.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -288,8 +289,8 @@ pub fn ContextMenu(comptime Action: type) type {
         pub fn view(self: *const Self, allocator: std.mem.Allocator) ![]const u8 {
             if (!self.visible) return try allocator.dupe(u8, "");
 
-            var result = std.array_list.Managed(u8).init(allocator);
-            const w = result.writer();
+            var result: Writer.Allocating = .init(allocator);
+            const w = &result.writer;
 
             const inner_width = self.calcWidth();
 
@@ -350,11 +351,11 @@ pub fn ContextMenu(comptime Action: type) type {
         const BorderPos = enum { top, middle, bottom };
         const BorderSide = enum { left, right };
 
-        fn writeIndent(_: *const Self, writer: anytype, count: usize) !void {
+        fn writeIndent(_: *const Self, writer: *Writer, count: usize) !void {
             for (0..count) |_| try writer.writeByte(' ');
         }
 
-        fn writeBorder(self: *const Self, writer: anytype, allocator: std.mem.Allocator, width: usize, pos: BorderPos) !void {
+        fn writeBorder(self: *const Self, writer: *Writer, allocator: std.mem.Allocator, width: usize, pos: BorderPos) !void {
             var bs = style_mod.Style{};
             bs = bs.fg(self.border_fg);
             bs = bs.inline_style(true);
@@ -378,7 +379,7 @@ pub fn ContextMenu(comptime Action: type) type {
             try writer.writeAll(try bs.render(allocator, cr));
         }
 
-        fn writeBorderChar(self: *const Self, writer: anytype, allocator: std.mem.Allocator, side: BorderSide) !void {
+        fn writeBorderChar(self: *const Self, writer: *Writer, allocator: std.mem.Allocator, side: BorderSide) !void {
             var bs = style_mod.Style{};
             bs = bs.fg(self.border_fg);
             bs = bs.inline_style(true);

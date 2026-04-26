@@ -2,6 +2,7 @@
 //! Provides text editing with multiple lines, cursor navigation, and scrolling.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const Color = @import("../style/color.zig").Color;
@@ -543,8 +544,8 @@ pub const TextArea = struct {
 
     /// Render the text area
     pub fn view(self: *const TextArea, allocator: std.mem.Allocator) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         const line_num_width: usize = if (self.line_numbers) 5 else 0;
         const text_width = self.width -| @as(u16, @intCast(line_num_width));
@@ -645,7 +646,7 @@ pub const TextArea = struct {
         return result.toOwnedSlice();
     }
 
-    fn renderPlaceholder(self: *const TextArea, writer: anytype, allocator: std.mem.Allocator, max_width: u16) !void {
+    fn renderPlaceholder(self: *const TextArea, writer: *Writer, allocator: std.mem.Allocator, max_width: u16) !void {
         const width_limit: usize = max_width;
         if (width_limit == 0) return;
 
@@ -679,7 +680,7 @@ pub const TextArea = struct {
 
     fn renderWrappedLineSegment(
         self: *const TextArea,
-        writer: anytype,
+        writer: *Writer,
         allocator: std.mem.Allocator,
         line: []const u8,
         line_idx: usize,
@@ -737,7 +738,7 @@ pub const TextArea = struct {
         }
     }
 
-    fn renderLine(self: *const TextArea, writer: anytype, allocator: std.mem.Allocator, line: []const u8, line_idx: usize, max_width: u16) !void {
+    fn renderLine(self: *const TextArea, writer: *Writer, allocator: std.mem.Allocator, line: []const u8, line_idx: usize, max_width: u16) !void {
         const is_cursor_line = line_idx == self.cursor_row;
 
         // Apply horizontal scroll

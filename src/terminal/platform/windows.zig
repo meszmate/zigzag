@@ -2,6 +2,7 @@
 //! Provides terminal control for Windows systems.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const windows = std.os.windows;
 const ansi = @import("../ansi.zig");
 
@@ -194,7 +195,7 @@ pub fn disableRawMode(state: *State) void {
 }
 
 /// Enter alternate screen buffer
-pub fn enterAltScreen(state: *State, writer: anytype) !void {
+pub fn enterAltScreen(state: *State, writer: *Writer) !void {
     if (state.in_alt_screen) return;
 
     try writer.writeAll(ansi.alt_screen_enter);
@@ -202,7 +203,7 @@ pub fn enterAltScreen(state: *State, writer: anytype) !void {
 }
 
 /// Exit alternate screen buffer
-pub fn exitAltScreen(state: *State, writer: anytype) !void {
+pub fn exitAltScreen(state: *State, writer: *Writer) !void {
     if (!state.in_alt_screen) return;
 
     try writer.writeAll(ansi.alt_screen_exit);
@@ -210,7 +211,7 @@ pub fn exitAltScreen(state: *State, writer: anytype) !void {
 }
 
 /// Enable mouse tracking
-pub fn enableMouse(state: *State, writer: anytype) !void {
+pub fn enableMouse(state: *State, writer: *Writer) !void {
     if (state.mouse_enabled) return;
 
     // Enable mouse input in console mode
@@ -227,7 +228,7 @@ pub fn enableMouse(state: *State, writer: anytype) !void {
 }
 
 /// Disable mouse tracking
-pub fn disableMouse(state: *State, writer: anytype) !void {
+pub fn disableMouse(state: *State, writer: *Writer) !void {
     if (!state.mouse_enabled) return;
 
     try writer.writeAll("\x1b[?1006l\x1b[?1003l");

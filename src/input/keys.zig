@@ -2,6 +2,7 @@
 //! Provides a comprehensive set of key types for terminal input.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 
 /// Modifier keys that can be combined with other keys
 pub const Modifiers = packed struct {
@@ -176,7 +177,7 @@ pub const KeyEvent = struct {
         self: KeyEvent,
         comptime fmt: []const u8,
         options: std.fmt.FormatOptions,
-        writer: anytype,
+        writer: *Writer,
     ) !void {
         _ = fmt;
         _ = options;

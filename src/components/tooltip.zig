@@ -31,6 +31,7 @@
 //! - `Tooltip.shortcut(label, key)` — "Label  Ctrl+S" style tooltip
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const style_mod = @import("../style/style.zig");
 const border_mod = @import("../style/border.zig");
 const Color = @import("../style/color.zig").Color;
@@ -216,8 +217,8 @@ pub const Tooltip = struct {
         pad_s = pad_s.inline_style(true);
         if (!self.content_bg.isNone()) pad_s = pad_s.bg(self.content_bg);
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // ── Top border ──
         try writer.writeAll(try bdr_s.render(allocator, bc.top_left));
@@ -282,8 +283,8 @@ pub const Tooltip = struct {
         const pos = self.computePosition(box_w, box_h, term_width, term_height);
 
         // Build full-screen output line by line
-        var result = std.array_list.Managed(u8).init(allocator);
-        const wr = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const wr = &result.writer;
 
         // Collect box lines
         var box_lines = std.array_list.Managed([]const u8).init(allocator);
@@ -489,7 +490,7 @@ pub const Tooltip = struct {
     // ── Render helpers (full-screen canvas) ────────────────────────────
 
     /// Arrow on its own row (top/bottom placement).
-    fn writeArrowOnlyRow(self: *const Tooltip, allocator: std.mem.Allocator, writer: anytype, pos: Position, tw: usize) !void {
+    fn writeArrowOnlyRow(self: *const Tooltip, allocator: std.mem.Allocator, writer: *Writer, pos: Position, tw: usize) !void {
         try writer.writeAll(try nSpaces(allocator, pos.arrow_x));
         try writer.writeAll(try self.renderStyledArrow(allocator));
         const aw = self.arrowDisplayWidth();
@@ -498,7 +499,7 @@ pub const Tooltip = struct {
     }
 
     /// Box row that also has a side arrow (left/right placement).
-    fn writeBoxRowWithSideArrow(self: *const Tooltip, allocator: std.mem.Allocator, writer: anytype, pos: Position, box_line: []const u8, tw: usize) !void {
+    fn writeBoxRowWithSideArrow(self: *const Tooltip, allocator: std.mem.Allocator, writer: *Writer, pos: Position, box_line: []const u8, tw: usize) !void {
         const box_line_w = measure.width(box_line);
         const aw = self.arrowDisplayWidth();
         const styled_arrow = try self.renderStyledArrow(allocator);
@@ -526,7 +527,7 @@ pub const Tooltip = struct {
 
     // ── Private Helpers ───────────────────────────────────────────────
 
-    fn writeEmptyLine(allocator: std.mem.Allocator, writer: anytype, styled_left: []const u8, styled_right: []const u8, pad_s: style_mod.Style, inner_w: usize) !void {
+    fn writeEmptyLine(allocator: std.mem.Allocator, writer: *Writer, styled_left: []const u8, styled_right: []const u8, pad_s: style_mod.Style, inner_w: usize) !void {
         try writer.writeAll(styled_left);
         try writer.writeAll(try pad_s.render(allocator, try nSpaces(allocator, inner_w)));
         try writer.writeAll(styled_right);

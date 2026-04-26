@@ -39,6 +39,7 @@
 //! can be registered with a `FocusGroup`.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("../input/keys.zig");
 const style_mod = @import("../style/style.zig");
 const border_mod = @import("../style/border.zig");
@@ -452,8 +453,8 @@ pub const Modal = struct {
         pad_s = pad_s.inline_style(true);
         if (!self.content_bg.isNone()) pad_s = pad_s.bg(self.content_bg);
 
-        var result = std.array_list.Managed(u8).init(allocator);
-        const writer = result.writer();
+        var result: Writer.Allocating = .init(allocator);
+        const writer = &result.writer;
 
         // ── Top border ──
         try writer.writeAll(try bdr_s.render(allocator, bc.top_left));
@@ -546,8 +547,8 @@ pub const Modal = struct {
             try self.writeEmptyInnerLine(allocator, writer, styled_left, styled_right, pad_s, inner_w);
 
             // Render button row content
-            var btn_buf = std.array_list.Managed(u8).init(allocator);
-            const btn_writer = btn_buf.writer();
+            var btn_buf: Writer.Allocating = .init(allocator);
+            const btn_writer = &btn_buf.writer;
 
             for (self.buttons[0..self.button_count], 0..) |maybe_btn, i| {
                 if (maybe_btn) |btn| {
@@ -610,7 +611,7 @@ pub const Modal = struct {
     fn writeEmptyInnerLine(
         self: *const Modal,
         allocator: std.mem.Allocator,
-        writer: anytype,
+        writer: *Writer,
         styled_left: []const u8,
         styled_right: []const u8,
         pad_s: style_mod.Style,

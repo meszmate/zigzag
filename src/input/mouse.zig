@@ -2,6 +2,7 @@
 //! Supports standard terminal mouse protocols.
 
 const std = @import("std");
+const Writer = std.Io.Writer;
 const keys = @import("keys.zig");
 
 /// Mouse button types
@@ -40,7 +41,7 @@ pub const MouseEvent = struct {
         self: MouseEvent,
         comptime fmt: []const u8,
         options: std.fmt.FormatOptions,
-        writer: anytype,
+        writer: *Writer,
     ) !void {
         _ = fmt;
         _ = options;
