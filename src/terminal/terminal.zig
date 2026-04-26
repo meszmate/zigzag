@@ -1830,6 +1830,11 @@ pub const Terminal = struct {
                 io_w.end = 0;
             }
 
+            // The std.Io.Writer.VTable contract treats data.len == 0 as a
+            // pure flush; the splat pattern lives at data[data.len - 1] so we
+            // must early-return before indexing.
+            if (data.len == 0) return 0;
+
             var consumed: usize = 0;
             if (data.len > 1) {
                 for (data[0 .. data.len - 1]) |chunk| {

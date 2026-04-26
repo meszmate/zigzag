@@ -155,6 +155,10 @@ pub const WasmWriter = struct {
     }
 
     fn drain(_: *Writer, data: []const []const u8, splat: usize) Writer.Error!usize {
+        // Empty data == pure flush; the splat pattern lives at the last
+        // element so we must early-return before indexing.
+        if (data.len == 0) return 0;
+
         var consumed: usize = 0;
         if (data.len > 1) for (data[0 .. data.len - 1]) |chunk| {
             if (chunk.len == 0) continue;

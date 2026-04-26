@@ -575,12 +575,13 @@ pub const Style = struct {
     pub fn render(self: Self, allocator: std.mem.Allocator, text: []const u8) ![]const u8 {
         var result: Writer.Allocating = .init(allocator);
         defer result.deinit();
-        var buf: Writer.Allocating = .init(allocator);
-        defer buf.deinit();
 
-        // Preprocess tabs if tab_width is set
+        // Preprocess tabs if tab_width is set. Only allocate the scratch
+        // buffer when expansion is actually needed.
         var processed_text = text;
         if (self.tab_width_val) |tw| {
+            var buf: Writer.Allocating = .init(allocator);
+            defer buf.deinit();
             for (text) |c| {
                 if (c == '\t') {
                     for (0..tw) |_| {
