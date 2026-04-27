@@ -670,6 +670,312 @@ pub const Style = struct {
         return array.toOwnedSlice(allocator);
     }
 
+    /// Comptime version of `render`. Both `self` and `text` must be known at
+    /// comptime; the result is a baked `[]const u8` requiring no allocator.
+    /// Currently rejects `transform_fn` and non-`.visible` overflow at
+    /// comptime — use `render` for those.
+    pub fn renderComptime(comptime self: Self, comptime text: []const u8) []const u8 {
+        @setEvalBranchQuota(1_000_000);
+        if (self.transform_fn != null) @compileError("Style.renderComptime: transform_fn not yet supported; use Style.render");
+        if (self.overflow_mode != .visible) @compileError("Style.renderComptime: overflow not yet supported; use Style.render");
+
+        comptime var processed: []const u8 = text;
+        if (self.tab_width_val) |tw| {
+            comptime var expanded: []const u8 = "";
+            for (text) |c| {
+                if (c == '\t') {
+                    for (0..tw) |_| expanded = expanded ++ " ";
+                } else {
+                    expanded = expanded ++ &[_]u8{c};
+                }
+            }
+            processed = expanded;
+        }
+
+        const content_width = measure.widthCt(processed);
+
+        comptime var target_width: usize = content_width;
+        if (self.width_val) |w| target_width = w;
+        if (self.max_width_val) |mw| target_width = @min(target_width, mw);
+        target_width += self.padding_val.left + self.padding_val.right;
+        if (self.border_sides.left) target_width += 1;
+        if (self.border_sides.right) target_width += 1;
+
+        comptime var out: []const u8 = "";
+
+        for (0..self.margin_val.top) |_| {
+            out = out ++ ctMarginLeft(self);
+            if (!self.margin_bg.isNone()) {
+                out = out ++ ctColorBg(self.margin_bg);
+                for (0..target_width) |_| out = out ++ " ";
+                out = out ++ ctMarginRight(self);
+                out = out ++ ansi.reset;
+            }
+            out = out ++ "\n";
+        }
+
+        out = out ++ ctStyledContent(self, processed, target_width);
+
+        for (0..self.margin_val.bottom) |_| {
+            out = out ++ "\n" ++ ctMarginLeft(self);
+            if (!self.margin_bg.isNone()) {
+                out = out ++ ctColorBg(self.margin_bg);
+                for (0..target_width) |_| out = out ++ " ";
+                out = out ++ ctMarginRight(self);
+                out = out ++ ansi.reset;
+            }
+        }
+
+        if (!self.inline_mode and out.len > 0 and out[out.len - 1] == '\n') {
+            return out[0 .. out.len - 1];
+        }
+        return out;
+    }
+
+    fn ctColorFg(comptime c: Color) []const u8 {
+        return switch (c) {
+            .none => "",
+            .ansi => |x| std.fmt.comptimePrint(ansi.CSI ++ "{d}m", .{x.fgCode()}),
+            .ansi256 => |n| std.fmt.comptimePrint(ansi.CSI ++ "38;5;{d}m", .{n}),
+            .rgb => |x| std.fmt.comptimePrint(ansi.CSI ++ "38;2;{d};{d};{d}m", .{ x.r, x.g, x.b }),
+        };
+    }
+
+    fn ctColorBg(comptime c: Color) []const u8 {
+        return switch (c) {
+            .none => "",
+            .ansi => |x| std.fmt.comptimePrint(ansi.CSI ++ "{d}m", .{x.bgCode()}),
+            .ansi256 => |n| std.fmt.comptimePrint(ansi.CSI ++ "48;5;{d}m", .{n}),
+            .rgb => |x| std.fmt.comptimePrint(ansi.CSI ++ "48;2;{d};{d};{d}m", .{ x.r, x.g, x.b }),
+        };
+    }
+
+    fn ctSgr(comptime code: u8) []const u8 {
+        return std.fmt.comptimePrint(ansi.CSI ++ "{d}m", .{code});
+    }
+
+    fn ctStyleStart(comptime self: Self) []const u8 {
+        comptime var s: []const u8 = "";
+        if (self.bold_attr orelse false) s = s ++ ctSgr(ansi.SGR.bold);
+        if (self.dim_attr orelse false) s = s ++ ctSgr(ansi.SGR.dim);
+        if (self.italic_attr orelse false) s = s ++ ctSgr(ansi.SGR.italic);
+        if (self.underline_attr orelse false) s = s ++ ctSgr(ansi.SGR.underline);
+        if (self.blink_attr orelse false) s = s ++ ctSgr(ansi.SGR.blink);
+        if (self.reverse_attr orelse false) s = s ++ ctSgr(ansi.SGR.reverse);
+        if (self.strikethrough_attr orelse false) s = s ++ ctSgr(ansi.SGR.strikethrough);
+        s = s ++ ctColorFg(self.foreground);
+        s = s ++ ctColorBg(self.background);
+        return s;
+    }
+
+    fn ctMarginLeft(comptime self: Self) []const u8 {
+        if (self.margin_val.left == 0) return "";
+        comptime var s: []const u8 = "";
+        if (!self.margin_bg.isNone()) s = s ++ ctColorBg(self.margin_bg);
+        for (0..self.margin_val.left) |_| s = s ++ " ";
+        if (!self.margin_bg.isNone()) s = s ++ ansi.reset;
+        return s;
+    }
+
+    fn ctMarginRight(comptime self: Self) []const u8 {
+        if (self.margin_val.right == 0) return "";
+        comptime var s: []const u8 = "";
+        if (!self.margin_bg.isNone()) s = s ++ ctColorBg(self.margin_bg);
+        for (0..self.margin_val.right) |_| s = s ++ " ";
+        if (!self.margin_bg.isNone()) s = s ++ ansi.reset;
+        return s;
+    }
+
+    fn ctBorderColorSide(comptime self: Self, comptime side: BorderSide) []const u8 {
+        const side_fg = switch (side) {
+            .top => self.border_top_fg,
+            .right => self.border_right_fg,
+            .bottom => self.border_bottom_fg,
+            .left => self.border_left_fg,
+        };
+        const side_bg = switch (side) {
+            .top => self.border_top_bg,
+            .right => self.border_right_bg,
+            .bottom => self.border_bottom_bg,
+            .left => self.border_left_bg,
+        };
+        const resolved_fg = if (!side_fg.isNone()) side_fg else self.border_fg;
+        const resolved_bg = if (!side_bg.isNone()) side_bg else self.border_bg;
+        return ctColorFg(resolved_fg) ++ ctColorBg(resolved_bg);
+    }
+
+    fn ctNeedsWhitespaceAware(comptime self: Self) bool {
+        return (!self.color_whitespace and !self.background.isNone()) or
+            (self.underline_spaces and (self.underline_attr orelse false)) or
+            (self.strikethrough_spaces and (self.strikethrough_attr orelse false));
+    }
+
+    fn ctWithWhitespace(comptime self: Self, comptime text: []const u8) []const u8 {
+        comptime var out: []const u8 = "";
+        comptime var i: usize = 0;
+        while (i < text.len) {
+            const byte_len = std.unicode.utf8ByteSequenceLength(text[i]) catch 1;
+            const end = @min(i + byte_len, text.len);
+            const ch = text[i..end];
+            const is_space = ch.len == 1 and ch[0] == ' ';
+            if (is_space) {
+                if (!self.color_whitespace and !self.background.isNone()) {
+                    out = out ++ ansi.reset;
+                    if (self.underline_spaces and (self.underline_attr orelse false))
+                        out = out ++ ctSgr(ansi.SGR.underline);
+                    if (self.strikethrough_spaces and (self.strikethrough_attr orelse false))
+                        out = out ++ ctSgr(ansi.SGR.strikethrough);
+                    out = out ++ " ";
+                    out = out ++ ctStyleStart(self);
+                } else {
+                    if (!self.underline_spaces and (self.underline_attr orelse false))
+                        out = out ++ ctSgr(ansi.SGR.no_underline);
+                    if (!self.strikethrough_spaces and (self.strikethrough_attr orelse false))
+                        out = out ++ ctSgr(ansi.SGR.no_strikethrough);
+                    out = out ++ " ";
+                    if (!self.underline_spaces and (self.underline_attr orelse false))
+                        out = out ++ ctSgr(ansi.SGR.underline);
+                    if (!self.strikethrough_spaces and (self.strikethrough_attr orelse false))
+                        out = out ++ ctSgr(ansi.SGR.strikethrough);
+                }
+            } else {
+                out = out ++ ch;
+            }
+            i = end;
+        }
+        return out;
+    }
+
+    fn ctSpacesWithCtrl(comptime self: Self, comptime count: usize) []const u8 {
+        if (count == 0) return "";
+        comptime var out: []const u8 = "";
+        if (!self.color_whitespace and !self.background.isNone()) {
+            out = out ++ ansi.reset;
+            if (self.underline_spaces and (self.underline_attr orelse false))
+                out = out ++ ctSgr(ansi.SGR.underline);
+            if (self.strikethrough_spaces and (self.strikethrough_attr orelse false))
+                out = out ++ ctSgr(ansi.SGR.strikethrough);
+            for (0..count) |_| out = out ++ " ";
+            out = out ++ ctStyleStart(self);
+        } else {
+            for (0..count) |_| out = out ++ " ";
+        }
+        return out;
+    }
+
+    fn ctContentLine(comptime self: Self, comptime line: []const u8, comptime inner_width: usize) []const u8 {
+        comptime var out: []const u8 = "";
+        out = out ++ ctMarginLeft(self);
+        if (self.border_sides.left) {
+            out = out ++ ctBorderColorSide(self, .left);
+            out = out ++ self.border_style.vertical;
+            out = out ++ ansi.reset;
+        }
+        out = out ++ ctStyleStart(self);
+        for (0..self.padding_val.left) |_| out = out ++ " ";
+
+        const line_w = measure.widthCt(line);
+        const content_pad = if (inner_width > line_w) inner_width - line_w else 0;
+
+        if (ctNeedsWhitespaceAware(self)) {
+            switch (self.align_horizontal) {
+                .left => {
+                    out = out ++ ctWithWhitespace(self, line);
+                    out = out ++ ctSpacesWithCtrl(self, content_pad);
+                },
+                .center => {
+                    const lp = content_pad / 2;
+                    const rp = content_pad - lp;
+                    out = out ++ ctSpacesWithCtrl(self, lp);
+                    out = out ++ ctWithWhitespace(self, line);
+                    out = out ++ ctSpacesWithCtrl(self, rp);
+                },
+                .right => {
+                    out = out ++ ctSpacesWithCtrl(self, content_pad);
+                    out = out ++ ctWithWhitespace(self, line);
+                },
+            }
+        } else {
+            switch (self.align_horizontal) {
+                .left => {
+                    out = out ++ line;
+                    for (0..content_pad) |_| out = out ++ " ";
+                },
+                .center => {
+                    const lp = content_pad / 2;
+                    const rp = content_pad - lp;
+                    for (0..lp) |_| out = out ++ " ";
+                    out = out ++ line;
+                    for (0..rp) |_| out = out ++ " ";
+                },
+                .right => {
+                    for (0..content_pad) |_| out = out ++ " ";
+                    out = out ++ line;
+                },
+            }
+        }
+
+        for (0..self.padding_val.right) |_| out = out ++ " ";
+        out = out ++ ansi.reset;
+        if (self.border_sides.right) {
+            out = out ++ ctBorderColorSide(self, .right);
+            out = out ++ self.border_style.vertical;
+            out = out ++ ansi.reset;
+        }
+        out = out ++ ctMarginRight(self);
+        if (!self.inline_mode) out = out ++ "\n";
+        return out;
+    }
+
+    fn ctStyledContent(comptime self: Self, comptime text: []const u8, comptime target_width: usize) []const u8 {
+        const inner_width = target_width -|
+            self.padding_val.left -| self.padding_val.right -|
+            @as(usize, if (self.border_sides.left) 1 else 0) -|
+            @as(usize, if (self.border_sides.right) 1 else 0);
+
+        comptime var out: []const u8 = "";
+        out = out ++ ctStyleStart(self);
+
+        if (self.border_sides.top) {
+            out = out ++ ctMarginLeft(self);
+            out = out ++ ctBorderColorSide(self, .top);
+            if (self.border_sides.left) out = out ++ self.border_style.top_left;
+            for (0..inner_width + self.padding_val.left + self.padding_val.right) |_| {
+                out = out ++ self.border_style.horizontal;
+            }
+            if (self.border_sides.right) out = out ++ self.border_style.top_right;
+            out = out ++ ansi.reset;
+            out = out ++ ctMarginRight(self);
+            if (!self.inline_mode) out = out ++ "\n";
+        }
+
+        for (0..self.padding_val.top) |_| {
+            out = out ++ ctContentLine(self, "", inner_width);
+        }
+
+        comptime var lines = std.mem.splitScalar(u8, text, '\n');
+        inline while (lines.next()) |line| {
+            out = out ++ ctContentLine(self, line, inner_width);
+        }
+
+        for (0..self.padding_val.bottom) |_| {
+            out = out ++ ctContentLine(self, "", inner_width);
+        }
+
+        if (self.border_sides.bottom) {
+            out = out ++ ctMarginLeft(self);
+            out = out ++ ctBorderColorSide(self, .bottom);
+            if (self.border_sides.left) out = out ++ self.border_style.bottom_left;
+            for (0..inner_width + self.padding_val.left + self.padding_val.right) |_| {
+                out = out ++ self.border_style.horizontal;
+            }
+            if (self.border_sides.right) out = out ++ self.border_style.bottom_right;
+            out = out ++ ansi.reset;
+            out = out ++ ctMarginRight(self);
+        }
+        return out;
+    }
+
     fn writeStyledContent(self: Self, writer: *Writer, text: []const u8, target_width: usize, target_height: usize) !void {
         const inner_width = target_width -|
             self.padding_val.left -| self.padding_val.right -|

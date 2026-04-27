@@ -2,6 +2,7 @@
 //! Demonstrates tweens with various easing functions.
 
 const std = @import("std");
+const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator(.{});
 const Writer = std.Io.Writer;
 const zz = @import("zigzag");
 
@@ -86,11 +87,11 @@ const Model = struct {
     }
 
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
-        var title_style = zz.Style{};
-        title_style = title_style.bold(true);
-        title_style = title_style.fg(.magenta);
-        title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "Animation & Easing Demo") catch "Animation";
+        const title = comptime zz.newStyle()
+            .bold(true)
+            .fg(.magenta)
+            .inline_style(true)
+            .renderComptime("Animation & Easing Demo");
 
         var buf: Writer.Allocating = .init(ctx.allocator);
         const writer = &buf.writer;
@@ -100,28 +101,28 @@ const Model = struct {
         // Render each tween as a bar
         for (&self.tweens, self.easing_names) |*tw, name| {
             // Label
-            var label_style = zz.Style{};
-            label_style = label_style.fg(.cyan);
-            label_style = label_style.inline_style(true);
-            const label = std.fmt.allocPrint(ctx.allocator, "{s:>20}: ", .{name}) catch "";
-            const styled_label = label_style.render(ctx.allocator, label) catch label;
-            writer.writeAll(styled_label) catch {};
+            const label_text = std.fmt.allocPrint(ctx.allocator, "{s:>20}: ", .{name}) catch "";
+            const label = zz.newStyle()
+                .fg(.cyan)
+                .inline_style(true)
+                .render(ctx.allocator, label_text) catch label_text;
+            writer.writeAll(label) catch {};
 
             // Bar
             const pos = @as(usize, @intFromFloat(@max(0, tw.value())));
             for (0..30) |i| {
                 if (i == pos) {
-                    var dot_style = zz.Style{};
-                    dot_style = dot_style.fg(.green);
-                    dot_style = dot_style.bold(true);
-                    dot_style = dot_style.inline_style(true);
-                    const dot = dot_style.render(ctx.allocator, "●") catch "o";
+                    const dot = comptime zz.newStyle()
+                        .fg(.green)
+                        .bold(true)
+                        .inline_style(true)
+                        .renderComptime("●");
                     writer.writeAll(dot) catch {};
                 } else {
-                    var track_style = zz.Style{};
-                    track_style = track_style.fg(.gray(6));
-                    track_style = track_style.inline_style(true);
-                    const track = track_style.render(ctx.allocator, "─") catch "-";
+                    const track = comptime zz.newStyle()
+                        .fg(.gray(6))
+                        .inline_style(true)
+                        .renderComptime("─");
                     writer.writeAll(track) catch {};
                 }
             }
@@ -130,27 +131,27 @@ const Model = struct {
 
         // Color tween demo
         writer.writeAll("\n") catch {};
-        var color_label_style = zz.Style{};
-        color_label_style = color_label_style.fg(.cyan);
-        color_label_style = color_label_style.inline_style(true);
-        const color_label = color_label_style.render(ctx.allocator, "     Color tween: ") catch "";
+        const color_label = comptime zz.newStyle()
+            .fg(.cyan)
+            .inline_style(true)
+            .renderComptime("     Color tween: ");
         writer.writeAll(color_label) catch {};
 
         const ct = self.color_tween.value();
         const color = zz.tweenColor(.red, .cyan, ct);
-        var cs = zz.Style{};
-        cs = cs.fg(color);
-        cs = cs.bold(true);
-        cs = cs.inline_style(true);
-        const color_block = cs.render(ctx.allocator, "████████████████████████████████") catch "";
+        const color_block = zz.newStyle()
+            .fg(color)
+            .bold(true)
+            .inline_style(true)
+            .render(ctx.allocator, "████████████████████████████████") catch "";
         writer.writeAll(color_block) catch {};
 
         // Help
         writer.writeAll("\n\n") catch {};
-        var help_style = zz.Style{};
-        help_style = help_style.fg(.gray(12));
-        help_style = help_style.inline_style(true);
-        const help = help_style.render(ctx.allocator, "r: restart animations | q: quit") catch "";
+        const help = comptime zz.newStyle()
+            .fg(.gray(12))
+            .inline_style(true)
+            .renderComptime("r: restart animations | q: quit");
         writer.writeAll(help) catch {};
 
         return buf.toOwnedSlice() catch "Error";
@@ -158,8 +159,8 @@ const Model = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa: GeneralPurposeAllocator = .init;
+    defer std.debug.assert(gpa.deinit() == .ok);
 
     var program = try zz.Program(Model).init(gpa.allocator());
     defer program.deinit();

@@ -86,6 +86,82 @@ pub fn width(str: []const u8) usize {
     return @max(max_width, w);
 }
 
+/// Comptime-friendly variant of `width`. Bypasses the runtime width-strategy
+/// atomic and uses the full Unicode table directly so it can run at comptime.
+pub fn widthCt(str: []const u8) usize {
+    @setEvalBranchQuota(100_000);
+    var w: usize = 0;
+    var max_width: usize = 0;
+    var in_escape = false;
+    var escape_bracket = false;
+
+    var i: usize = 0;
+    while (i < str.len) {
+        const c = str[i];
+
+        if (c == 0x1b) {
+            in_escape = true;
+            escape_bracket = false;
+            i += 1;
+            continue;
+        }
+
+        if (in_escape) {
+            if (c == '[') {
+                escape_bracket = true;
+            } else if (escape_bracket) {
+                if ((c >= 'A' and c <= 'Z') or (c >= 'a' and c <= 'z')) {
+                    in_escape = false;
+                    escape_bracket = false;
+                }
+            } else if (c == ']') {
+                i += 1;
+                while (i < str.len and str[i] != 0x07) {
+                    if (str[i] == 0x1b and i + 1 < str.len and str[i + 1] == '\\') {
+                        i += 1;
+                        break;
+                    }
+                    i += 1;
+                }
+                in_escape = false;
+            } else {
+                in_escape = false;
+            }
+            i += 1;
+            continue;
+        }
+
+        if (c == '\n') {
+            max_width = @max(max_width, w);
+            w = 0;
+            i += 1;
+            continue;
+        }
+
+        if (c == '\r' or c == '\t') {
+            if (c == '\t') w += 8 - (w % 8);
+            i += 1;
+            continue;
+        }
+
+        const byte_len = std.unicode.utf8ByteSequenceLength(c) catch 1;
+        if (i + byte_len <= str.len) {
+            const codepoint = std.unicode.utf8Decode(str[i..][0..byte_len]) catch {
+                w += 1;
+                i += 1;
+                continue;
+            };
+            w += unicode.display_width.charWidth(codepoint);
+            i += byte_len;
+        } else {
+            w += 1;
+            i += 1;
+        }
+    }
+
+    return @max(max_width, w);
+}
+
 /// Calculate the height of a string (number of lines)
 pub fn height(str: []const u8) usize {
     if (str.len == 0) return 0;

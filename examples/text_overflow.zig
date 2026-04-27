@@ -31,30 +31,30 @@ const Model = struct {
         const box_width: u16 = 35;
 
         // Title
-        var title_style = zz.Style{};
-        title_style = title_style.bold(true);
-        title_style = title_style.fg(.cyan);
-        title_style = title_style.inline_style(true);
-        const title = title_style.render(alloc, "Text Overflow Policies") catch "Text Overflow Policies";
+        const title = zz.newStyle()
+            .bold(true)
+            .fg(.cyan)
+            .inline_style(true)
+            .render(alloc, "Text Overflow Policies") catch "Text Overflow Policies";
 
         // visible (no overflow handling)
-        var vis_style = zz.Style{};
-        vis_style = vis_style.width(box_width);
-        vis_style = vis_style.borderAll(.rounded);
-        vis_style = vis_style.borderForeground(.gray(8));
-        vis_style = vis_style.overflow(.visible);
-        const vis = vis_style.render(alloc, long_text) catch "";
+        const vis = zz.newStyle()
+            .width(box_width)
+            .borderAll(.rounded)
+            .borderForeground(.gray(8))
+            .overflow(.visible)
+            .render(alloc, long_text) catch "";
 
         // hidden (clip)
-        var clip_style = zz.Style{};
-        clip_style = clip_style.width(box_width);
-        clip_style = clip_style.borderAll(.rounded);
-        clip_style = clip_style.borderForeground(.yellow);
-        clip_style = clip_style.overflow(.hidden);
+        var clip_style = zz.newStyle()
+            .width(box_width)
+            .borderAll(.rounded)
+            .borderForeground(.yellow)
+            .overflow(.hidden);
         const clip = clip_style.render(alloc, long_text) catch "";
 
         // ellipsis
-        var ell_style = zz.Style{};
+        var ell_style = zz.newStyle();
         ell_style = ell_style.width(box_width);
         ell_style = ell_style.borderAll(.rounded);
         ell_style = ell_style.borderForeground(.green);
@@ -62,7 +62,7 @@ const Model = struct {
         const ell = ell_style.render(alloc, long_text) catch "";
 
         // word_wrap
-        var ww_style = zz.Style{};
+        var ww_style = zz.newStyle();
         ww_style = ww_style.width(box_width);
         ww_style = ww_style.borderAll(.rounded);
         ww_style = ww_style.borderForeground(.blue);
@@ -70,7 +70,7 @@ const Model = struct {
         const ww = ww_style.render(alloc, long_text) catch "";
 
         // char_wrap
-        var cw_style = zz.Style{};
+        var cw_style = zz.newStyle();
         cw_style = cw_style.width(box_width);
         cw_style = cw_style.borderAll(.rounded);
         cw_style = cw_style.borderForeground(.magenta);
@@ -78,11 +78,12 @@ const Model = struct {
         const cw = cw_style.render(alloc, long_text) catch "";
 
         // Labels
-        var label_style = zz.Style{};
+        var label_style = zz.newStyle();
         label_style = label_style.fg(.gray(12));
         label_style = label_style.inline_style(true);
 
-        const content = std.fmt.allocPrint(alloc,
+        const content = std.fmt.allocPrint(
+            alloc,
             "{s}\n\n{s} visible (default):\n{s}\n\n{s} hidden (clip):\n{s}\n\n{s} ellipsis:\n{s}\n\n{s} word_wrap:\n{s}\n\n{s} char_wrap:\n{s}\n\nPress q to quit",
             .{
                 title,

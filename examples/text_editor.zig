@@ -74,16 +74,16 @@ const Model = struct {
 
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         // Title
-        var title_style = zz.Style{};
-        title_style = title_style.bold(true);
-        title_style = title_style.fg(.cyan);
-        title_style = title_style.inline_style(true);
+        var title_style = zz.newStyle()
+            .bold(true)
+            .fg(.cyan)
+            .inline_style(true);
         const title = title_style.render(ctx.allocator, "ZigZag Text Editor") catch "Text Editor";
 
         // Editor with border
-        var editor_style = zz.Style{};
-        editor_style = editor_style.borderAll(.rounded);
-        editor_style = editor_style.borderForeground(.gray(12));
+        var editor_style = zz.newStyle()
+            .borderAll(.rounded)
+            .borderForeground(.gray(12));
 
         const editor_content = self.editor.view(ctx.allocator) catch "";
         const editor_box = editor_style.render(ctx.allocator, editor_content) catch editor_content;
@@ -95,19 +95,19 @@ const Model = struct {
             .{ self.editor.cursor_row + 1, self.editor.cursorDisplayColumn() + 1, self.editor.lineCount() },
         ) catch "";
 
-        var status_style = zz.Style{};
+        var status_style = zz.newStyle();
         status_style = status_style.fg(.gray(18));
         status_style = status_style.inline_style(true);
         const status = status_style.render(ctx.allocator, cursor_info) catch "";
 
         // Status message
-        var msg_style = zz.Style{};
+        var msg_style = zz.newStyle();
         msg_style = msg_style.fg(.green);
         msg_style = msg_style.inline_style(true);
         const msg = msg_style.render(ctx.allocator, self.status_message) catch "";
 
         // Help
-        var help_style = zz.Style{};
+        var help_style = zz.newStyle();
         help_style = help_style.fg(.gray(12));
         help_style = help_style.inline_style(true);
         const help = help_style.render(

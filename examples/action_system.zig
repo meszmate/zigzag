@@ -2,6 +2,7 @@
 //! One registry feeding both an auto-rendered footer and a fuzzy command palette.
 
 const std = @import("std");
+const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator(.{});
 const zz = @import("zigzag");
 
 const Model = struct {
@@ -154,11 +155,11 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         const alloc = ctx.allocator;
 
-        var title = zz.Style{};
-        title = title.bold(true);
-        title = title.fg(.cyan);
-        title = title.inline_style(true);
-        const title_str = title.render(alloc, "ActionRegistry — one source of truth") catch "";
+        const title_str = comptime zz.newStyle()
+            .bold(true)
+            .fg(.cyan)
+            .inline_style(true)
+            .renderComptime("ActionRegistry — one source of truth");
 
         const body = std.fmt.allocPrint(
             alloc,
@@ -172,11 +173,11 @@ const Model = struct {
             .{ self.counter, self.last_action },
         ) catch "";
 
-        var box = zz.Style{};
-        box = box.borderAll(.rounded);
-        box = box.borderForeground(.gray(8));
-        box = box.paddingAll(1);
-        const boxed = box.render(alloc, body) catch body;
+        const boxed = zz.newStyle()
+            .borderAll(.rounded)
+            .borderForeground(.gray(8))
+            .paddingAll(1)
+            .render(alloc, body) catch body;
 
         var footer = zz.ActionFooter.init(&self.registry);
         footer.setWidth(@intCast(ctx.width));
@@ -204,8 +205,8 @@ const Model = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa: GeneralPurposeAllocator = .init;
+    defer std.debug.assert(gpa.deinit() == .ok);
 
     var program = try zz.Program(Model).init(gpa.allocator());
     defer program.deinit();

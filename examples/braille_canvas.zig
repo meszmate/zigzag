@@ -2,6 +2,7 @@
 //! Animated bouncing ball with a faint grid background.
 
 const std = @import("std");
+const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator(.{});
 const zz = @import("zigzag");
 
 const Model = struct {
@@ -76,9 +77,9 @@ const Model = struct {
         c.clear();
 
         // Faint grid: dotted border + crosshair through the centre.
-        var grid_style = zz.Style{};
-        grid_style = grid_style.fg(.gray(6));
-        grid_style = grid_style.inline_style(true);
+        const grid_style = zz.newStyle()
+            .fg(.gray(6))
+            .inline_style(true);
 
         const w = c.pixelWidth();
         const h = c.pixelHeight();
@@ -90,42 +91,43 @@ const Model = struct {
         const tx: i32 = @intFromFloat(self.ball_x);
         const ty: i32 = @intFromFloat(self.ball_y);
 
-        var trail_style = zz.Style{};
-        trail_style = trail_style.fg(.cyan);
-        trail_style = trail_style.inline_style(true);
+        const trail_style = zz.newStyle()
+            .fg(.cyan)
+            .inline_style(true);
         c.drawCircleStyled(tx, ty, 3, trail_style);
 
-        var ball_style = zz.Style{};
-        ball_style = ball_style.fg(.magenta);
-        ball_style = ball_style.bold(true);
-        ball_style = ball_style.inline_style(true);
+        const ball_style = zz.newStyle()
+            .fg(.magenta)
+            .bold(true)
+            .inline_style(true);
         c.drawCircleStyled(tx, ty, 1, ball_style);
 
         const canvas_view = c.view(alloc) catch "";
 
-        var title = zz.Style{};
-        title = title.bold(true);
-        title = title.fg(.cyan);
-        title = title.inline_style(true);
-        const t = title.render(alloc, "BrailleCanvas — bouncing ball") catch "";
+        const title = comptime zz.newStyle()
+            .bold(true)
+            .fg(.cyan)
+            .inline_style(true)
+            .renderComptime("BrailleCanvas — bouncing ball");
 
-        var box = zz.Style{};
-        box = box.borderAll(.rounded);
-        box = box.borderForeground(.gray(8));
-        const boxed = box.render(alloc, canvas_view) catch canvas_view;
+        const boxed = zz.newStyle()
+            .borderAll(.rounded)
+            .borderForeground(.gray(8))
+            .render(alloc, canvas_view) catch canvas_view;
 
-        var help = zz.Style{};
-        help = help.fg(.gray(10));
-        help = help.inline_style(true);
         const status = if (self.paused) "PAUSED  " else "        ";
         const help_text = std.fmt.allocPrint(
             alloc,
             "{s}space pause  r reset  q quit   |   frame {d}",
             .{ status, self.frame },
         ) catch "";
-        const help_str = help.render(alloc, help_text) catch "";
 
-        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}", .{ t, boxed, help_str }) catch "Error";
+        const help = zz.newStyle()
+            .fg(.gray(10))
+            .inline_style(true)
+            .render(alloc, help_text) catch "";
+
+        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}", .{ title, boxed, help }) catch "Error";
     }
 
     pub fn deinit(self: *Model) void {
@@ -134,8 +136,8 @@ const Model = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa: GeneralPurposeAllocator = .init;
+    defer std.debug.assert(gpa.deinit() == .ok);
 
     var program = try zz.Program(Model).init(gpa.allocator());
     defer program.deinit();

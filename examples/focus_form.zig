@@ -83,24 +83,26 @@ const Model = struct {
 
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         // Title
-        var title_style = zz.Style{};
-        title_style = title_style.bold(true);
-        title_style = title_style.fg(.hex("#FF6B6B"));
-        title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "Contact Form") catch "Contact Form";
+        const title = comptime zz.newStyle()
+            .bold(true)
+            .fg(.hex("#FF6B6B"))
+            .inline_style(true)
+            .renderComptime("Contact Form");
 
         // Subtitle
-        var sub_style = zz.Style{};
-        sub_style = sub_style.fg(.gray(15));
-        sub_style = sub_style.inline_style(true);
+        var sub_style = zz.newStyle()
+            .fg(.gray(15))
+            .inline_style(true);
+        // sub_style = sub_style.fg(.gray(15));
+        // sub_style = sub_style.inline_style(true);
         const subtitle = sub_style.render(ctx.allocator, "Tab/Shift+Tab to navigate • Enter to submit • Esc to quit") catch "";
 
         // Field labels
-        var label_style = zz.Style{};
+        var label_style = zz.newStyle();
         label_style = label_style.bold(true);
         label_style = label_style.inline_style(true);
 
-        var focused_label = zz.Style{};
+        var focused_label = zz.newStyle();
         focused_label = focused_label.bold(true);
         focused_label = focused_label.fg(.cyan);
         focused_label = focused_label.inline_style(true);
@@ -133,7 +135,7 @@ const Model = struct {
 
         // Status line
         const status = if (self.submitted) blk: {
-            var success_style = zz.Style{};
+            var success_style = zz.newStyle();
             success_style = success_style.bold(true);
             success_style = success_style.fg(.green);
             success_style = success_style.inline_style(true);
@@ -153,7 +155,7 @@ const Model = struct {
             ) catch "✓ Submitted!";
             break :blk success_style.render(ctx.allocator, text) catch text;
         } else blk: {
-            var hint_style = zz.Style{};
+            var hint_style = zz.newStyle();
             hint_style = hint_style.fg(.gray(12));
             hint_style = hint_style.inline_style(true);
             const field_name = switch (self.focus_group.focused()) {
@@ -200,7 +202,7 @@ const Model = struct {
 
     fn renderField(self: *const Model, ctx: *const zz.Context, label: []const u8, input_view: []const u8, index: usize) []const u8 {
         const content = std.fmt.allocPrint(ctx.allocator, "{s}\n{s}", .{ label, input_view }) catch input_view;
-        var box = zz.Style{};
+        var box = zz.newStyle();
         box = box.paddingLeft(1);
         box = box.paddingRight(1);
         box = box.width(40);

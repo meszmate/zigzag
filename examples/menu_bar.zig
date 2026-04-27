@@ -126,7 +126,7 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         const menu_view = self.menu.view(ctx.allocator, ctx.width) catch "error";
 
-        var content_style = zz.Style{};
+        var content_style = zz.newStyle();
         content_style = content_style.fg(.gray(16));
         content_style = content_style.inline_style(true);
 
@@ -135,16 +135,16 @@ const Model = struct {
             "Press F9 or Alt+F/E/V/H to open menus\nUse arrow keys to navigate, Enter to select",
         ) catch "";
 
-        var status_style = zz.Style{};
-        status_style = status_style.fg(.cyan);
-        status_style = status_style.bold(true);
-        status_style = status_style.inline_style(true);
+        var status_style = zz.newStyle()
+            .fg(.cyan)
+            .bold(true)
+            .inline_style(true);
         const status = std.fmt.allocPrint(ctx.allocator, "Status: {s}", .{self.status}) catch "?";
         const styled_status = status_style.render(ctx.allocator, status) catch status;
 
-        var help_style = zz.Style{};
-        help_style = help_style.fg(.gray(12));
-        help_style = help_style.inline_style(true);
+        var help_style = zz.newStyle()
+            .fg(.gray(12))
+            .inline_style(true);
         const help = help_style.render(ctx.allocator, "F9: activate menu | Alt+letter: open menu | q/Esc: quit") catch "";
 
         return std.fmt.allocPrint(
@@ -156,7 +156,7 @@ const Model = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
     defer _ = gpa.deinit();
 
     var program = try zz.Program(Model).init(gpa.allocator());

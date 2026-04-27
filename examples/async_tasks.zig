@@ -2,6 +2,7 @@
 //! Demonstrates spawning background tasks that report results.
 
 const std = @import("std");
+const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator(.{});
 const zz = @import("zigzag");
 
 const Model = struct {
@@ -98,37 +99,41 @@ const Model = struct {
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         const alloc = ctx.allocator;
 
-        var title_s = zz.Style{};
-        title_s = title_s.bold(true);
-        title_s = title_s.fg(.cyan);
-        title_s = title_s.inline_style(true);
+        const title = comptime zz.newStyle()
+            .bold(true)
+            .fg(.cyan)
+            .inline_style(true)
+            .renderComptime("Async Tasks Demo");
 
-        var status_s = zz.Style{};
-        status_s = status_s.fg(.yellow);
-        status_s = status_s.inline_style(true);
+        var status_s = zz.newStyle()
+            .fg(.yellow)
+            .inline_style(true);
 
-        var box_s = zz.Style{};
-        box_s = box_s.borderAll(.rounded);
-        box_s = box_s.borderForeground(.cyan);
-        box_s = box_s.paddingAll(1);
-        box_s = box_s.width(45);
+        var box_s = zz.newStyle()
+            .borderAll(.rounded)
+            .borderForeground(.cyan)
+            .paddingAll(1)
+            .width(45);
 
-        const results_text = std.fmt.allocPrint(alloc,
+        const results_text = std.fmt.allocPrint(
+            alloc,
             "1: {s}\n2: {s}\n3: {s}",
             .{ self.results[0], self.results[1], self.results[2] },
         ) catch "";
 
-        var help_s = zz.Style{};
-        help_s = help_s.fg(.gray(10));
-        help_s = help_s.inline_style(true);
+        const help = comptime zz.newStyle()
+            .fg(.gray(10))
+            .inline_style(true)
+            .renderComptime("s: start tasks  q: quit");
 
-        const content = std.fmt.allocPrint(alloc,
+        const content = std.fmt.allocPrint(
+            alloc,
             "{s}\n\n{s}\n\n{s}\n\n{s}",
             .{
-                title_s.render(alloc, "Async Tasks Demo") catch "Async Tasks",
+                title,
                 status_s.render(alloc, self.status) catch self.status,
                 box_s.render(alloc, results_text) catch results_text,
-                help_s.render(alloc, "s: start tasks  q: quit") catch "",
+                help,
             },
         ) catch "Error";
 
@@ -137,8 +142,8 @@ const Model = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var gpa: GeneralPurposeAllocator = .init;
+    defer std.debug.assert(gpa.deinit() == .ok);
 
     var program = try zz.Program(Model).init(gpa.allocator());
     defer program.deinit();
