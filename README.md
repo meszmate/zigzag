@@ -30,7 +30,7 @@ A delightful TUI framework for Zig, inspired by [Bubble Tea](https://github.com/
 
 Add ZigZag to your `build.zig.zon`:
 ```sh
-zig fetch --save https://github.com/meszmate/zigzag/
+zig fetch --save git+https://github.com/meszmate/zigzag#main
 ```
 
 Then in your `build.zig`:
