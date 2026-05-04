@@ -83,7 +83,14 @@ fn parseControl(c: u8) KeyEvent {
     return switch (c) {
         0 => .{ .key = .null_key, .modifiers = .{ .ctrl = true } },
         9 => .{ .key = .tab },
-        10, 13 => .{ .key = .enter },
+        // In raw mode 0x0a is sent by the terminal itself
+        // Some editor-integrated terminals (Zed, possibly VSCode) use this
+        // historical CR/LF split to encode Shift+Enter without a richer
+        // keyboard protocol -- plain Enter sends 0x0d, Shift+Enter sends
+        // 0x0a. Mapping LF onto Enter+Shift recovers the modifier, ensuring
+        // consistent behavior to other TUI applications / libraries.
+        10 => .{ .key = .enter, .modifiers = .{ .shift = true } },
+        13 => .{ .key = .enter },
         27 => .{ .key = .escape },
         1...8, 11, 12, 14...26 => .{
             .key = .{ .char = 'a' + c - 1 },
