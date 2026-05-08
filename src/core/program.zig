@@ -201,7 +201,7 @@ pub fn Program(comptime Model: type) type {
             unicode.setWidthStrategy(effective_width_strategy);
 
             self.clock_epoch = std.Io.Clock.Timestamp.now(self.io, .boot);
-            self.last_frame_time = 0;
+            self.last_frame_time = self.elapsedNs();
             self.context.elapsed = 0;
             self.context.delta = 0;
             self.context.frame = 0;
@@ -225,14 +225,16 @@ pub fn Program(comptime Model: type) type {
             const now = self.elapsedNs();
             const delta = now - self.last_frame_time;
 
-            // Enforce framerate limit
-            const min_frame_time_ns: u64 = if (self.options.fps > 0)
-                @divFloor(std.time.ns_per_s, self.options.fps)
-            else
-                16_666_666; // ~60fps default
+            // Enforce framerate limit. Skipped on the very first tick.
+            if (self.context.frame > 0) {
+                const min_frame_time_ns: u64 = if (self.options.fps > 0)
+                    @divFloor(std.time.ns_per_s, self.options.fps)
+                else
+                    16_666_666; // ~60fps default
 
-            if (delta < min_frame_time_ns) {
-                sleepNs(self.io, min_frame_time_ns - delta);
+                if (delta < min_frame_time_ns) {
+                    sleepNs(self.io, min_frame_time_ns - delta);
+                }
             }
 
             const frame_time = self.elapsedNs();
@@ -260,10 +262,10 @@ pub fn Program(comptime Model: type) type {
                     try self.processCommand(cmd);
                 }
             }
-
-            // Read input
+            // First read is non-blocking for first frame, blocking for subsequent frames
             var input_buf: [256]u8 = undefined;
-            const bytes_read = try self.terminal.?.readInput(&input_buf, 16);
+            const input_timeout_ms: i32 = if (self.context.frame == 1) 0 else 16;
+            const bytes_read = try self.terminal.?.readInput(&input_buf, input_timeout_ms);
 
             if (bytes_read > 0) {
                 const events = try keyboard.parseAll(self.context.allocator, input_buf[0..bytes_read]);
