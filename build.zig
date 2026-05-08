@@ -71,10 +71,12 @@ pub fn build(b: *std.Build) void {
                 },
             }),
         });
-        b.installArtifact(example);
+
+        const install_example = b.addInstallArtifact(example, .{});
+        b.getInstallStep().dependOn(&install_example.step);
 
         const run_cmd = b.addRunArtifact(example);
-        run_cmd.step.dependOn(b.getInstallStep());
+        run_cmd.step.dependOn(&install_example.step);
         if (b.args) |args| {
             run_cmd.addArgs(args);
         }
