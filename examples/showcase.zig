@@ -1036,7 +1036,7 @@ const Model = struct {
 };
 
 pub fn main(init: std.process.Init) !void {
-    var program = try zz.Program(Model).initWithOptions(init.gpa, init.io, init.environ_map, .{
+    var program = zz.Program(Model).initWithOptions(init.gpa, init.io, init.environ_map, .{
         .mouse = true,
         .title = "ZigZag Showcase",
     });

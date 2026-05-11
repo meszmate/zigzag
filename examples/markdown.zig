@@ -32,7 +32,7 @@ const sample_md =
     \\const zz = @import("zigzag");
     \\
     \\pub fn main() !void {
-    \\    var program = try zz.Program(Model).init(allocator);
+    \\    var program = zz.Program(Model).init(allocator);
     \\    try program.run();
     \\}
     \\```
@@ -95,7 +95,7 @@ const Model = struct {
 };
 
 pub fn main(init: std.process.Init) !void {
-    var program = try zz.Program(Model).init(init.gpa, init.io, init.environ_map);
+    var program = zz.Program(Model).init(init.gpa, init.io, init.environ_map);
     defer program.deinit();
 
     try program.run();

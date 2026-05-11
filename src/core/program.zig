@@ -77,7 +77,7 @@ pub fn Program(comptime Model: type) type {
             allocator: std.mem.Allocator,
             io: std.Io,
             environ_map: *const std.process.Environ.Map,
-        ) !Self {
+        ) Self {
             return initWithOptions(allocator, io, environ_map, .{});
         }
 
@@ -87,7 +87,7 @@ pub fn Program(comptime Model: type) type {
             io: std.Io,
             environ_map: *const std.process.Environ.Map,
             options: Options,
-        ) !Self {
+        ) Self {
             const arena = std.heap.ArenaAllocator.init(allocator);
             const clock_epoch = std.Io.Clock.Timestamp.now(io, .boot);
             const self = Self{

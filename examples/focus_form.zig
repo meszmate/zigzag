@@ -216,7 +216,7 @@ const Model = struct {
 };
 
 pub fn main(init: std.process.Init) !void {
-    var prog = try zz.Program(Model).init(init.gpa, init.io, init.environ_map);
+    var prog = zz.Program(Model).init(init.gpa, init.io, init.environ_map);
     defer prog.deinit();
 
     try prog.run();

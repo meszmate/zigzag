@@ -105,7 +105,7 @@ pub fn main(init: std.process.Init) !void {
     try console.addSink(.{ .file = "dev_console.log" });
     try console.addSink(.{ .tcp = .{ .host = "127.0.0.1", .port = 7878 } });
 
-    var program = try zz.Program(Model).init(init.gpa, init.io, init.environ_map);
+    var program = zz.Program(Model).init(init.gpa, init.io, init.environ_map);
     defer program.deinit();
 
     try program.run();

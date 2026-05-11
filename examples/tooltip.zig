@@ -246,7 +246,7 @@ fn clearShortcut(label: []const u8, key: []const u8) zz.Tooltip {
 }
 
 pub fn main(init: std.process.Init) !void {
-    var prog = try zz.Program(Model).init(init.gpa, init.io, init.environ_map);
+    var prog = zz.Program(Model).init(init.gpa, init.io, init.environ_map);
     defer prog.deinit();
 
     try prog.run();
