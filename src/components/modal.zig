@@ -64,7 +64,7 @@ pub const Modal = struct {
 
     // ── Buttons ────────────────────────────────────────────────────────
 
-    buttons: [max_buttons]?Button = [_]?Button{null} ** max_buttons,
+    buttons: [max_buttons]?Button = @splat(null),
     button_count: usize = 0,
     selected_button: usize = 0,
 
@@ -254,7 +254,7 @@ pub const Modal = struct {
 
     /// Remove all buttons.
     pub fn clearButtons(self: *Modal) void {
-        self.buttons = [_]?Button{null} ** max_buttons;
+        self.buttons = @splat(null);
         self.button_count = 0;
         self.selected_button = 0;
     }

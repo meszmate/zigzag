@@ -71,7 +71,7 @@ pub fn MenuBar(comptime Action: type) type {
 
         pub fn init() Self {
             return .{
-                .menus = [_]?Menu{null} ** max_menus,
+                .menus = @splat(null),
                 .menu_count = 0,
                 .state = .closed,
                 .active_menu = 0,
@@ -143,7 +143,7 @@ pub fn MenuBar(comptime Action: type) type {
             var menu = Menu{
                 .label = label,
                 .accelerator = accelerator,
-                .items = [_]?MenuItem{null} ** max_items,
+                .items = @splat(null),
                 .item_count = 0,
             };
 

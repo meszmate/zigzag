@@ -51,7 +51,7 @@ pub fn ContextMenu(comptime Action: type) type {
 
         pub fn init() Self {
             return .{
-                .items = [_]?MenuItem{null} ** max_items,
+                .items = @splat(null),
                 .item_count = 0,
                 .visible = false,
                 .cursor = 0,

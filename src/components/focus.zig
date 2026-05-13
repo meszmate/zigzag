@@ -89,7 +89,7 @@ pub fn FocusGroup(comptime max_items: usize) type {
             ptr: *anyopaque,
         };
 
-        items: [max_items]?FocusItem = [_]?FocusItem{null} ** max_items,
+        items: [max_items]?FocusItem = @splat(null),
         count: usize = 0,
         active: usize = 0,
         /// Whether cycling wraps from last to first (and vice versa).

@@ -27,8 +27,8 @@ pub fn SortableTable(comptime num_cols: usize) type {
         filter_active: bool = false,
 
         // Display
-        col_widths: [num_cols]?u16 = .{null} ** num_cols,
-        col_aligns: [num_cols]Align = .{.left} ** num_cols,
+        col_widths: [num_cols]?u16 = @splat(null),
+        col_aligns: [num_cols]Align = @splat(.left),
         show_header: bool = true,
         show_border: bool = true,
         border_chars: border_mod.BorderChars = .normal,
@@ -68,7 +68,7 @@ pub fn SortableTable(comptime num_cols: usize) type {
         pub fn init(allocator: std.mem.Allocator) Self {
             return .{
                 .allocator = allocator,
-                .headers = .{""} ** num_cols,
+                .headers = @splat(""),
                 .rows = std.array_list.Managed([num_cols][]const u8).init(allocator),
                 .view_indices = std.array_list.Managed(usize).init(allocator),
                 .filter_text = std.array_list.Managed(u8).init(allocator),

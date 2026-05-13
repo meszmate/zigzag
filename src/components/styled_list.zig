@@ -81,7 +81,7 @@ pub const StyledList = struct {
         const writer = &result.writer;
 
         // Track counters per depth level
-        var counters: [16]usize = .{0} ** 16;
+        var counters: [16]usize = @splat(0);
 
         for (self.items.items, 0..) |item, i| {
             if (i > 0) try writer.writeAll("\n");

@@ -76,7 +76,7 @@ pub fn Form(comptime max_fields: usize) type {
 
         pub fn init() Self {
             return .{
-                .fields = [_]?Field{null} ** max_fields,
+                .fields = @splat(null),
                 .field_count = 0,
                 .focus_group = .{},
                 .submitted = false,

@@ -117,10 +117,10 @@ fn parseCsi(data: []const u8) ?ParseReturn {
     }
 
     var idx: usize = 2;
-    var params: [8]u16 = .{0} ** 8;
+    var params: [8]u16 = @splat(0);
     var param_count: usize = 0;
     var has_colon = false;
-    var sub_params: [8]u16 = .{0} ** 8;
+    var sub_params: [8]u16 = @splat(0);
 
     // Parse parameters (supports both ; and : separators for Kitty protocol)
     while (idx < data.len and param_count < params.len) {

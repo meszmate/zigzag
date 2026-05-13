@@ -20,7 +20,7 @@ pub const Calendar = struct {
     /// Week starts on Monday (true) or Sunday (false).
     week_start_monday: bool = true,
     /// Marked dates with colors.
-    marked_days: [31]?Color = .{null} ** 31,
+    marked_days: [31]?Color = @splat(null),
     /// Focused state.
     focused: bool = true,
 
@@ -117,7 +117,7 @@ pub const Calendar = struct {
     }
 
     pub fn clearMarkedDates(self: *Calendar) void {
-        self.marked_days = .{null} ** 31;
+        self.marked_days = @splat(null);
     }
 
     pub fn update(self: *Calendar, key: keys.KeyEvent) void {

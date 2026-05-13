@@ -17,7 +17,7 @@ const Model = struct {
     status: []const u8,
 
     // Button positions (computed in view, used for tooltip targeting)
-    btn_positions: [7]ButtonPos = [_]ButtonPos{.{}} ** 7,
+    btn_positions: [7]ButtonPos = @splat(.{}),
 
     const ButtonPos = struct {
         x: usize = 0,

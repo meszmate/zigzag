@@ -54,10 +54,10 @@ pub fn Table(comptime num_cols: usize) type {
         pub fn init(allocator: std.mem.Allocator) Self {
             return .{
                 .allocator = allocator,
-                .headers = .{""} ** num_cols,
+                .headers = @splat(""),
                 .rows = std.array_list.Managed([num_cols][]const u8).init(allocator),
-                .col_widths = .{null} ** num_cols,
-                .col_aligns = .{.left} ** num_cols,
+                .col_widths = @splat(null),
+                .col_aligns = @splat(.left),
                 .border_chars = .normal,
                 .show_header = true,
                 .show_border = true,
@@ -230,7 +230,7 @@ pub fn Table(comptime num_cols: usize) type {
 
         /// Calculate actual column widths
         fn calculateWidths(self: *const Self) [num_cols]usize {
-            var widths: [num_cols]usize = .{0} ** num_cols;
+            var widths: [num_cols]usize = @splat(0);
 
             // Check headers
             for (0..num_cols) |i| {
