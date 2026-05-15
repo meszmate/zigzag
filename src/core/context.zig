@@ -9,6 +9,7 @@ const color_mod = @import("../style/color.zig");
 const unicode_mod = @import("../unicode.zig");
 const Logger = @import("log.zig").Logger;
 const theme_mod = @import("../style/theme.zig");
+const Environment = @import("environment.zig").Environment;
 
 /// Runtime context passed to init, update, and view functions
 pub const Context = struct {
@@ -18,8 +19,8 @@ pub const Context = struct {
     /// Persistent allocator for model state (not reset between frames)
     persistent_allocator: std.mem.Allocator,
 
-    /// Process environment for env-driven detection (color, multiplexer, locale).
-    environ_map: *const std.process.Environ.Map,
+    /// Home directory captured from the process environment at startup.
+    home_dir: []const u8,
 
     /// Asynchronous I/O facilities (file, network, time, sleep).
     io: std.Io,
@@ -80,14 +81,14 @@ pub const Context = struct {
         allocator: std.mem.Allocator,
         persistent_allocator: std.mem.Allocator,
         io: std.Io,
-        environ_map: *const std.process.Environ.Map,
+        environment: *const Environment,
     ) Context {
-        const profile = color_mod.ColorProfile.detect(environ_map);
+        const profile = environment.color_profile;
         return .{
             .allocator = allocator,
             .persistent_allocator = persistent_allocator,
             .io = io,
-            .environ_map = environ_map,
+            .home_dir = environment.home_dir,
             .width = 80,
             .height = 24,
             .frame = 0,
@@ -96,7 +97,7 @@ pub const Context = struct {
             .true_color = profile.supportsTrueColor(),
             .color_256 = profile.supports256(),
             .color_profile = profile,
-            .is_dark_background = color_mod.hasDarkBackground(environ_map),
+            .is_dark_background = environment.is_dark_background,
             .unicode_width_strategy = unicode_mod.getWidthStrategy(),
             .terminal_mode_2027 = false,
             .kitty_text_sizing = false,

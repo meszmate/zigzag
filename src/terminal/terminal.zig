@@ -7,6 +7,7 @@ const builtin = @import("builtin");
 pub const ansi = @import("ansi.zig");
 pub const screen = @import("screen.zig");
 const unicode = @import("../unicode.zig");
+const Environment = @import("../core/environment.zig").Environment;
 
 // Platform-specific implementation
 const is_wasm = builtin.os.tag == .wasi or builtin.cpu.arch == .wasm32 or builtin.cpu.arch == .wasm64;
@@ -261,7 +262,7 @@ pub const Config = struct {
 /// Terminal abstraction
 pub const Terminal = struct {
     io: std.Io,
-    environ_map: *const std.process.Environ.Map,
+    environment: *const Environment,
     state: platform.State,
     config: Config,
     stdin: std.Io.File,
@@ -271,12 +272,12 @@ pub const Terminal = struct {
     unicode_width_caps: UnicodeWidthCapabilities = .{},
     image_caps: ImageCapabilities = .{},
 
-    pub fn init(io: std.Io, environ_map: *const std.process.Environ.Map, config: Config) !Terminal {
+    pub fn init(io: std.Io, environment: *const Environment, config: Config) !Terminal {
         var state = platform.State.init();
 
         var term: Terminal = if (is_wasm) .{
             .io = io,
-            .environ_map = environ_map,
+            .environment = environment,
             .state = state,
             .config = config,
             .stdin = undefined,
@@ -296,7 +297,7 @@ pub const Terminal = struct {
 
             break :blk .{
                 .io = io,
-                .environ_map = environ_map,
+                .environment = environment,
                 .state = state,
                 .config = config,
                 .stdin = stdin,
@@ -1032,25 +1033,25 @@ pub const Terminal = struct {
             return;
         }
 
-        const term_features = self.environ_map.get("TERM_FEATURES") orelse "";
+        const env = self.environment;
+        const term_features = env.term_features;
 
-        const kitty_candidate = looksLikeKittyTerminal(self.environ_map) or
-            envVarEquals(self.environ_map, "TERM_PROGRAM", "WezTerm") or
-            envVarContains(self.environ_map, "TERM", "wezterm") or
-            envVarContains(self.environ_map, "TERM", "ghostty");
-        const iterm_candidate = looksLikeIterm2Terminal(self.environ_map) or
-            envVarEquals(self.environ_map, "TERM_PROGRAM", "WezTerm");
-        const in_multiplexer = isInsideMultiplexer(self.environ_map);
+        const kitty_candidate = env.looksLikeKittyTerminal() or
+            env.termProgramEquals("WezTerm") or
+            env.termContains("wezterm") or
+            env.termContains("ghostty");
+        const iterm_candidate = env.looksLikeIterm2Terminal() or env.termProgramEquals("WezTerm");
+        const in_multiplexer = env.isInsideMultiplexer();
 
         var kitty = false;
         var iterm = iterm_candidate or termFeaturesContain(term_features, "F");
-        var sixel = looksLikeSixelTerminal(self.environ_map) or termFeaturesContain(term_features, "Sx");
+        var sixel = env.looksLikeSixelTerminal() or termFeaturesContain(term_features, "Sx");
 
         if (kitty_candidate) {
             kitty = self.queryKittyGraphicsSupport() catch false;
             // Keep an env fallback only outside multiplexers where probe failures are uncommon.
             if (!kitty and !in_multiplexer) {
-                kitty = envVarExists(self.environ_map, "KITTY_WINDOW_ID");
+                kitty = env.has_kitty_window;
             }
         }
 
@@ -1187,8 +1188,8 @@ pub const Terminal = struct {
             .tmux => .tmux,
             .dcs => .dcs,
             .auto => blk: {
-                if (envVarExists(self.environ_map, "TMUX")) break :blk .tmux;
-                if (envVarContains(self.environ_map, "TERM", "screen")) break :blk .dcs;
+                if (self.environment.has_tmux) break :blk .tmux;
+                if (self.environment.termContains("screen")) break :blk .dcs;
                 break :blk .none;
             },
         };
@@ -1595,7 +1596,7 @@ pub const Terminal = struct {
     }
 
     fn selectWidthStrategy(self: *const Terminal) unicode.WidthStrategy {
-        if (isInsideMultiplexer(self.environ_map)) {
+        if (self.environment.isInsideMultiplexer()) {
             return .legacy_wcwidth;
         }
 
@@ -1607,7 +1608,7 @@ pub const Terminal = struct {
             return .unicode;
         }
 
-        if (isKnownUnicodeWidthTerminal(self.environ_map)) {
+        if (self.environment.isKnownUnicodeWidthTerminal()) {
             return .unicode;
         }
 
@@ -1615,7 +1616,7 @@ pub const Terminal = struct {
     }
 
     fn queryKittyTextSizingSupport(self: *Terminal) !bool {
-        if (!looksLikeKittyTerminal(self.environ_map)) return false;
+        if (!self.environment.looksLikeKittyTerminal()) return false;
 
         const cpr = "\x1b[6n";
         // CR, CPR, draw 2-cell space via kitty OSC 66 width-only, CPR.
@@ -1684,10 +1685,6 @@ pub const Terminal = struct {
         return null;
     }
 
-    fn isInsideMultiplexer(environ_map: *const std.process.Environ.Map) bool {
-        return envVarExists(environ_map, "TMUX") or envVarExists(environ_map, "ZELLIJ") or envVarContains(environ_map, "TERM", "screen");
-    }
-
     fn drainInput(self: *Terminal) void {
         var buf: [128]u8 = undefined;
         while (true) {
@@ -1738,30 +1735,6 @@ pub const Terminal = struct {
         return null;
     }
 
-    fn isKnownUnicodeWidthTerminal(environ_map: *const std.process.Environ.Map) bool {
-        // Terminals known to use grapheme-aware width by default.
-        return envVarEquals(environ_map, "TERM_PROGRAM", "WezTerm") or
-            envVarEquals(environ_map, "TERM_PROGRAM", "iTerm.app") or
-            envVarContains(environ_map, "TERM", "wezterm") or
-            envVarContains(environ_map, "TERM", "ghostty");
-    }
-
-    fn looksLikeKittyTerminal(environ_map: *const std.process.Environ.Map) bool {
-        return envVarExists(environ_map, "KITTY_WINDOW_ID") or envVarContains(environ_map, "TERM", "kitty");
-    }
-
-    fn looksLikeIterm2Terminal(environ_map: *const std.process.Environ.Map) bool {
-        return envVarEquals(environ_map, "TERM_PROGRAM", "iTerm.app") or
-            envVarEquals(environ_map, "LC_TERMINAL", "iTerm2");
-    }
-
-    fn looksLikeSixelTerminal(environ_map: *const std.process.Environ.Map) bool {
-        return envVarContains(environ_map, "TERM", "sixel") or
-            envVarContains(environ_map, "TERM", "mlterm") or
-            envVarContains(environ_map, "TERM", "yaft") or
-            envVarContains(environ_map, "TERM", "contour");
-    }
-
     fn isLikelyFullSixelSequence(bytes: []const u8) bool {
         if (bytes.len == 0) return false;
         return std.mem.startsWith(u8, bytes, ansi.DCS) or bytes[0] == 0x90;
@@ -1795,21 +1768,6 @@ pub const Terminal = struct {
         defer std.heap.page_allocator.free(result.stdout);
         defer std.heap.page_allocator.free(result.stderr);
         return true;
-    }
-
-    fn envVarExists(environ_map: *const std.process.Environ.Map, name: []const u8) bool {
-        const value = environ_map.get(name) orelse return false;
-        return value.len > 0;
-    }
-
-    fn envVarEquals(environ_map: *const std.process.Environ.Map, name: []const u8, expected: []const u8) bool {
-        const value = environ_map.get(name) orelse return false;
-        return std.ascii.eqlIgnoreCase(value, expected);
-    }
-
-    fn envVarContains(environ_map: *const std.process.Environ.Map, name: []const u8, needle: []const u8) bool {
-        const value = environ_map.get(name) orelse return false;
-        return std.mem.indexOf(u8, value, needle) != null;
     }
 
     /// Buffered writer that exposes a `std.Io.Writer` interface and drains to

@@ -30,6 +30,7 @@ pub const FilePicker = struct {
     dir_only: bool,
     file_only: bool,
     allowed_extensions: ?[]const []const u8,
+    home_path: []const u8,
 
     // Styling
     dir_style: style_mod.Style,
@@ -76,6 +77,7 @@ pub const FilePicker = struct {
             .dir_only = false,
             .file_only = false,
             .allowed_extensions = null,
+            .home_path = defaultHomePath(),
             .dir_style = blk: {
                 var s = style_mod.Style{};
                 s = s.bold(true);
@@ -225,15 +227,13 @@ pub const FilePicker = struct {
         self.y_offset = 0;
     }
 
-    /// Navigate to home directory using the supplied environment.
-    pub fn navigateHome(self: *FilePicker, io: std.Io, environ_map: *const std.process.Environ.Map) !void {
-        if (comptime builtin.os.tag == .windows) {
-            const home = environ_map.get("USERPROFILE") orelse "C:\\";
-            try self.navigate(io, home);
-        } else {
-            const home = environ_map.get("HOME") orelse "/";
-            try self.navigate(io, home);
-        }
+    pub fn setHomePath(self: *FilePicker, home_path: []const u8) void {
+        self.home_path = if (home_path.len > 0) home_path else defaultHomePath();
+    }
+
+    /// Navigate to the configured home directory.
+    pub fn navigateHome(self: *FilePicker, io: std.Io) !void {
+        try self.navigate(io, self.home_path);
     }
 
     /// Move cursor up
@@ -295,7 +295,6 @@ pub const FilePicker = struct {
     pub fn handleKey(
         self: *FilePicker,
         io: std.Io,
-        environ_map: *const std.process.Environ.Map,
         key: keys.KeyEvent,
     ) !bool {
         if (!self.focused) return false;
@@ -314,7 +313,7 @@ pub const FilePicker = struct {
                     'j' => self.cursorDown(),
                     'k' => self.cursorUp(),
                     'h' => self.showHidden(io),
-                    '~' => try self.navigateHome(io, environ_map),
+                    '~' => try self.navigateHome(io),
                     else => {},
                 }
             },
@@ -328,6 +327,10 @@ pub const FilePicker = struct {
         const path_copy = self.allocator.dupe(u8, self.current_path.items) catch return;
         defer self.allocator.free(path_copy);
         self.navigate(io, path_copy) catch {};
+    }
+
+    fn defaultHomePath() []const u8 {
+        return if (comptime builtin.os.tag == .windows) "C:\\" else "/";
     }
 
     fn ensureVisible(self: *FilePicker) void {

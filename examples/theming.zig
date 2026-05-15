@@ -15,7 +15,7 @@ const Model = struct {
     };
 
     pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
-        self.tm = zz.ThemeManager.init(ctx.environ_map);
+        self.tm = zz.ThemeManager.init(ctx.is_dark_background);
         self.progress_val = 35;
         // Also set the theme on the context so components can read it
         ctx.setTheme(self.tm.current.palette);

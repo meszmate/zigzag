@@ -23,7 +23,11 @@ const DummyModel = struct {
 test "Program.init context allocator is stable before start and can be rebound to arena" {
     var env_map: std.process.Environ.Map = .init(testing.allocator);
     defer env_map.deinit();
-    var program = zz.Program(DummyModel).init(testing.allocator, testing.io, &env_map);
+    var program = zz.Program(DummyModel).init(
+        testing.allocator,
+        testing.io,
+        &env_map,
+    );
     defer program.deinit();
 
     const backing_ptr = @intFromPtr(testing.allocator.ptr);

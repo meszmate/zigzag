@@ -52,6 +52,7 @@ pub const program = @import("core/program.zig");
 pub const Program = program.Program;
 pub const Cmd = program.Cmd;
 pub const command = @import("core/command.zig");
+pub const Environment = @import("core/environment.zig").Environment;
 pub const async_task = @import("core/async_task.zig");
 pub const AsyncRunner = async_task.AsyncRunner;
 pub const SubProgram = @import("core/sub_program.zig").SubProgram;

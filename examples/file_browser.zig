@@ -16,9 +16,10 @@ const Model = struct {
     pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
         self.file_picker = zz.components.FilePicker.init(ctx.persistent_allocator);
         self.file_picker.height = ctx.height -| 10;
+        self.file_picker.setHomePath(ctx.home_dir);
 
         // Start at home directory
-        self.file_picker.navigateHome(ctx.io, ctx.environ_map) catch {
+        self.file_picker.navigateHome(ctx.io) catch {
             self.file_picker.navigate(ctx.io, "/") catch {};
         };
 
@@ -34,7 +35,7 @@ const Model = struct {
                     .char => |c| switch (c) {
                         'q' => return .quit,
                         else => {
-                            const selected = self.file_picker.handleKey(ctx.io, ctx.environ_map, k) catch false;
+                            const selected = self.file_picker.handleKey(ctx.io, k) catch false;
                             if (selected) {
                                 self.loadPreview(ctx.io);
                             }
@@ -42,7 +43,7 @@ const Model = struct {
                     },
                     .escape => return .quit,
                     else => {
-                        const selected = self.file_picker.handleKey(ctx.io, ctx.environ_map, k) catch false;
+                        const selected = self.file_picker.handleKey(ctx.io, k) catch false;
                         if (selected) {
                             self.loadPreview(ctx.io);
                         }

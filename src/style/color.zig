@@ -249,27 +249,31 @@ pub const ColorProfile = enum {
     ansi256,
     true_color,
 
-    /// Detect terminal color profile from the supplied environment.
-    pub fn detect(environ_map: *const std.process.Environ.Map) ColorProfile {
+    pub const DetectionHints = struct {
+        no_color: bool = false,
+        color_term: []const u8 = "",
+        term: []const u8 = "",
+    };
+
+    /// Detect terminal color profile from values captured at startup.
+    pub fn detect(hints: DetectionHints) ColorProfile {
         if (comptime builtin.os.tag == .windows) {
             // Windows Terminal supports true color VT sequences
             return .true_color;
         }
 
-        if (environ_map.get("NO_COLOR")) |_| {
+        if (hints.no_color) {
             return .ascii;
         }
 
-        if (environ_map.get("COLORTERM")) |ct| {
-            if (std.mem.eql(u8, ct, "truecolor") or std.mem.eql(u8, ct, "24bit")) {
-                return .true_color;
-            }
+        if (std.mem.eql(u8, hints.color_term, "truecolor") or
+            std.mem.eql(u8, hints.color_term, "24bit"))
+        {
+            return .true_color;
         }
 
-        if (environ_map.get("TERM")) |term| {
-            if (std.mem.indexOf(u8, term, "256color") != null) {
-                return .ansi256;
-            }
+        if (std.mem.indexOf(u8, hints.term, "256color") != null) {
+            return .ansi256;
         }
 
         return .ansi;
@@ -291,16 +295,16 @@ pub const ColorProfile = enum {
     }
 };
 
-/// Detect if terminal has a dark background using the supplied environment.
-pub fn hasDarkBackground(environ_map: *const std.process.Environ.Map) bool {
+/// Detect if terminal has a dark background from the COLORFGBG value captured at startup.
+pub fn hasDarkBackground(color_fg_bg: []const u8) bool {
     if (comptime builtin.os.tag == .windows) {
         return true;
     }
 
-    if (environ_map.get("COLORFGBG")) |val| {
+    if (color_fg_bg.len > 0) {
         // Format: "foreground;background"
-        if (std.mem.lastIndexOfScalar(u8, val, ';')) |idx| {
-            const bg_str = val[idx + 1 ..];
+        if (std.mem.lastIndexOfScalar(u8, color_fg_bg, ';')) |idx| {
+            const bg_str = color_fg_bg[idx + 1 ..];
             const bg_num = std.fmt.parseInt(u8, bg_str, 10) catch return true;
             // Low numbers typically mean dark background
             return bg_num < 8;

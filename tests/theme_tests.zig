@@ -83,9 +83,7 @@ test "Theme boldStyleWith creates bold inline style" {
 }
 
 test "ThemeManager init and cycle" {
-    var env_map: std.process.Environ.Map = .init(testing.allocator);
-    defer env_map.deinit();
-    var tm = zz.ThemeManager.init(&env_map);
+    var tm = zz.ThemeManager.init(true);
 
     // Should start at index 0
     try testing.expectEqualStrings("Default Dark", tm.currentName());
@@ -102,9 +100,7 @@ test "ThemeManager init and cycle" {
 }
 
 test "ThemeManager setBuiltinByIndex" {
-    var env_map: std.process.Environ.Map = .init(testing.allocator);
-    defer env_map.deinit();
-    var tm = zz.ThemeManager.init(&env_map);
+    var tm = zz.ThemeManager.init(true);
 
     tm.setBuiltinByIndex(4); // Dracula
     try testing.expectEqualStrings("Dracula", tm.currentName());
@@ -112,9 +108,7 @@ test "ThemeManager setBuiltinByIndex" {
 }
 
 test "ThemeManager setPalette with custom palette" {
-    var env_map: std.process.Environ.Map = .init(testing.allocator);
-    defer env_map.deinit();
-    var tm = zz.ThemeManager.init(&env_map);
+    var tm = zz.ThemeManager.init(true);
 
     const custom = zz.Palette{
         .primary = .red,

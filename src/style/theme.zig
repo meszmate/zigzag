@@ -306,9 +306,8 @@ pub const ThemeManager = struct {
     is_dark: bool,
     palette_index: usize,
 
-    /// Initialize with dark/light background detected from `environ_map`.
-    pub fn init(environ_map: *const std.process.Environ.Map) ThemeManager {
-        const is_dark = @import("color.zig").hasDarkBackground(environ_map);
+    /// Initialize with the dark/light background detected at startup.
+    pub fn init(is_dark: bool) ThemeManager {
         const palette = AdaptivePalette.default.resolve(is_dark);
         return .{
             .current = .fromPalette(palette),
@@ -317,9 +316,8 @@ pub const ThemeManager = struct {
         };
     }
 
-    /// Initialize with a specific palette and `environ_map`-detected dark/light hint.
-    pub fn initWithPalette(environ_map: *const std.process.Environ.Map, palette: Palette) ThemeManager {
-        const is_dark = @import("color.zig").hasDarkBackground(environ_map);
+    /// Initialize with a specific palette and the dark/light background detected at startup.
+    pub fn initWithPalette(is_dark: bool, palette: Palette) ThemeManager {
         return .{
             .current = .fromPalette(palette),
             .is_dark = is_dark,
