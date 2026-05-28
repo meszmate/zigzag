@@ -392,12 +392,12 @@ pub const Chart = struct {
     }
 
     fn renderPlotRow(self: *const Chart, allocator: std.mem.Allocator, row_index: usize, plot_line: []const u8, plot_height: usize, y_label_width: usize, y_ticks: *const TickSet) ![]const u8 {
-        _ = plot_height;
         var result: Writer.Allocating = .init(allocator);
         const writer = &result.writer;
 
         if (self.y_axis.show_labels) {
-            const label = y_ticks.labelForRow(row_index) orelse "";
+            const tick_row = if (plot_height > 0) plot_height - 1 - row_index else row_index;
+            const label = y_ticks.labelForRow(tick_row) orelse "";
             const padded = try renderPaddedLabel(allocator, label, y_label_width, self.y_axis.label_style);
             defer allocator.free(padded);
             try writer.writeAll(padded);
