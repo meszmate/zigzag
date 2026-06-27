@@ -21,7 +21,16 @@ pub const WindowSize = struct {
 pub const Tick = struct {
     /// Monotonic timestamp in nanoseconds since program start.
     timestamp: i64,
-    delta: u64, // nanoseconds since last tick
+    /// Nanoseconds elapsed since the previous tick event from this timer.
+    ///
+    /// For a repeating timer (`everyMs`/`every`) this is the time between
+    /// consecutive ticks (≈ the requested interval). For a one-shot timer
+    /// (`tickMs`/`tick`) this is the time since the tick was scheduled.
+    ///
+    /// This is the timer delta, not the per-frame render delta. The render
+    /// delta (time since the previous rendered frame) is available separately
+    /// as `ctx.delta` / `ctx.deltaSec()` / `ctx.fps()`.
+    delta: u64,
 };
 
 /// Focus change message

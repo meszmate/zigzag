@@ -67,6 +67,10 @@ pub fn Program(comptime Model: type) type {
         pacing_epoch: std.Io.Clock.Timestamp,
         pacing_frame_offset: u64,
         pending_tick: ?u64,
+        /// `context.elapsed` captured when the active one-shot `pending_tick` was
+        /// scheduled, so the delivered `Tick.delta` reflects the time since the
+        /// tick was requested rather than the per-frame render delta.
+        pending_tick_scheduled_at: u64,
         every_interval: ?u64,
         last_every_tick: u64,
         last_view_hash: u64,
@@ -112,6 +116,7 @@ pub fn Program(comptime Model: type) type {
                 .pacing_epoch = clock_epoch,
                 .pacing_frame_offset = 0,
                 .pending_tick = null,
+                .pending_tick_scheduled_at = 0,
                 .every_interval = null,
                 .last_every_tick = 0,
                 .last_view_hash = 0,
@@ -285,9 +290,11 @@ pub fn Program(comptime Model: type) type {
                     self.pending_tick = null;
                     // Deliver tick to user's update if Model.Msg has a tick variant
                     if (@hasField(UserMsg, "tick")) {
+                        // Time since the tick was scheduled, not the frame delta.
+                        const tick_delta = self.context.elapsed -| self.pending_tick_scheduled_at;
                         const user_msg = UserMsg{ .tick = .{
                             .timestamp = @intCast(tick_start),
-                            .delta = actual_delta,
+                            .delta = tick_delta,
                         } };
                         const cmd = self.dispatchToModel(user_msg);
                         try self.processCommand(cmd);
@@ -298,11 +305,13 @@ pub fn Program(comptime Model: type) type {
             // Handle repeating tick
             if (self.every_interval) |interval| {
                 if (self.context.elapsed - self.last_every_tick >= interval) {
+                    // Time since the previous repeating tick, not the frame delta.
+                    const tick_delta = self.context.elapsed -| self.last_every_tick;
                     self.last_every_tick = self.context.elapsed;
                     if (@hasField(UserMsg, "tick")) {
                         const user_msg = UserMsg{ .tick = .{
                             .timestamp = @intCast(tick_start),
-                            .delta = actual_delta,
+                            .delta = tick_delta,
                         } };
                         const cmd = self.dispatchToModel(user_msg);
                         try self.processCommand(cmd);
@@ -432,11 +441,26 @@ pub fn Program(comptime Model: type) type {
                 term.setup() catch {};
             }
 
-            // Avoid a large post-resume frame delta, and rebase the pacing anchor
-            // so we don't burst-render to "catch up" the suspended interval.
-            self.last_frame_time = self.elapsedNs();
+            // Avoid a large post-resume delta, and rebase the pacing anchor so we
+            // don't burst-render to "catch up" the suspended interval. Advance the
+            // user-visible clock to "now" so the timer checks below run against a
+            // consistent post-resume `elapsed`.
+            const resume_elapsed = self.elapsedNs();
+            self.last_frame_time = resume_elapsed;
+            self.context.elapsed = resume_elapsed;
             self.pacing_epoch = std.Io.Clock.Timestamp.now(self.io, .boot);
             self.pacing_frame_offset = self.context.frame;
+
+            // Re-anchor the timers to "now" so the first post-resume Tick.delta is a
+            // normal interval rather than the whole suspended span (mirrors the
+            // last_frame_time and pacing resets above: we resume the cadence from
+            // here instead of bursting to catch up the suspended time). The
+            // repeating timer fires one interval after resume; an already-overdue
+            // one-shot fires next with a ~zero delta. Anchoring to `resume_elapsed`
+            // (== context.elapsed) also keeps the later `elapsed - last_every_tick`
+            // subtraction from underflowing.
+            self.last_every_tick = resume_elapsed;
+            self.pending_tick_scheduled_at = resume_elapsed;
 
             // Force re-render
             self.last_view_hash = 0;
@@ -456,6 +480,7 @@ pub fn Program(comptime Model: type) type {
                 },
                 .tick => |ns| {
                     self.pending_tick = self.context.elapsed + ns;
+                    self.pending_tick_scheduled_at = self.context.elapsed;
                 },
                 .every => |ns| {
                     self.every_interval = ns;
