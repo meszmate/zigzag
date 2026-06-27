@@ -2,7 +2,6 @@
 //! Demonstrates mouse tracking, hit testing, and interactive buttons.
 
 const std = @import("std");
-const Writer = std.Io.Writer;
 const zz = @import("zigzag");
 
 const Model = struct {
@@ -82,9 +81,12 @@ const Model = struct {
     }
 
     fn buttonHitBox(index: usize) zz.HitBox {
-        // Buttons start at row 5, spaced 14 columns apart
-        const x: u16 = @intCast(2 + index * 16);
-        return zz.HitBox.init(x, 5, 14, 3);
+        // The three buttons render as a horizontal row starting at row 4
+        // (after the title, mouse coords, count, and a blank line). Each box
+        // is 14 columns wide (12-char label + 2 border) with a 2-column gap,
+        // so the boxes start 16 columns apart.
+        const x: u16 = @intCast(index * 16);
+        return zz.HitBox.init(x, 4, 14, 3);
     }
 
     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
@@ -106,11 +108,11 @@ const Model = struct {
             .{self.click_count},
         ) catch "";
 
-        // Render buttons
-        var buttons_line: Writer.Allocating = .init(ctx.allocator);
-        const bw = &buttons_line.writer;
+        // Render each button as its own bordered box, then place the boxes
+        // side by side with joinHorizontal. Each box is multi-line, so simply
+        // concatenating them would stair-step the boxes diagonally (issue #117).
+        var boxes: [self.buttons.len][]const u8 = undefined;
         for (&self.buttons, 0..) |*btn, i| {
-            if (i > 0) bw.writeAll("  ") catch {};
             var s = zz.Style{};
             s = s.borderAll(zz.Border.rounded);
             if (btn.mouse.hover) {
@@ -121,10 +123,11 @@ const Model = struct {
             }
             s = s.fg(btn.color);
             s = s.inline_style(false);
-            const rendered = s.render(ctx.allocator, btn.label) catch btn.label;
-            bw.writeAll(rendered) catch {};
+            boxes[i] = s.render(ctx.allocator, btn.label) catch btn.label;
         }
-        const buttons = buttons_line.toOwnedSlice() catch "";
+        const buttons = zz.joinHorizontal(ctx.allocator, &.{
+            boxes[0], "  ", boxes[1], "  ", boxes[2],
+        }) catch boxes[0];
 
         var help_s = zz.Style{};
         help_s = help_s.fg(zz.Color.gray(12));
