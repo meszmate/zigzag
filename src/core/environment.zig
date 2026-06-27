@@ -68,6 +68,18 @@ pub const Environment = struct {
         return self.has_kitty_window or self.termContains("kitty");
     }
 
+    /// Terminals whose identity reliably implies Kitty graphics protocol support.
+    /// Used as a fallback when the live graphics probe misses (e.g. a slow
+    /// first-frame/GPU init on Ghostty, or a reply that lands after the read
+    /// deadline). Kitty, Ghostty, and WezTerm all implement the protocol.
+    pub fn looksLikeKittyGraphicsTerminal(self: *const Environment) bool {
+        return self.looksLikeKittyTerminal() or
+            self.termContains("ghostty") or
+            self.termProgramEquals("ghostty") or
+            self.termContains("wezterm") or
+            self.termProgramEquals("WezTerm");
+    }
+
     pub fn looksLikeIterm2Terminal(self: *const Environment) bool {
         return self.termProgramEquals("iTerm.app") or self.lcTerminalEquals("iTerm2");
     }
@@ -120,3 +132,16 @@ pub const Environment = struct {
         return null;
     }
 };
+
+test "looksLikeKittyGraphicsTerminal recognizes graphics-capable terminals" {
+    // Ghostty: identified by TERM=xterm-ghostty and/or TERM_PROGRAM=ghostty.
+    try std.testing.expect((Environment{ .term = "xterm-ghostty" }).looksLikeKittyGraphicsTerminal());
+    try std.testing.expect((Environment{ .term_program = "ghostty" }).looksLikeKittyGraphicsTerminal());
+    // Kitty: KITTY_WINDOW_ID locally, or TERM=xterm-kitty (e.g. over SSH).
+    try std.testing.expect((Environment{ .has_kitty_window = true }).looksLikeKittyGraphicsTerminal());
+    try std.testing.expect((Environment{ .term = "xterm-kitty" }).looksLikeKittyGraphicsTerminal());
+    // WezTerm: identified by TERM_PROGRAM=WezTerm (case-insensitive).
+    try std.testing.expect((Environment{ .term_program = "WezTerm" }).looksLikeKittyGraphicsTerminal());
+    // A plain terminal must not be treated as graphics-capable.
+    try std.testing.expect(!(Environment{ .term = "xterm-256color" }).looksLikeKittyGraphicsTerminal());
+}

@@ -1036,10 +1036,7 @@ pub const Terminal = struct {
         const env = self.environment;
         const term_features = env.term_features;
 
-        const kitty_candidate = env.looksLikeKittyTerminal() or
-            env.termProgramEquals("WezTerm") or
-            env.termContains("wezterm") or
-            env.termContains("ghostty");
+        const kitty_candidate = env.looksLikeKittyGraphicsTerminal();
         const iterm_candidate = env.looksLikeIterm2Terminal() or env.termProgramEquals("WezTerm");
         const in_multiplexer = env.isInsideMultiplexer();
 
@@ -1049,9 +1046,15 @@ pub const Terminal = struct {
 
         if (kitty_candidate) {
             kitty = self.queryKittyGraphicsSupport() catch false;
-            // Keep an env fallback only outside multiplexers where probe failures are uncommon.
+            // The live probe can miss on terminals that genuinely support Kitty graphics
+            // (e.g. a slow first-frame/GPU init on Ghostty, or a reply that arrives after
+            // the read deadline). Since kitty_candidate already identifies a terminal that
+            // reliably implements the protocol by its identity, trust that identity when the
+            // probe misses — but only outside a multiplexer, which may strip graphics.
+            // Previously this fell back to KITTY_WINDOW_ID only, so Ghostty/WezTerm (which
+            // never set it) were left with no image support whenever the probe missed (#113).
             if (!kitty and !in_multiplexer) {
-                kitty = env.has_kitty_window;
+                kitty = true;
             }
         }
 
@@ -1391,7 +1394,9 @@ pub const Terminal = struct {
         var collected_len: usize = 0;
         const start = std.Io.Clock.Timestamp.now(self.io, .boot);
 
-        while (withinDeadline(self.io, start, 180)) {
+        // Allow a generous window: the reply is queued behind the other startup
+        // sequences and can be delayed by first-frame/GPU init on some terminals.
+        while (withinDeadline(self.io, start, 500)) {
             var chunk: [128]u8 = undefined;
             const n = self.readInput(&chunk, 30) catch 0;
             if (n == 0) continue;
@@ -1426,8 +1431,13 @@ pub const Terminal = struct {
             const params = bytes[content_start..semicolon];
             const payload = bytes[semicolon + 1 .. st_index];
 
-            if (std.mem.indexOf(u8, params, expected_id) != null) {
-                return std.mem.startsWith(u8, payload, "OK");
+            // Match the id as a whole comma-delimited field so that, e.g., a reply
+            // for image 99312 is not mistaken for our probe id 9931.
+            var param_it = std.mem.splitScalar(u8, params, ',');
+            while (param_it.next()) |param| {
+                if (std.mem.eql(u8, param, expected_id)) {
+                    return std.mem.startsWith(u8, payload, "OK");
+                }
             }
 
             search_from = st_index + 2;
@@ -1869,4 +1879,30 @@ test "parseOsc52Response tmux passthrough ST" {
     try std.testing.expectEqual(@as(usize, 0), parsed.consume_start);
     try std.testing.expectEqual(bytes.len, parsed.consume_end);
     try std.testing.expectEqualStrings("YQ==", parsed.payload_b64);
+}
+
+test "parseKittyGraphicsProbeResponse OK reply means supported" {
+    const bytes = "\x1b_Gi=9931;OK\x1b\\";
+    try std.testing.expectEqual(@as(?bool, true), Terminal.parseKittyGraphicsProbeResponse(bytes, 9931));
+}
+
+test "parseKittyGraphicsProbeResponse OK reply after stale prefix" {
+    // A leftover mode-2027 / CPR report may precede the graphics reply in the buffer.
+    const bytes = "\x1b[?2027;2$y\x1b_Gi=9931;OK\x1b\\";
+    try std.testing.expectEqual(@as(?bool, true), Terminal.parseKittyGraphicsProbeResponse(bytes, 9931));
+}
+
+test "parseKittyGraphicsProbeResponse error reply means unsupported" {
+    const bytes = "\x1b_Gi=9931;ENOENT:bad\x1b\\";
+    try std.testing.expectEqual(@as(?bool, false), Terminal.parseKittyGraphicsProbeResponse(bytes, 9931));
+}
+
+test "parseKittyGraphicsProbeResponse truncated reply keeps reading" {
+    const bytes = "\x1b_Gi=9931;OK"; // no ST terminator yet
+    try std.testing.expectEqual(@as(?bool, null), Terminal.parseKittyGraphicsProbeResponse(bytes, 9931));
+}
+
+test "parseKittyGraphicsProbeResponse superstring id does not match" {
+    const bytes = "\x1b_Gi=99312;OK\x1b\\";
+    try std.testing.expectEqual(@as(?bool, null), Terminal.parseKittyGraphicsProbeResponse(bytes, 9931));
 }
