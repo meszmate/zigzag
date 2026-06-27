@@ -333,14 +333,49 @@ pub fn flush(handle: windows.HANDLE) void {
     // Windows typically auto-flushes
 }
 
+/// Last observed console window dimensions, used to detect resizes by polling.
+/// Windows has no SIGWINCH equivalent, so `checkResize` compares the current
+/// size against these cached values. `resize_initialized` guards the first read
+/// so startup establishes a baseline without reporting a spurious resize.
+var resize_initialized: bool = false;
+var cached_cols: windows.SHORT = 0;
+var cached_rows: windows.SHORT = 0;
+
 /// Setup signal handlers (Windows uses console events differently)
 pub fn setupSignals() !void {
-    // Windows handles resize through WINDOW_BUFFER_SIZE_EVENT
-    // This is handled in the input loop
+    // Windows has no SIGWINCH. Resize is detected by polling the console screen
+    // buffer in `checkResize`, so there is nothing to register here.
 }
 
-/// Check if resize was signaled
-pub fn checkResize() bool {
-    // On Windows, resize is handled through console events
+/// Check whether the terminal was resized since the last call.
+///
+/// Polls the console window dimensions (via the same handle `getSize` reads) and
+/// compares them against the last observed size. `GetConsoleScreenBufferInfo` is
+/// a cheap kernel read, so polling each frame is negligible. Polling is used
+/// instead of `WINDOW_BUFFER_SIZE_EVENT` because those records are only queued
+/// when `ENABLE_WINDOW_INPUT` is set on the input mode, which `enableRawMode`
+/// deliberately avoids. Because the size is re-polled every frame, a transiently
+/// stale reading under ConPTY self-corrects on a later frame.
+pub fn checkResize(handle: windows.HANDLE) bool {
+    var info: CONSOLE_SCREEN_BUFFER_INFO = undefined;
+    if (!GetConsoleScreenBufferInfo(handle, &info).toBool()) return false;
+
+    const cols = info.srWindow.Right - info.srWindow.Left + 1;
+    const rows = info.srWindow.Bottom - info.srWindow.Top + 1;
+
+    // The first successful read establishes the baseline without signaling a
+    // resize; the initial size is already reported via `getSize` at startup.
+    if (!resize_initialized) {
+        resize_initialized = true;
+        cached_cols = cols;
+        cached_rows = rows;
+        return false;
+    }
+
+    if (cols != cached_cols or rows != cached_rows) {
+        cached_cols = cols;
+        cached_rows = rows;
+        return true;
+    }
     return false;
 }

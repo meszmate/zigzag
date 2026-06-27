@@ -431,8 +431,13 @@ pub const Terminal = struct {
 
     /// Check if terminal was resized
     pub fn checkResize(self: *Terminal) bool {
-        _ = self;
-        return platform.checkResize();
+        if (is_wasm) {
+            return platform.checkResize();
+        } else if (builtin.os.tag == .windows) {
+            return platform.checkResize(self.state.stdout_handle);
+        } else {
+            return platform.checkResize();
+        }
     }
 
     /// Get a Writer interface.
