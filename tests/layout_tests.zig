@@ -133,3 +133,63 @@ test "joinVertical convenience" {
     defer allocator.free(result);
     try testing.expectEqualStrings("A\nB", result);
 }
+
+test "layer.LayerStack - multibyte UTF-8 chars occupy one cell" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    var stack = zz.layout.layer.LayerStack.init(allocator);
+    defer stack.deinit();
+    stack.setSize(5, 1);
+
+    try stack.push(.{ .content = "╭─╮", .transparent = false });
+
+    try testing.expectEqualStrings("╭─╮  ", stack.render(allocator));
+}
+
+test "layer.LayerStack - styled multibyte border chars stay intact" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    var stack = zz.layout.layer.LayerStack.init(allocator);
+    defer stack.deinit();
+    stack.setSize(4, 1);
+
+    try stack.push(.{ .content = "\x1b[36m─│\x1b[0m", .transparent = false });
+
+    try testing.expectEqualStrings(
+        "\x1b[36m─\x1b[0m\x1b[36m│\x1b[0m  ",
+        stack.render(allocator),
+    );
+}
+
+test "layer.LayerStack - overlay aligns on UTF-8 background" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    var stack = zz.layout.layer.LayerStack.init(allocator);
+    defer stack.deinit();
+    stack.setSize(6, 1);
+
+    try stack.push(.{ .content = "──────", .z = 0, .transparent = false });
+    try stack.push(.{ .content = "AB", .x = 2, .z = 1 });
+
+    try testing.expectEqualStrings("──AB──", stack.render(allocator));
+}
+
+test "layer.LayerStack - wide characters cover two cells" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    var stack = zz.layout.layer.LayerStack.init(allocator);
+    defer stack.deinit();
+    stack.setSize(4, 1);
+
+    try stack.push(.{ .content = "你a", .transparent = false });
+
+    try testing.expectEqualStrings("你a ", stack.render(allocator));
+}
