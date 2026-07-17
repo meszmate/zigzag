@@ -36,7 +36,7 @@ const Model = struct {
         return .enable_mouse;
     }
 
-    pub fn update(self: *Model, msg: Msg, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn update(self: *Model, msg: Msg, _: *zz.Context) zz.Cmd(Msg) {
         switch (msg) {
             .key => |k| switch (k.key) {
                 .char => |c| if (c == 'q') return .quit,
@@ -58,11 +58,10 @@ const Model = struct {
                                 },
                                 1 => {
                                     self.click_count += 1;
-                                    self.last_event = std.fmt.allocPrint(
-                                        ctx.allocator,
-                                        "Count: {d}",
-                                        .{self.click_count},
-                                    ) catch "Count++";
+                                    // ctx.allocator is a per-frame arena, so
+                                    // strings stored in the model must not be
+                                    // allocated from it.
+                                    self.last_event = "Count incremented!";
                                 },
                                 2 => {
                                     self.click_count = 0;
