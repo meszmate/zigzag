@@ -178,17 +178,17 @@ zz.Border.markdown         // |-|
 
 ## Components
 
-The component library covers the common building blocks of full terminal
-applications. The sections below document the most frequently used components
-in detail.
+Use this index to jump directly to a component or related system.
 
-| Category | Components |
-|----------|------------|
-| **Input and forms** | `TextInput`, `TextArea`, `Checkbox`, `RadioGroup`, `Slider`, `Dropdown`, `Form`, `FilePicker`, `Stepper` |
-| **Data and navigation** | `List`, `VirtualList`, `Table`, `DataTable`, `SortableTable`, `Tree`, `TabGroup`, `Breadcrumb`, `ScreenStack` |
-| **Visualization** | `Progress`, `Gauge`, `Sparkline`, `Chart`, `BarChart`, `Heatmap`, `Canvas`, `BrailleCanvas` |
-| **Overlays and feedback** | `Modal`, `Confirm`, `Tooltip`, `Notification`, `Toast`, `ContextMenu`, `CommandPalette` |
-| **Content and tooling** | `Markdown`, `CodeView`, `DiffView`, `RichLog`, `StatusBar`, `Help`, `DevConsole` |
+| Category | Reference |
+|----------|-----------|
+| **Input and navigation** | [`TextInput`](#textinput) · [`TextArea`](#textarea) · [`List`](#list) · [`Viewport`](#viewport) · [`Table`](#table) · [`Tree`](#tree) · [`StyledList`](#styledlist) · [`TabGroup`](#tabgroup) · [`Calendar`](#calendar) · [`VirtualList`](#virtuallist) · [`SortableTable`](#sortabletable) |
+| **Visualization** | [`Progress`](#progress) · [`Spinner`](#spinner) · [`Sparkline`](#sparkline) · [`Chart`](#chart) · [`BarChart`](#barchart) · [`Canvas`](#canvas) · [`Gauge`](#gauge) · [`Heatmap`](#heatmap) |
+| **Overlays and feedback** | [`Notification` / `Toast`](#notificationtoast) · [`Confirm`](#confirm) · [`Modal`](#modal) · [`Tooltip`](#tooltip) |
+| **Content and developer tools** | [`CodeView`](#codeview) · [`DiffView`](#diffview) |
+| **Architecture and layout** | [`SubProgram`](#subprogram) · [`AsyncRunner`](#asyncrunner) · [Flexbox](#flexbox-layout) · [Layer compositing](#layer-compositing) · [Text overflow](#text-overflow) |
+| **Interaction** | [Keybinding management](#keybinding-management) · [Focus management](#focus-management) |
+| **Additional components** | [`Help`, `Paginator`, `Timer`, and `FilePicker`](#more-components) |
 
 ### TextInput
 
