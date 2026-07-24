@@ -77,7 +77,7 @@ return .{ .delete_image = .all };              // Free all cached images
 
 ### Styling
 
-The styling system is inspired by Lipgloss:
+Build styles by chaining properties:
 
 ```zig
 const style = (zz.Style{})

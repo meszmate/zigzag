@@ -18,7 +18,6 @@
     <a href="#documentation">Documentation</a>
   </p>
 
-  <p><i>Inspired by <a href="https://github.com/charmbracelet/bubbletea">Bubble Tea</a> and <a href="https://github.com/charmbracelet/lipgloss">Lipgloss</a>. Built from scratch for Zig.</i></p>
 </div>
 
 ![ZigZag component showcase](assets/showcase.gif)
