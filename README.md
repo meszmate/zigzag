@@ -12,6 +12,7 @@
 
   <p>
     <a href="#features">Features</a> ·
+    <a href="#how-it-works">How it works</a> ·
     <a href="#quick-start">Quick start</a> ·
     <a href="#components">Components</a> ·
     <a href="#examples">Examples</a> ·
@@ -28,12 +29,26 @@ layout, and 40+ components to the terminal with no third-party dependencies.
 
 | Capability | Highlights |
 |------------|------------|
-| **Framework** | Typed messages, commands, async tasks, sub-programs |
-| **UI** | Inputs, tables, lists, charts, forms, overlays |
-| **Rendering** | TrueColor styling, Flexbox, layers, images |
-| **Terminal** | Keyboard, mouse, clipboard, macOS, Linux, Windows, WASM |
+| **Architecture** | Typed Model-Update-View, commands, async tasks, sub-programs |
+| **Components** | 40+ inputs, tables, lists, charts, forms, and overlays |
+| **Styling** | ANSI, 256-color, TrueColor, adaptive themes, borders, and text overflow |
+| **Layout** | Placement, Flexbox constraints, split panes, and layered composition |
+| **Terminal support** | Keyboard, mouse, clipboard, images, suspend/resume |
+| **Performance** | Diff rendering, ANSI compression, and virtual lists |
 
-<p align="center"><code>Event → update → Model → view → Terminal</code></p>
+## How it works
+
+Events update the model, then `view` renders the next terminal frame.
+
+```mermaid
+flowchart LR
+  E["Input · timer · async"] --> U["update"]
+  U --> M["Model"]
+  M --> V["view"]
+  V --> T["Terminal"]
+  U --> C["Command"]
+  C --> E
+```
 
 ## Quick start
 
@@ -62,12 +77,9 @@ Start with the [counter example](examples/counter.zig).
 | **Data** | Lists, tables, trees, navigation |
 | **Visuals** | Charts, gauges, heatmaps, canvases |
 | **Feedback** | Modals, toasts, tooltips, menus |
+| **Tooling** | Markdown, code view, diff view, logs |
 
 [Browse the component index →](REFERENCE.md#components)
-
-<p align="center">
-  <img src="assets/charts.jpg" alt="Charts rendered with ZigZag" width="820" />
-</p>
 
 ## Examples
 
