@@ -1,34 +1,74 @@
-# ZigZag
+<div align="center">
+  <h1>ZigZag</h1>
 
-A delightful TUI framework for Zig, inspired by [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Lipgloss](https://github.com/charmbracelet/lipgloss).
+  <p>A batteries-included TUI framework for Zig.</p>
 
-![Demo](assets/showcase.gif)
+  <p>
+    <a href="https://github.com/meszmate/zigzag/actions"><img src="https://img.shields.io/github/actions/workflow/status/meszmate/zigzag/ci.yml?branch=main&style=flat-square&label=CI" alt="CI status" /></a>
+    <a href="https://github.com/meszmate/zigzag/releases"><img src="https://img.shields.io/github/v/release/meszmate/zigzag?style=flat-square" alt="Latest release" /></a>
+    <a href="./LICENSE"><img src="https://img.shields.io/github/license/meszmate/zigzag?style=flat-square" alt="MIT license" /></a>
+    <img src="https://img.shields.io/badge/Zig-0.16.0-F7A41D?logo=zig&logoColor=white&style=flat-square" alt="Zig 0.16.0" />
+  </p>
+
+  <p>
+    <a href="#features">Features</a> ·
+    <a href="#how-it-works">How it works</a> ·
+    <a href="#quick-start">Quick start</a> ·
+    <a href="#documentation">Documentation</a> ·
+    <a href="#examples">Examples</a> ·
+    <a href="#contributing">Contributing</a>
+  </p>
+
+  <p><i>Inspired by <a href="https://github.com/charmbracelet/bubbletea">Bubble Tea</a> and <a href="https://github.com/charmbracelet/lipgloss">Lipgloss</a>. Built from scratch for Zig.</i></p>
+</div>
+
+![ZigZag component showcase](assets/showcase.gif)
+
+ZigZag gives terminal applications a predictable Model-Update-View loop, a rich
+styling and layout system, and a broad set of ready-to-use components. It stays
+portable and testable with zero runtime dependencies and configurable I/O.
 
 ## Features
 
-- **Elm Architecture** - Model-Update-View pattern for predictable state management
-- **Rich Styling** - Comprehensive styling system with colors, borders, padding, margin backgrounds, per-side border colors, tab width control, style ranges, full style inheritance, text transforms, whitespace formatting controls, and unset methods
-- **34+ Pre-built Components** - TextInput (with autocomplete/word movement), TextArea, List (fuzzy filtering), Table (interactive with row selection), SortableTable (column sorting, filtering), Viewport, VirtualList (lazy rendering for 100K+ items), Progress (color gradients), Gauge (bar, level meter, blocks with thresholds), Spinner, Tree, StyledList, Sparkline, Chart (linear, stepped, smoothed, area, scatter), BarChart, Heatmap (4 color scales), Canvas, Calendar/DatePicker, CodeView (syntax highlighting for 5 languages), DiffView (unified and side-by-side), Notification/Toast, Confirm dialog, Modal/Popup, Tooltip, Help, Paginator, Timer, FilePicker, TabGroup (multi-view routing), Form, Markdown, Dropdown, Checkbox/RadioGroup, Slider, MenuBar, ContextMenu
-- **Focus Management** - `FocusGroup` with Tab/Shift+Tab cycling, comptime focusable protocol, `FocusStyle` for visual focus ring indicators
-- **Keybinding Management** - Structured `KeyBinding`/`KeyMap` with matching, display formatting, and Help component integration
-- **Color System** - ANSI 16, 256, and TrueColor with adaptive colors, color profile detection, and dark background detection
-- **Command System** - Quit, tick, repeating tick (`every`), batch, sequence, suspend/resume, runtime terminal control (mouse, cursor, alt screen, title), print above program, comprehensive image rendering, AsyncRunner for background tasks
-- **Sub-Programs** - Embed independent child models inside a parent with message routing and lifecycle management
-- **Text Overflow** - Configurable overflow policies (hidden, ellipsis, word_wrap, char_wrap) integrated into the Style system
-- **Image Rendering** - Kitty/iTerm2/Sixel with in-memory data, file paths, image caching (transmit once, display many), z-index layering, unicode placeholders for text reflow, protocol override, and file validation
-- **Custom I/O** - Pipe-friendly with configurable input/output streams for testing and automation
-- **Kitty Keyboard Protocol** - Modern keyboard handling with key release events and unambiguous key identification
-- **Bracketed Paste** - Paste events delivered as a single message instead of individual keystrokes
-- **Debug Logging** - File-based timestamped logging since stdout is owned by the renderer
-- **Message Filtering** - Intercept and transform messages before they reach your model
-- **ANSI Compression** - Reduce output overhead with diff-based style state tracking and redundant sequence elimination
-- **Layout** - Horizontal/vertical joining, ANSI-aware measurement, 2D placement, float-based positioning, horizontal/vertical single-axis placement, overlay compositing, constraint-based Flexbox engine (fixed, percentage, min, max, ratio, fill), layer compositing with z-ordering
-- **Cross-platform** - Works on macOS, Linux, and Windows
-- **Zero Dependencies** - Pure Zig with no external dependencies
+| Area | What you get |
+|------|--------------|
+| **Application architecture** | Elm-style Model-Update-View, typed messages, commands, sub-programs, screen stacks, actions, timers, and background tasks |
+| **Components** | 40+ inputs, pickers, tables, lists, charts, overlays, navigation controls, feedback elements, and developer tools |
+| **Styling** | ANSI 16, 256, and TrueColor; adaptive colors; borders; spacing; inheritance; text transforms; ranges; themes; and overflow policies |
+| **Layout** | ANSI-aware measurement, horizontal and vertical joins, placement, Flexbox constraints, split panes, and z-ordered layer compositing |
+| **Terminal integration** | Mouse input, bracketed paste, Kitty keyboard events, OSC 52 clipboard access, alternate-screen control, and suspend/resume |
+| **Images** | Kitty, iTerm2, and Sixel rendering from files or memory, plus Kitty caching, layering, and Unicode placeholders |
+| **Performance** | Diff-based rendering, ANSI compression, configurable frame rate, and virtual lists that handle 100K+ items |
+| **Portability and testing** | macOS, Linux, Windows, and WebAssembly support; custom input/output streams; snapshots; and no third-party dependencies |
 
-## Installation
+<p align="center">
+  <img src="assets/charts.jpg" alt="Charts rendered with ZigZag" width="88%" />
+</p>
 
-Add ZigZag to your `build.zig.zon`:
+## How it works
+
+ZigZag applications keep state in a model. Events become typed messages,
+`update` changes the model and returns optional commands, and `view` renders the
+next frame. The runtime handles terminal input, command execution, and efficient
+screen updates around that loop.
+
+```mermaid
+flowchart LR
+  T["Keyboard · mouse · timers · async work"] --> M["Typed message"]
+  M --> U["update(model, message)"]
+  U --> S["Updated model"]
+  U --> C["Command"]
+  C --> M
+  S --> V["view(model)"]
+  V --> R["Styled terminal frame"]
+```
+
+## Quick start
+
+ZigZag requires Zig 0.16.0 or newer.
+
+Add it to your `build.zig.zon`:
+
 ```sh
 zig fetch --save git+https://github.com/meszmate/zigzag#main
 ```
@@ -43,7 +83,7 @@ const zigzag = b.dependency("zigzag", .{
 exe.root_module.addImport("zigzag", zigzag.module("zigzag"));
 ```
 
-## Quick Start
+### Counter example
 
 ```zig
 const std = @import("std");
@@ -87,9 +127,21 @@ pub fn main(init: std.process.Init) !void {
 }
 ```
 
-## Core Concepts
+## Documentation
 
-### The Elm Architecture
+| Read this | To learn |
+|-----------|----------|
+| [Core concepts](#core-concepts) | The Elm architecture, commands, styling, colors, and borders |
+| [Components](#components) | Inputs, data display, charts, overlays, focus, and keybindings |
+| [Program options](#program-options) | Runtime configuration, allocator lifetimes, custom loops, logging, and filtering |
+| [Terminal features](#terminal-features) | Bracketed paste, OSC 52 clipboard access, suspend/resume, and terminal images |
+| [Layout utilities](#layout-utilities) | Joining, measuring, and placing ANSI-styled content |
+| [Examples](#examples) | Runnable demos covering common application patterns |
+| [Development](#development) | Building, testing, and cross-compiling ZigZag |
+
+## Core concepts
+
+### The Elm architecture
 
 ZigZag uses the Elm Architecture (Model-Update-View):
 
@@ -254,6 +306,18 @@ zz.Border.markdown         // |-|
 ```
 
 ## Components
+
+The component library covers the common building blocks of full terminal
+applications. The sections below document the most frequently used components
+in detail.
+
+| Category | Components |
+|----------|------------|
+| **Input and forms** | `TextInput`, `TextArea`, `Checkbox`, `RadioGroup`, `Slider`, `Dropdown`, `Form`, `FilePicker`, `Stepper` |
+| **Data and navigation** | `List`, `VirtualList`, `Table`, `DataTable`, `SortableTable`, `Tree`, `TabGroup`, `Breadcrumb`, `ScreenStack` |
+| **Visualization** | `Progress`, `Gauge`, `Sparkline`, `Chart`, `BarChart`, `Heatmap`, `Canvas`, `BrailleCanvas` |
+| **Overlays and feedback** | `Modal`, `Confirm`, `Tooltip`, `Notification`, `Toast`, `ContextMenu`, `CommandPalette` |
+| **Content and tooling** | `Markdown`, `CodeView`, `DiffView`, `RichLog`, `StatusBar`, `Help`, `DevConsole` |
 
 ### TextInput
 
@@ -707,7 +771,7 @@ const results = runner.poll();          // Collect completed messages
 for (results) |msg| { /* process */ }
 ```
 
-### Flexbox Layout
+### Flexbox layout
 
 Constraint-based layout engine:
 
@@ -722,7 +786,7 @@ const areas = try zz.flex.layout(allocator, width, height, &.{
 
 Constraints: `fixed(n)`, `percentage(pct)`, `min(n)`, `max(n)`, `ratio(num, den)`, `fill`. Options: direction, gap, alignment, justify, wrap.
 
-### Layer Compositing
+### Layer compositing
 
 Z-ordered overlay system for popups and modals:
 
@@ -734,7 +798,7 @@ stack.push(.{ .content = popup, .x = 10, .y = 5, .z = 10 }) catch {};
 const output = stack.render(allocator);
 ```
 
-### Text Overflow
+### Text overflow
 
 Integrated into the Style system:
 
@@ -745,14 +809,14 @@ s = s.overflow(.ellipsis);  // .visible, .hidden, .ellipsis, .word_wrap, .char_w
 const output = try s.render(allocator, long_text);
 ```
 
-### More Components
+### More components
 
 - **Help** - Display key bindings with responsive truncation
 - **Paginator** - Pagination controls
 - **Timer** - Countdown/stopwatch with warning thresholds
 - **FilePicker** - File system navigation
 
-### Keybinding Management
+### Keybinding management
 
 Structured key binding definitions with matching and Help integration:
 
@@ -780,7 +844,7 @@ defer help.deinit();
 const help_view = try help.view(allocator);
 ```
 
-### Focus Management
+### Focus management
 
 Manage Tab/Shift+Tab cycling between interactive components with `FocusGroup`:
 
@@ -878,7 +942,7 @@ const fs = zz.FocusStyle{
 };
 ```
 
-## Options
+## Program options
 
 Configure the program with custom options:
 
@@ -916,14 +980,14 @@ By default (`null`/`auto`), ZigZag:
 - probes kitty text-sizing support,
 - applies terminal/multiplexer heuristics (e.g. tmux/screen/zellij favor legacy width).
 
-### Allocator Lifetimes
+### Allocator lifetimes
 
 `ctx.allocator` is a frame allocator that is reset before each `tick()`.
 Use it for temporary values (render strings, per-frame buffers).
 
 For model state that must live across frames, allocate with `ctx.persistent_allocator`.
 
-### Custom Event Loop
+### Custom event loop
 
 For applications that need to do other work between frames (network polling, background processing, etc.), use `start()` + `tick()` instead of `run()`:
 
@@ -938,7 +1002,7 @@ while (program.isRunning()) {
 }
 ```
 
-### Debug Logging
+### Debug logging
 
 Since stdout is owned by the renderer, use file-based logging:
 
@@ -950,7 +1014,7 @@ pub fn update(self: *Model, msg: Msg, ctx: *zz.Context) zz.Cmd(Msg) {
 }
 ```
 
-### Message Filtering
+### Message filtering
 
 Intercept and transform messages before they reach your model:
 
@@ -964,7 +1028,9 @@ fn myFilter(msg: Model.Msg) ?Model.Msg {
 }
 ```
 
-### Bracketed Paste
+## Terminal features
+
+### Bracketed paste
 
 Handle pasted text as a single event by adding a `paste` field to your Msg:
 
@@ -975,7 +1041,7 @@ pub const Msg = union(enum) {
 };
 ```
 
-### OSC 52 Clipboard (Copy + Query)
+### OSC 52 clipboard
 
 Copy text/bytes to the system clipboard from your app:
 
@@ -1027,7 +1093,7 @@ Notes:
 - Terminals differ in security policy and maximum accepted sequence length. Use `.max_bytes` to enforce an app-side ceiling if desired.
 - The `run-clipboard_osc52` example also handles `Msg.paste` (bracketed paste input) to demonstrate inbound paste events.
 
-### Suspend/Resume
+### Suspend and resume
 
 Ctrl+Z support is enabled by default. Handle resume events by adding a `resumed` field:
 
@@ -1038,7 +1104,7 @@ pub const Msg = union(enum) {
 };
 ```
 
-### Images (Kitty + iTerm2 + Sixel)
+### Images
 
 Image commands are automatically no-ops on unsupported terminals. All `draw*` functions return `bool` indicating success.
 
@@ -1081,7 +1147,7 @@ _ = try ctx.drawImageData(rgba_pixels, .{
 });
 ```
 
-#### Image caching (Kitty)
+#### Image caching with Kitty
 
 Transmit an image once, display it many times without re-uploading:
 
@@ -1103,7 +1169,7 @@ _ = try ctx.deleteKittyImage(.{ .by_id = 1 });
 _ = try ctx.deleteKittyImage(.all);  // Delete everything
 ```
 
-#### Z-index and unicode placeholders (Kitty)
+#### Z-index and Unicode placeholders with Kitty
 
 ```zig
 // Render image behind text
@@ -1188,7 +1254,7 @@ Common terminals supported by default:
 - Inside multiplexers (tmux/screen/zellij), image passthrough depends on multiplexer configuration.
 - Image caching, z-index, and unicode placeholders are Kitty-specific features; they are silently ignored on other protocols.
 
-## Layout
+## Layout utilities
 
 ### Join
 
@@ -1231,35 +1297,23 @@ const placed = try zz.placeFloat(allocator, 80, 24, 0.75, 0.25, content);
 
 ## Examples
 
-Run the examples:
+Start with the full component showcase, then use the focused examples as
+references for individual patterns:
 
 ```bash
-zig build run-hello_world
+zig build run-showcase
 zig build run-counter
-zig build run-todo_list
-zig build run-text_editor
-zig build run-file_browser
 zig build run-dashboard
-zig build run-charts          # Static snapshots plus slower sampled chart updates
-zig build run-showcase        # Multi-tab demo of all features
-zig build run-focus_form      # Focus management with Tab cycling
-zig build run-tabs            # TabGroup multi-screen routing
-zig build run-clipboard_osc52 # OSC 52 clipboard output demo
-zig build run-flex_layout     # Flexbox constraint-based layout
-zig build run-text_overflow   # Overflow policies demo
-zig build run-gauge           # Gauge component styles
-zig build run-heatmap         # 2D data heatmap visualization
-zig build run-calendar        # Calendar date picker
-zig build run-virtual_list    # 100K item virtual scrolling
-zig build run-layers          # Z-ordered layer compositing
-zig build run-sub_program     # Nested sub-program models
-zig build run-async_tasks     # Background task execution
-zig build run-sortable_table  # Sortable/filterable table
-zig build run-code_view       # Syntax-highlighted code
-zig build run-diff_view       # Unified and side-by-side diff
+zig build run-file_browser
 ```
 
-## Building
+Other examples cover forms, menus, mouse input, accessibility, charts, layouts,
+animations, async tasks, nested programs, developer tooling, and WebAssembly.
+Run `zig build --help` to see every available `run-*` step.
+
+## Development
+
+### Build and test
 
 ```bash
 # Build the library
@@ -1272,7 +1326,7 @@ zig build test
 zig build -Doptimize=ReleaseFast
 ```
 
-## Cross-compilation
+### Cross-compile
 
 ```bash
 zig build -Dtarget=x86_64-linux
@@ -1280,20 +1334,28 @@ zig build -Dtarget=aarch64-macos
 zig build -Dtarget=x86_64-windows
 ```
 
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## License
-
-MIT License - see LICENSE file for details.
-
-## Projects using `zigzag`
+## Projects using ZigZag
 
 - [zmenu](https://github.com/menosbits/zmenu) - A simple Zig application launcher for GNU/Linux.
+
+## Star ZigZag ⭐
+
+If ZigZag helps you build a terminal application, consider
+[starring the repository](https://github.com/meszmate/zigzag). It helps more Zig
+developers find the project.
+
+## Contributing
+
+Pull requests are welcome. Keep changes focused and run `zig build` and
+`zig build test` before opening a PR. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the full guidelines.
 
 ## Acknowledgments
 
 - [Bubble Tea](https://github.com/charmbracelet/bubbletea) - The original Go TUI framework
 - [Lipgloss](https://github.com/charmbracelet/lipgloss) - Style definitions for terminal applications
 - [The Elm Architecture](https://guide.elm-lang.org/architecture/) - The pattern that inspired it all
+
+## License
+
+ZigZag is available under the [MIT License](LICENSE).
