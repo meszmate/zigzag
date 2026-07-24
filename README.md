@@ -97,6 +97,10 @@ Start with the [counter example](examples/counter.zig).
 [Reference](REFERENCE.md) · [Examples](examples/) ·
 [Contributing](CONTRIBUTING.md)
 
+## Projects using ZigZag
+
+- [zmenu](https://github.com/menosbits/zmenu), a simple Zig application launcher for GNU/Linux
+
 ## Star ZigZag ⭐
 
 If ZigZag helps you build a terminal application, consider
