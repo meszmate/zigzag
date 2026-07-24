@@ -73,11 +73,11 @@ Start with the [counter example](examples/counter.zig).
 
 | Category | Includes |
 |----------|----------|
-| **Input** | Text input, text area, forms, pickers |
-| **Data** | Lists, tables, trees, navigation |
-| **Visuals** | Charts, gauges, heatmaps, canvases |
-| **Feedback** | Modals, toasts, tooltips, menus |
-| **Tooling** | Markdown, code view, diff view, logs |
+| **Input and forms** | Text input, text area, checkbox, radio group, slider, dropdown, form, file picker, stepper |
+| **Data and navigation** | List, virtual list, table, sortable table, data table, tree, tabs, breadcrumbs, screen stacks |
+| **Visualization** | Progress, spinner, gauge, sparkline, chart, bar chart, heatmap, canvas, Braille canvas |
+| **Overlays and feedback** | Modal, confirmation, tooltip, notification, toast, context menu, command palette |
+| **Content and tooling** | Markdown, code view, diff view, rich log, status bar, help, developer console |
 
 [Browse the component index →](REFERENCE.md#components)
 
@@ -99,7 +99,10 @@ Start with the [counter example](examples/counter.zig).
 
 ## Star ZigZag ⭐
 
-If ZigZag is useful to you, [star the repository](https://github.com/meszmate/zigzag).
+If ZigZag helps you build a terminal application, consider
+[starring the repository](https://github.com/meszmate/zigzag). Stars help other
+Zig developers discover the project, show that the framework is useful, and
+motivate continued work on components, terminal support, and documentation.
 
 ## License
 
