@@ -8,6 +8,7 @@
         "build.zig.zon",
         "src",
         "README.md",
+        "REFERENCE.md",
         "LICENSE",
     },
     .dependencies = .{},
