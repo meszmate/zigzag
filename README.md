@@ -15,41 +15,33 @@
     <a href="#quick-start">Quick start</a> ·
     <a href="#components">Components</a> ·
     <a href="#examples">Examples</a> ·
-    <a href="#documentation">Documentation</a>
+    <a href="REFERENCE.md">Reference</a>
   </p>
 
+  <img src="assets/showcase.gif" alt="ZigZag component showcase" width="800" />
 </div>
 
-![ZigZag component showcase](assets/showcase.gif)
-
-ZigZag combines a predictable Model-Update-View loop with rich styling,
-flexible layout, and more than 40 ready-to-use components. It runs on macOS,
-Linux, Windows, and WebAssembly with no third-party dependencies.
+ZigZag brings typed Model-Update-View applications, rich styling, flexible
+layout, and 40+ components to the terminal with no third-party dependencies.
 
 ## Features
 
-| | |
-|---|---|
-| **Predictable architecture** | Typed messages, commands, sub-programs, screen stacks, timers, and background tasks |
-| **Rich styling** | ANSI 16, 256, and TrueColor; adaptive colors; borders; spacing; themes; and text overflow |
-| **Flexible layout** | ANSI-aware measurement, placement, Flexbox constraints, split panes, and layered composition |
-| **Terminal-native input** | Keyboard and mouse events, bracketed paste, OSC 52 clipboard access, and focus management |
-| **Images and graphics** | Kitty, iTerm2, and Sixel images, plus charts, heatmaps, canvases, and Braille drawing |
-| **Fast and testable** | Diff-based rendering, ANSI compression, virtual lists, custom I/O, and snapshot helpers |
+| Capability | Highlights |
+|------------|------------|
+| **Framework** | Typed messages, commands, async tasks, sub-programs |
+| **UI** | Inputs, tables, lists, charts, forms, overlays |
+| **Rendering** | TrueColor styling, Flexbox, layers, images |
+| **Terminal** | Keyboard, mouse, clipboard, macOS, Linux, Windows, WASM |
 
-ZigZag follows the Elm architecture: events become typed messages, `update`
-changes the model and returns optional commands, and `view` renders the next
-terminal frame.
+<p align="center"><code>Event → update → Model → view → Terminal</code></p>
 
 ## Quick start
 
-ZigZag requires Zig 0.16.0 or newer.
+Requires Zig 0.16.0 or newer.
 
 ```sh
 zig fetch --save git+https://github.com/meszmate/zigzag#main
 ```
-
-Add the module to your executable in `build.zig`:
 
 ```zig
 const zigzag = b.dependency("zigzag", .{
@@ -60,61 +52,43 @@ const zigzag = b.dependency("zigzag", .{
 exe.root_module.addImport("zigzag", zigzag.module("zigzag"));
 ```
 
-Then build your application around a model with `init`, `update`, and `view`
-methods. See the small [counter example](examples/counter.zig) for a complete
-starting point.
+Start with the [counter example](examples/counter.zig).
 
 ## Components
 
-| Category | Included |
+| Category | Includes |
 |----------|----------|
-| **Input and forms** | Text input, text area, checkbox, radio group, slider, dropdown, form, file picker, stepper |
-| **Data and navigation** | Lists, virtual lists, tables, trees, tabs, breadcrumbs, screen stacks |
-| **Visualization** | Progress, gauges, sparklines, charts, heatmaps, canvas, Braille canvas |
-| **Overlays and feedback** | Modals, confirmations, tooltips, notifications, toasts, context menus, command palette |
-| **Content and tooling** | Markdown, code view, diff view, rich log, status bar, help, developer console |
+| **Input** | Text input, text area, forms, pickers |
+| **Data** | Lists, tables, trees, navigation |
+| **Visuals** | Charts, gauges, heatmaps, canvases |
+| **Feedback** | Modals, toasts, tooltips, menus |
 
-The [component reference](REFERENCE.md#components) includes usage examples
-for each major component.
+[Browse the component index →](REFERENCE.md#components)
+
+<p align="center">
+  <img src="assets/charts.jpg" alt="Charts rendered with ZigZag" width="820" />
+</p>
 
 ## Examples
 
-Clone the repository and run any example with `zig build run-<name>`.
-
-| Start here | Command |
-|------------|---------|
-| [Full showcase](examples/showcase.zig) | `zig build run-showcase` |
-| [Counter](examples/counter.zig) | `zig build run-counter` |
+| Demo | Run |
+|------|-----|
+| [Showcase](examples/showcase.zig) | `zig build run-showcase` |
 | [Dashboard](examples/dashboard.zig) | `zig build run-dashboard` |
 | [File browser](examples/file_browser.zig) | `zig build run-file_browser` |
-| [Charts](examples/charts.zig) | `zig build run-charts` |
-| [WebAssembly app](examples/wasm_app.zig) | `zig build run-wasm_app` |
+| [WebAssembly](examples/wasm_app.zig) | `zig build run-wasm_app` |
 
-Run `zig build --help` to see every available example.
+[See every example →](examples/)
 
 ## Documentation
 
-| Read this | To learn |
-|-----------|----------|
-| [API and component reference](REFERENCE.md) | Architecture, commands, styling, components, runtime options, terminal features, and layout |
-| [Examples](examples/) | Complete applications and focused feature demonstrations |
-| [Contributing guide](CONTRIBUTING.md) | Development workflow and contribution guidelines |
-
-## Projects using ZigZag
-
-- [zmenu](https://github.com/menosbits/zmenu) - A simple Zig application launcher for GNU/Linux.
+[Reference](REFERENCE.md) · [Examples](examples/) ·
+[Contributing](CONTRIBUTING.md)
 
 ## Star ZigZag ⭐
 
-If ZigZag helps you build a terminal application, consider
-[starring the repository](https://github.com/meszmate/zigzag). It helps more Zig
-developers find the project.
-
-## Contributing
-
-Pull requests are welcome. Run `zig build` and `zig build test` before opening a
-PR, then follow the [contributing guide](CONTRIBUTING.md).
+If ZigZag is useful to you, [star the repository](https://github.com/meszmate/zigzag).
 
 ## License
 
-ZigZag is available under the [MIT License](LICENSE).
+[MIT](LICENSE)
