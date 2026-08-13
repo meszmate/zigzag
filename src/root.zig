@@ -149,6 +149,10 @@ pub const testing = struct {
     pub const snapshot = @import("testing/snapshot.zig");
     pub const expectSnapshot = snapshot.expectSnapshot;
     pub const expectSnapshotOpts = snapshot.expectSnapshotOpts;
+    pub const harness = @import("testing/harness.zig");
+    pub const Harness = harness.Harness;
+    pub const HarnessOptions = harness.Options;
+    pub const stripAnsi = harness.stripAnsi;
 };
 
 // Components

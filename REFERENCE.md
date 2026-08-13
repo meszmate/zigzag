@@ -956,6 +956,52 @@ self-correcting at the cost of a screenful of output per frame.
 
 The renderer is usable on its own — `zz.FrameRenderer` over any
 `std.Io.Writer` — if you drive the terminal yourself.
+### Testing a model
+
+`zz.testing.Harness` runs the Model-Update-View cycle with no terminal
+attached, so an application's own tests can drive it like a user would:
+
+```zig
+test "pressing + increments the counter" {
+    var h = try zz.testing.Harness(Model).init(testing.allocator, testing.io, .{});
+    defer h.deinit();
+
+    try h.start();
+    try h.pressChar('+');
+    try h.pressChar('+');
+
+    try testing.expectEqual(@as(i32, 2), h.model.count);
+    try testing.expect(try h.viewContains("Count: 2"));
+}
+```
+
+| | |
+|---|---|
+| `start()` | runs `Model.init` and processes the command it returns |
+| `send(msg)` | delivers a message, following any command it produces |
+| `press(key)` / `pressChar(c)` / `typeText(s)` | key input |
+| `mouse(event)` | mouse input |
+| `resize(w, h)` | changes the context size, sends `window_size` |
+| `advance(ns)` | moves the clock and delivers timers that came due |
+| `nextFrame(ns)` | starts a frame, resetting the frame allocator |
+| `view()` / `plainView()` / `viewContains(s)` | the rendered frame, styled or not |
+| `hasQuit()` | whether the model returned `.quit` |
+| `recordedEffects()` / `title()` | commands the terminal would have run |
+| `model` / `context` | direct access, for setup and assertions |
+
+Commands that only mean something to a terminal — `set_title`, `println`,
+images, mouse toggles — are recorded rather than executed, so a test can assert
+on them.
+
+The frame allocator is reset by `nextFrame` and `advance`, exactly as the
+runtime resets it each tick. A model that holds on to a frame-allocated slice
+across frames therefore fails here rather than in production.
+
+Pair it with `expectSnapshot` for golden-file rendering tests:
+
+```zig
+try zz.testing.expectSnapshot(allocator, "tests/snapshots/counter.snap", try h.view());
+```
 
 ### Allocator lifetimes
 

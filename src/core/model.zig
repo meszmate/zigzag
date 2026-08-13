@@ -30,6 +30,17 @@ pub fn Result(comptime Func: type, comptime Payload: type) type {
     };
 }
 
+/// The error set `Func` can fail with, or an empty set when it cannot fail.
+/// Lets a wrapper name its own error type instead of relying on inference,
+/// which mutually recursive helpers cannot do.
+pub fn ErrorSet(comptime Func: type) type {
+    const return_type = returnType(Func) orelse return error{};
+    return switch (@typeInfo(return_type)) {
+        .error_union => |eu| eu.error_set,
+        else => error{},
+    };
+}
+
 fn returnType(comptime Func: type) ?type {
     return switch (@typeInfo(Func)) {
         .@"fn" => |f| f.return_type,
