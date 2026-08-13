@@ -188,6 +188,10 @@ pub fn Cmd(comptime Msg: type) type {
         /// Print a line above the program output
         println: []const u8,
 
+        /// Repaint the whole frame on the next render.
+        /// Use after something outside the framework wrote to the terminal.
+        repaint,
+
         /// Draw an image file using the best available protocol (Kitty, iTerm2, Sixel)
         image_file: ImageFile,
 

@@ -13,6 +13,7 @@ const command = @import("command.zig");
 const Logger = @import("log.zig").Logger;
 const unicode = @import("../unicode.zig");
 const Environment = @import("environment.zig").Environment;
+const frame = @import("../terminal/frame.zig");
 
 pub const Cmd = command.Cmd;
 pub const Msg = message;
@@ -80,8 +81,7 @@ pub fn Program(comptime Model: type) type {
         pending_tick_scheduled_at: u64,
         every_interval: ?u64,
         last_every_tick: u64,
-        last_view_hash: u64,
-        last_line_count: usize,
+        renderer: frame.Renderer,
         pending_image: ?PendingImage,
         logger: ?Logger,
         /// Retains escape sequences that a read cut in half.
@@ -128,8 +128,7 @@ pub fn Program(comptime Model: type) type {
                 .pending_tick_scheduled_at = 0,
                 .every_interval = null,
                 .last_every_tick = 0,
-                .last_view_hash = 0,
-                .last_line_count = 0,
+                .renderer = frame.Renderer.init(allocator, options.render_mode),
                 .pending_image = null,
                 .logger = null,
                 .input_parser = .{},
@@ -151,6 +150,7 @@ pub fn Program(comptime Model: type) type {
             if (self.logger) |*l| {
                 l.deinit();
             }
+            self.renderer.deinit();
             self.arena.deinit();
 
             // Call model's deinit if it exists
@@ -268,6 +268,10 @@ pub fn Program(comptime Model: type) type {
                 const size = try self.terminal.?.getSize();
                 self.context.width = size.cols;
                 self.context.height = size.rows;
+
+                // The terminal reflows on resize, so the previous frame no
+                // longer describes what is on screen.
+                self.renderer.invalidate();
 
                 // Only send window_size message if the user model supports it
                 if (@hasField(UserMsg, "window_size")) {
@@ -502,8 +506,9 @@ pub fn Program(comptime Model: type) type {
             self.last_every_tick = resume_elapsed;
             self.pending_tick_scheduled_at = resume_elapsed;
 
-            // Force re-render
-            self.last_view_hash = 0;
+            // The terminal was handed back to the shell in between, so nothing
+            // about the previous frame can be relied on.
+            self.renderer.invalidate();
 
             // Dispatch resumed message if model supports it
             if (@hasField(UserMsg, "resumed")) {
@@ -579,6 +584,8 @@ pub fn Program(comptime Model: type) type {
                         try writer.writeAll(ansi.alt_screen_enter);
                         try term.flush();
                     }
+                    // Switching buffers swaps out everything on screen.
+                    self.renderer.invalidate();
                 },
                 .exit_alt_screen => {
                     if (self.terminal) |*term| {
@@ -586,6 +593,10 @@ pub fn Program(comptime Model: type) type {
                         try writer.writeAll(ansi.alt_screen_exit);
                         try term.flush();
                     }
+                    self.renderer.invalidate();
+                },
+                .repaint => {
+                    self.renderer.invalidate();
                 },
                 .set_title => |title| {
                     if (self.terminal) |*term| {
@@ -602,6 +613,8 @@ pub fn Program(comptime Model: type) type {
                         try writer.writeAll(ansi.cursor_restore);
                         try term.flush();
                     }
+                    // This wrote over the frame area.
+                    self.renderer.invalidate();
                 },
                 .image_file => |image| {
                     self.pending_image = .{ .auto = image };
@@ -754,6 +767,9 @@ pub fn Program(comptime Model: type) type {
                     },
                 }
                 try term.flush();
+                // An image covers cells the renderer thinks it owns; the next
+                // frame repaints over it the way a full redraw always did.
+                self.renderer.invalidate();
             }
         }
 
@@ -862,49 +878,19 @@ pub fn Program(comptime Model: type) type {
         fn render(self: *Self) !void {
             const view_output = self.model.view(&self.context);
 
-            // Compute hash of view output
-            const view_hash = std.hash.Wyhash.hash(0, view_output);
+            const wrote = try self.renderer.render(
+                self.terminal.?.writer(),
+                view_output,
+                .{ .width = self.context.width, .height = self.context.height },
+            );
+            if (wrote) try self.terminal.?.flush();
+        }
 
-            // Only redraw if view changed
-            if (view_hash != self.last_view_hash) {
-                const writer = self.terminal.?.writer();
-
-                // Start synchronized output (prevents tearing on supporting terminals)
-                try writer.writeAll(ansi.sync_start);
-
-                // Move cursor home (don't clear entire screen to reduce flicker)
-                try writer.writeAll(ansi.cursor_home);
-
-                // Write each line, clearing to end of line
-                var lines = std.mem.splitScalar(u8, view_output, '\n');
-                var first = true;
-                var line_count: usize = 0;
-                while (lines.next()) |line| {
-                    if (!first) try writer.writeAll("\r\n");
-                    first = false;
-                    try writer.writeAll(line);
-                    try writer.writeAll(ansi.line_clear_right);
-                    line_count += 1;
-                }
-
-                // Clear remaining lines if previous content was taller
-                if (self.last_line_count > line_count) {
-                    var remaining = self.last_line_count - line_count;
-                    while (remaining > 0) : (remaining -= 1) {
-                        try writer.writeAll("\r\n");
-                        try writer.writeAll(ansi.line_clear);
-                    }
-                }
-                self.last_line_count = line_count;
-
-                // End synchronized output
-                try writer.writeAll(ansi.sync_end);
-
-                try self.terminal.?.flush();
-
-                // Save hash for comparison
-                self.last_view_hash = view_hash;
-            }
+        /// Repaint the whole frame on the next render, discarding what the
+        /// renderer believes is on screen. Needed after anything else writes to
+        /// the terminal.
+        pub fn invalidate(self: *Self) void {
+            self.renderer.invalidate();
         }
 
         /// Send a message to the model

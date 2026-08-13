@@ -85,6 +85,9 @@ pub const lerp = animation.lerp;
 pub const terminal = @import("terminal/terminal.zig");
 pub const Terminal = terminal.Terminal;
 pub const ansi = terminal.ansi;
+pub const frame = terminal.frame;
+pub const FrameRenderer = frame.Renderer;
+pub const RenderMode = frame.Mode;
 
 // Input
 pub const input = struct {

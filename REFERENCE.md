@@ -39,6 +39,7 @@ return .show_cursor;                   // Show terminal cursor
 return .hide_cursor;                   // Hide terminal cursor
 return .{ .set_title = "My App" };     // Set terminal window title
 return .{ .println = "Log message" };  // Print above the program output
+return .repaint;                       // Repaint the whole frame next render
 return .{ .image_file = .{             // Draw image via Kitty/iTerm2/Sixel when available
     .path = "assets/cat.png",
     .width_cells = 40,
@@ -874,6 +875,7 @@ var program = zz.Program(Model).initWithOptions(init.gpa, init.io, init.environ_
     .unicode_width_strategy = null, // null=auto, .legacy_wcwidth, .unicode
     .suspend_enabled = true,    // Enable Ctrl+Z suspend/resume
     .escape_timeout_ms = 50,    // How long a lone ESC waits for a sequence
+    .render_mode = .diff,       // .diff rewrites changed lines, .full rewrites everything
     .title = "My App",         // Window title
     .log_file = "debug.log",   // Debug log file path
     .input = custom_stdin,      // Custom input (for testing/piping)
@@ -892,6 +894,42 @@ By default (`null`/`auto`), ZigZag:
 - probes DEC mode `2027` and enables it when available,
 - probes kitty text-sizing support,
 - applies terminal/multiplexer heuristics (e.g. tmux/screen/zellij favor legacy width).
+
+### Rendering
+
+`view()` returns the whole frame as a string; the runtime works out what to
+send to the terminal.
+
+With the default `render_mode = .diff`, a frame is compared line by line
+against the one before it and only the rows that changed are rewritten. An
+animated spinner next to a screenful of streaming text costs a few dozen bytes
+per frame instead of a few thousand, which is the difference between a busy
+event loop and an idle one at 60fps.
+
+Diffing needs frame row `n` to really be terminal row `n`, so it steps aside
+and repaints in full whenever that does not hold:
+
+- a line wider than the terminal (it would wrap and shift everything below it)
+- a frame taller than the terminal (it would scroll)
+- a line that leaves a colour or attribute switched on, since the lines under
+  it inherit that styling and cannot be redrawn on their own
+- the frame after any of the above
+
+The runtime also repaints in full after a resize, a suspend/resume, an inline
+image, `println`, and alt-screen switches. If something *outside* the framework
+writes to the terminal — a library printing to stderr, a shelled-out command —
+tell the renderer its picture is stale:
+
+```zig
+return .repaint;        // from update()
+program.invalidate();   // from a custom event loop
+```
+
+Set `render_mode = .full` to always rewrite every line, which is
+self-correcting at the cost of a screenful of output per frame.
+
+The renderer is usable on its own — `zz.FrameRenderer` over any
+`std.Io.Writer` — if you drive the terminal yourself.
 
 ### Allocator lifetimes
 

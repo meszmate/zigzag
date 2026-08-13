@@ -10,6 +10,7 @@ const unicode_mod = @import("../unicode.zig");
 const Logger = @import("log.zig").Logger;
 const theme_mod = @import("../style/theme.zig");
 const Environment = @import("environment.zig").Environment;
+const frame_mod = @import("../terminal/frame.zig");
 
 /// Runtime context passed to init, update, and view functions
 pub const Context = struct {
@@ -389,4 +390,12 @@ pub const Options = struct {
     /// input follows. Lower values make Escape feel snappier; raise it if
     /// sequences arrive in pieces over a slow link (ssh, serial).
     escape_timeout_ms: u32 = 50,
+
+    /// How a new frame is pushed to the terminal.
+    ///
+    /// `.diff` rewrites only the lines that changed since the previous frame,
+    /// which is what keeps a spinner or a streaming log from costing a full
+    /// screen of output several times a second. It falls back to a full
+    /// repaint on its own whenever the screen cannot be addressed by row.
+    render_mode: frame_mod.Mode = .diff,
 };

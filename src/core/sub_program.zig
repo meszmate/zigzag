@@ -73,6 +73,7 @@ pub fn SubProgram(comptime ChildModel: type, comptime ParentMsg: type) type {
                 .exit_alt_screen => .exit_alt_screen,
                 .set_title => |t| .{ .set_title = t },
                 .println => |l| .{ .println = l },
+                .repaint => .repaint,
                 .batch => .none, // Complex: would need recursive translation
                 .sequence => .none,
                 .image_file => |img| .{ .image_file = img },
