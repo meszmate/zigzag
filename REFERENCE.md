@@ -22,6 +22,32 @@ ZigZag uses the Elm Architecture (Model-Update-View):
 4. **update** - Handle messages and update state
 5. **view** - Render your model to a string
 
+### Fallible callbacks
+
+`init`, `update` and `view` may each return an error union. Rendering allocates
+on nearly every line, and without this each allocation needs its own fallback:
+
+```zig
+// Plain signature — every allocation needs a `catch`, and a failed one is
+// silently rendered as text.
+pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    const title = title_style.render(ctx.allocator, "Report") catch "Report";
+    const body = std.fmt.allocPrint(ctx.allocator, "{d} rows", .{self.rows}) catch "?";
+    return std.fmt.allocPrint(ctx.allocator, "{s}\n{s}", .{ title, body }) catch "Error";
+}
+
+// Error union — the runtime propagates the failure out of `tick()`.
+pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
+    const title = try title_style.render(ctx.allocator, "Report");
+    const body = try std.fmt.allocPrint(ctx.allocator, "{d} rows", .{self.rows});
+    return std.fmt.allocPrint(ctx.allocator, "{s}\n{s}", .{ title, body });
+}
+```
+
+Both forms are supported; the runtime picks the right one at compile time, per
+function. `SubProgram` mirrors its child, so a fallible child model gives a
+`SubProgram` whose `view` is fallible too.
+
 ### Commands
 
 Commands let you perform side effects:

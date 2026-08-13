@@ -33,8 +33,10 @@
 //!         return .none;
 //!     }
 //!
-//!     pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
-//!         return std.fmt.allocPrint(ctx.allocator, "Count: {d}\n\nPress q to quit", .{self.count}) catch "Error";
+//!     // `init`, `update` and `view` may return an error union, which spares
+//!     // every allocation in a view its own `catch "Error"` fallback.
+//!     pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
+//!         return std.fmt.allocPrint(ctx.allocator, "Count: {d}\n\nPress q to quit", .{self.count});
 //!     }
 //! };
 //!
@@ -52,6 +54,7 @@ pub const program = @import("core/program.zig");
 pub const Program = program.Program;
 pub const Cmd = program.Cmd;
 pub const command = @import("core/command.zig");
+pub const model = @import("core/model.zig");
 pub const Environment = @import("core/environment.zig").Environment;
 pub const async_task = @import("core/async_task.zig");
 pub const AsyncRunner = async_task.AsyncRunner;

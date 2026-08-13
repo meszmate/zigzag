@@ -199,16 +199,19 @@ const Model = struct {
         };
     }
 
-    fn capsString(self: *const Model, allocator: std.mem.Allocator) []const u8 {
+    fn capsString(self: *const Model, allocator: std.mem.Allocator) ![]const u8 {
         return std.fmt.allocPrint(allocator, "kitty={s} iterm2={s} sixel={s}", .{
             if (self.caps.kitty_graphics) "yes" else "no",
             if (self.caps.iterm2_inline_image) "yes" else "no",
             if (self.caps.sixel) "yes" else "no",
-        }) catch "?";
+        });
     }
 
-    /// Render the view
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    /// Render the view.
+    ///
+    /// The error union means every allocation here can just be `try`ed; a view
+    /// returning plain `[]const u8` has to end each one in `catch "..."`.
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.cyan);
@@ -227,25 +230,25 @@ const Model = struct {
         image_hint_style = image_hint_style.fg(zz.Color.gray(16));
         image_hint_style = image_hint_style.inline_style(true);
 
-        const title = title_style.render(ctx.allocator, "Hello, ZigZag!") catch "Hello, ZigZag!";
-        const subtitle = subtitle_style.render(ctx.allocator, "A TUI library for Zig") catch "";
-        const hint = hint_style.render(ctx.allocator, "Press 'q' to quit") catch "";
+        const title = try title_style.render(ctx.allocator, "Hello, ZigZag!");
+        const subtitle = try subtitle_style.render(ctx.allocator, "A TUI library for Zig");
+        const hint = try hint_style.render(ctx.allocator, "Press 'q' to quit");
 
         const image_hint_text = if (self.image_supported)
             "'i' draw  'c' cache  'z' z-index  'd' delete  'p' protocol"
         else
             "Inline image protocol not detected in this terminal";
-        const image_hint = image_hint_style.render(ctx.allocator, image_hint_text) catch image_hint_text;
+        const image_hint = try image_hint_style.render(ctx.allocator, image_hint_text);
 
-        const caps_text = self.capsString(ctx.allocator);
-        const caps_line = image_hint_style.render(ctx.allocator, caps_text) catch caps_text;
+        const caps_text = try self.capsString(ctx.allocator);
+        const caps_line = try image_hint_style.render(ctx.allocator, caps_text);
 
-        const protocol_text = std.fmt.allocPrint(ctx.allocator, "protocol: {s}  z-index: {s}  cached: {s}", .{
+        const protocol_text = try std.fmt.allocPrint(ctx.allocator, "protocol: {s}  z-index: {s}  cached: {s}", .{
             self.protocolName(),
             if (self.image_behind_text) "behind" else "normal",
             if (self.image_cached) "yes" else "no",
-        }) catch "";
-        const protocol_line = image_hint_style.render(ctx.allocator, protocol_text) catch protocol_text;
+        });
+        const protocol_line = try image_hint_style.render(ctx.allocator, protocol_text);
 
         const status_text = if (self.image_attempted and self.image_supported)
             "Image command sent (check assets/cat.png path)"
@@ -253,7 +256,7 @@ const Model = struct {
             "Image skipped: unsupported terminal protocol"
         else
             "";
-        const status = hint_style.render(ctx.allocator, status_text) catch status_text;
+        const status = try hint_style.render(ctx.allocator, status_text);
 
         // Get max width for centering
         const max_width = @max(
@@ -268,19 +271,19 @@ const Model = struct {
         );
 
         // Center each element
-        const centered_title = zz.place.place(ctx.allocator, max_width, 1, .center, .top, title) catch title;
-        const centered_subtitle = zz.place.place(ctx.allocator, max_width, 1, .center, .top, subtitle) catch subtitle;
-        const centered_hint = zz.place.place(ctx.allocator, max_width, 1, .center, .top, hint) catch hint;
-        const centered_image_hint = zz.place.place(ctx.allocator, max_width, 1, .center, .top, image_hint) catch image_hint;
-        const centered_caps = zz.place.place(ctx.allocator, max_width, 1, .center, .top, caps_line) catch caps_line;
-        const centered_protocol = zz.place.place(ctx.allocator, max_width, 1, .center, .top, protocol_line) catch protocol_line;
-        const centered_status = zz.place.place(ctx.allocator, max_width, 1, .center, .top, status) catch status;
+        const centered_title = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, title);
+        const centered_subtitle = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, subtitle);
+        const centered_hint = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, hint);
+        const centered_image_hint = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, image_hint);
+        const centered_caps = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, caps_line);
+        const centered_protocol = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, protocol_line);
+        const centered_status = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, status);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}\n\n{s}\n{s}\n{s}\n{s}\n{s}",
             .{ centered_title, centered_subtitle, centered_hint, centered_image_hint, centered_caps, centered_protocol, centered_status },
-        ) catch "Error rendering view";
+        );
 
         if (self.image_supported and self.image_visible) {
             const image_size = if (self.image_size_cells > 0) self.image_size_cells else self.pickImageSize(ctx);
@@ -288,28 +291,28 @@ const Model = struct {
             const container_width = @max(max_width, @as(usize, image_size));
             const text_height = zz.measure.height(content);
 
-            const centered_text = zz.place.place(
+            const centered_text = try zz.place.place(
                 ctx.allocator,
                 container_width,
                 text_height,
                 .center,
                 .top,
                 content,
-            ) catch content;
+            );
 
-            const image_slot = zz.place.place(
+            const image_slot = try zz.place.place(
                 ctx.allocator,
                 container_width,
                 slot_height,
                 .left,
                 .top,
                 "",
-            ) catch "";
+            );
 
-            const container = zz.joinVertical(
+            const container = try zz.joinVertical(
                 ctx.allocator,
                 &.{ centered_text, image_slot },
-            ) catch centered_text;
+            );
 
             return zz.place.place(
                 ctx.allocator,
@@ -318,7 +321,7 @@ const Model = struct {
                 .center,
                 .middle,
                 container,
-            ) catch container;
+            );
         }
 
         return zz.place.place(
@@ -328,7 +331,7 @@ const Model = struct {
             .center,
             .middle,
             content,
-        ) catch content;
+        );
     }
 };
 

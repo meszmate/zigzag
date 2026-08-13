@@ -37,7 +37,9 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    // Returning an error union lets every allocation below use `try`, instead
+    // of each one needing its own `catch "..."` fallback.
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         // Title style
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
@@ -62,25 +64,25 @@ const Model = struct {
         box_style = box_style.paddingAll(1);
         box_style = box_style.alignH(.center);
 
-        const title = title_style.render(ctx.allocator, "Counter Demo") catch "Counter Demo";
-        const counter = std.fmt.allocPrint(ctx.allocator, "{d}", .{self.count}) catch "?";
-        const styled_counter = counter_style.render(ctx.allocator, counter) catch counter;
+        const title = try title_style.render(ctx.allocator, "Counter Demo");
+        const counter = try std.fmt.allocPrint(ctx.allocator, "{d}", .{self.count});
+        const styled_counter = try counter_style.render(ctx.allocator, counter);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\nCount: {s}",
             .{ title, styled_counter },
-        ) catch "Error";
+        );
 
-        const boxed = box_style.render(ctx.allocator, content) catch content;
+        const boxed = try box_style.render(ctx.allocator, content);
 
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const help = help_style.render(
+        const help = try help_style.render(
             ctx.allocator,
             "Up/+ Increment  Down/- Decrement  r Reset  q Quit",
-        ) catch "";
+        );
 
         // Get max width for centering
         const box_width = zz.measure.maxLineWidth(boxed);
@@ -88,14 +90,14 @@ const Model = struct {
         const max_width = @max(box_width, help_width);
 
         // Center elements
-        const centered_box = zz.place.place(ctx.allocator, max_width, zz.measure.height(boxed), .center, .top, boxed) catch boxed;
-        const centered_help = zz.place.place(ctx.allocator, max_width, 1, .center, .top, help) catch help;
+        const centered_box = try zz.place.place(ctx.allocator, max_width, zz.measure.height(boxed), .center, .top, boxed);
+        const centered_help = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, help);
 
-        const final_content = std.fmt.allocPrint(
+        const final_content = try std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}",
             .{ centered_box, centered_help },
-        ) catch "Error";
+        );
 
         // Center in terminal
         return zz.place.place(
@@ -105,7 +107,7 @@ const Model = struct {
             .center,
             .middle,
             final_content,
-        ) catch final_content;
+        );
     }
 };
 

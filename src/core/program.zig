@@ -14,6 +14,7 @@ const Logger = @import("log.zig").Logger;
 const unicode = @import("../unicode.zig");
 const Environment = @import("environment.zig").Environment;
 const frame = @import("../terminal/frame.zig");
+const model_contract = @import("model.zig");
 
 pub const Cmd = command.Cmd;
 pub const Msg = message;
@@ -34,21 +35,13 @@ const max_reads_per_tick = 8;
 
 /// Program runtime that manages the application lifecycle
 pub fn Program(comptime Model: type) type {
-    // Ensure Model has required declarations
-    comptime {
-        if (!@hasDecl(Model, "Msg")) {
-            @compileError("Model must have a 'Msg' type declaration");
-        }
-        if (!@hasDecl(Model, "init")) {
-            @compileError("Model must have an 'init' function");
-        }
-        if (!@hasDecl(Model, "update")) {
-            @compileError("Model must have an 'update' function");
-        }
-        if (!@hasDecl(Model, "view")) {
-            @compileError("Model must have a 'view' function");
-        }
-    }
+    model_contract.validate(Model, "Model");
+
+    // `init`, `update` and `view` may each return an error union; the runtime
+    // propagates it instead of the model having to swallow it.
+    const init_fallible = model_contract.returnsError(@TypeOf(Model.init));
+    const update_fallible = model_contract.returnsError(@TypeOf(Model.update));
+    const view_fallible = model_contract.returnsError(@TypeOf(Model.view));
 
     const UserMsg = Model.Msg;
     const UserCmd = Cmd(UserMsg);
@@ -240,7 +233,10 @@ pub fn Program(comptime Model: type) type {
             self.resetFrameAllocator();
 
             // Initialize the model
-            const init_cmd = self.model.init(&self.context);
+            const init_cmd = if (comptime init_fallible)
+                try self.model.init(&self.context)
+            else
+                self.model.init(&self.context);
             try self.processCommand(init_cmd);
 
             self.running = true;
@@ -275,7 +271,7 @@ pub fn Program(comptime Model: type) type {
 
                 // Only send window_size message if the user model supports it
                 if (@hasField(UserMsg, "window_size")) {
-                    const cmd = self.dispatchToModel(.{ .window_size = .{
+                    const cmd = try self.dispatchToModel(.{ .window_size = .{
                         .width = size.cols,
                         .height = size.rows,
                     } });
@@ -297,7 +293,7 @@ pub fn Program(comptime Model: type) type {
                             .timestamp = @intCast(tick_start),
                             .delta = tick_delta,
                         } };
-                        const cmd = self.dispatchToModel(user_msg);
+                        const cmd = try self.dispatchToModel(user_msg);
                         try self.processCommand(cmd);
                     }
                 }
@@ -314,7 +310,7 @@ pub fn Program(comptime Model: type) type {
                             .timestamp = @intCast(tick_start),
                             .delta = tick_delta,
                         } };
-                        const cmd = self.dispatchToModel(user_msg);
+                        const cmd = try self.dispatchToModel(user_msg);
                         try self.processCommand(cmd);
                     }
                 }
@@ -375,8 +371,8 @@ pub fn Program(comptime Model: type) type {
                 );
                 for (events) |event| {
                     const user_cmd = switch (event) {
-                        .key => |k| self.processKeyEvent(k),
-                        .mouse => |m| self.processMouseEvent(m),
+                        .key => |k| try self.processKeyEvent(k),
+                        .mouse => |m| try self.processMouseEvent(m),
                         .none => null,
                     };
                     if (user_cmd) |cmd| {
@@ -390,17 +386,19 @@ pub fn Program(comptime Model: type) type {
         }
 
         /// Dispatch a message to the model, applying the filter if set
-        fn dispatchToModel(self: *Self, user_msg: UserMsg) UserCmd {
-            if (self.filter) |f| {
-                if (f(user_msg)) |filtered_msg| {
-                    return self.model.update(filtered_msg, &self.context);
-                }
-                return .none;
-            }
-            return self.model.update(user_msg, &self.context);
+        fn dispatchToModel(self: *Self, user_msg: UserMsg) !UserCmd {
+            const delivered = if (self.filter) |f|
+                f(user_msg) orelse return .none
+            else
+                user_msg;
+
+            return if (comptime update_fallible)
+                try self.model.update(delivered, &self.context)
+            else
+                self.model.update(delivered, &self.context);
         }
 
-        fn processKeyEvent(self: *Self, key: keyboard.KeyEvent) ?UserCmd {
+        fn processKeyEvent(self: *Self, key: keyboard.KeyEvent) !?UserCmd {
             // Check for Ctrl+C to quit
             if (key.modifiers.ctrl) {
                 switch (key.key) {
@@ -423,12 +421,12 @@ pub fn Program(comptime Model: type) type {
             if (key.key == .paste) {
                 if (@hasField(UserMsg, "paste")) {
                     const user_msg = UserMsg{ .paste = key.key.paste };
-                    return self.dispatchToModel(user_msg);
+                    return try self.dispatchToModel(user_msg);
                 }
                 // If model doesn't handle paste, send as individual key events
                 if (@hasField(UserMsg, "key")) {
                     const user_msg = UserMsg{ .key = key };
-                    return self.dispatchToModel(user_msg);
+                    return try self.dispatchToModel(user_msg);
                 }
                 return null;
             }
@@ -436,7 +434,7 @@ pub fn Program(comptime Model: type) type {
             // Convert to user message if Model.Msg has a key variant
             if (@hasField(UserMsg, "key")) {
                 const user_msg = UserMsg{ .key = key };
-                return self.dispatchToModel(user_msg);
+                return try self.dispatchToModel(user_msg);
             }
 
             return null;
@@ -452,10 +450,10 @@ pub fn Program(comptime Model: type) type {
             return detected;
         }
 
-        fn processMouseEvent(self: *Self, mouse_event: keyboard.MouseEvent) ?UserCmd {
+        fn processMouseEvent(self: *Self, mouse_event: keyboard.MouseEvent) !?UserCmd {
             if (@hasField(UserMsg, "mouse")) {
                 const user_msg = UserMsg{ .mouse = mouse_event };
-                return self.dispatchToModel(user_msg);
+                return try self.dispatchToModel(user_msg);
             }
 
             return null;
@@ -512,8 +510,9 @@ pub fn Program(comptime Model: type) type {
 
             // Dispatch resumed message if model supports it
             if (@hasField(UserMsg, "resumed")) {
-                const cmd = self.dispatchToModel(.{ .resumed = {} });
-                self.processCommand(cmd) catch {};
+                if (self.dispatchToModel(.{ .resumed = {} })) |cmd| {
+                    self.processCommand(cmd) catch {};
+                } else |_| {}
             }
         }
 
@@ -542,12 +541,12 @@ pub fn Program(comptime Model: type) type {
                     }
                 },
                 .msg => |m| {
-                    const new_cmd = self.dispatchToModel(m);
+                    const new_cmd = try self.dispatchToModel(m);
                     try self.processCommand(new_cmd);
                 },
                 .perform => |func| {
                     if (func()) |m| {
-                        const new_cmd = self.dispatchToModel(m);
+                        const new_cmd = try self.dispatchToModel(m);
                         try self.processCommand(new_cmd);
                     }
                 },
@@ -876,7 +875,10 @@ pub fn Program(comptime Model: type) type {
         }
 
         fn render(self: *Self) !void {
-            const view_output = self.model.view(&self.context);
+            const view_output = if (comptime view_fallible)
+                try self.model.view(&self.context)
+            else
+                self.model.view(&self.context);
 
             const wrote = try self.renderer.render(
                 self.terminal.?.writer(),
@@ -895,7 +897,7 @@ pub fn Program(comptime Model: type) type {
 
         /// Send a message to the model
         pub fn send(self: *Self, m: UserMsg) !void {
-            const cmd = self.dispatchToModel(m);
+            const cmd = try self.dispatchToModel(m);
             try self.processCommand(cmd);
         }
 
