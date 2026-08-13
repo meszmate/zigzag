@@ -23,16 +23,16 @@ const Model = struct {
     };
 
     const rows = [_][]const []const u8{
-        &.{ "01", "Alice",   "Platform", "Berlin",     "Engineer",       "5y",  "4.8", "$120k" },
-        &.{ "02", "Bob",     "Growth",   "Lisbon",     "PM",             "3y",  "4.1", "$110k" },
-        &.{ "03", "Carol",   "Platform", "Tokyo",      "Staff Eng",      "9y",  "4.9", "$180k" },
-        &.{ "04", "Dan",     "Infra",    "Berlin",     "SRE",            "2y",  "4.3", "$130k" },
-        &.{ "05", "Eve",     "Growth",   "Lisbon",     "Designer",       "1y",  "4.5", "$95k"  },
-        &.{ "06", "Frank",   "Infra",    "Singapore",  "Eng Manager",    "7y",  "4.6", "$160k" },
-        &.{ "07", "Grace",   "Platform", "Berlin",     "Engineer",       "4y",  "4.7", "$125k" },
-        &.{ "08", "Heidi",   "Sec",      "Tel Aviv",   "Security Eng",   "6y",  "4.4", "$140k" },
-        &.{ "09", "Ivan",    "Growth",   "Lisbon",     "Engineer",       "2y",  "4.0", "$105k" },
-        &.{ "10", "Judy",    "Platform", "Tokyo",      "Engineer",       "3y",  "4.2", "$118k" },
+        &.{ "01", "Alice", "Platform", "Berlin", "Engineer", "5y", "4.8", "$120k" },
+        &.{ "02", "Bob", "Growth", "Lisbon", "PM", "3y", "4.1", "$110k" },
+        &.{ "03", "Carol", "Platform", "Tokyo", "Staff Eng", "9y", "4.9", "$180k" },
+        &.{ "04", "Dan", "Infra", "Berlin", "SRE", "2y", "4.3", "$130k" },
+        &.{ "05", "Eve", "Growth", "Lisbon", "Designer", "1y", "4.5", "$95k" },
+        &.{ "06", "Frank", "Infra", "Singapore", "Eng Manager", "7y", "4.6", "$160k" },
+        &.{ "07", "Grace", "Platform", "Berlin", "Engineer", "4y", "4.7", "$125k" },
+        &.{ "08", "Heidi", "Sec", "Tel Aviv", "Security Eng", "6y", "4.4", "$140k" },
+        &.{ "09", "Ivan", "Growth", "Lisbon", "Engineer", "2y", "4.0", "$105k" },
+        &.{ "10", "Judy", "Platform", "Tokyo", "Engineer", "3y", "4.2", "$118k" },
     };
 
     pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {

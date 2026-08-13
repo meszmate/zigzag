@@ -20,7 +20,7 @@ test "charWidth: emoji are wide" {
     defer zz.unicode.setWidthStrategy(.legacy_wcwidth);
     try testing.expectEqual(@as(usize, 2), zz.unicode.charWidth(0x1F600)); // grinning face
     try testing.expectEqual(@as(usize, 2), zz.unicode.charWidth(0x1F680)); // rocket
-    try testing.expectEqual(@as(usize, 2), zz.unicode.charWidth(0x2615));  // hot beverage
+    try testing.expectEqual(@as(usize, 2), zz.unicode.charWidth(0x2615)); // hot beverage
 }
 
 test "charWidth: combining marks are zero-width" {

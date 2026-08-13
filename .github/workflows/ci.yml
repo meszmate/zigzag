@@ -11,6 +11,15 @@ env:
   ZIG_VERSION: "0.16.0"
 
 jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+      - run: zig fmt --check src tests examples build.zig
+
   build:
     strategy:
       fail-fast: false

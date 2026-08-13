@@ -344,7 +344,10 @@ pub fn Program(comptime Model: type) type {
                         .raw = .{ .nanoseconds = @intCast(deadline_offset_ns) },
                         .clock = .boot,
                     });
-                    deadline.wait(self.io) catch unreachable;
+                    // A wait that fails (a cancelled or interrupted sleep)
+                    // just means this frame is not paced; `unreachable` here
+                    // would be undefined behaviour in a release build.
+                    deadline.wait(self.io) catch {};
                 }
             }
         }
@@ -812,11 +815,6 @@ pub fn Program(comptime Model: type) type {
             const ns = dur.raw.nanoseconds;
             if (ns <= 0) return 0;
             return @intCast(ns);
-        }
-
-        fn sleepNs(io: std.Io, nanoseconds: u64) void {
-            if (nanoseconds == 0) return;
-            std.Io.sleep(io, .fromNanoseconds(nanoseconds), .boot) catch unreachable;
         }
 
         fn resetFrameAllocator(self: *Self) void {

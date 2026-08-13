@@ -90,7 +90,8 @@ const Model = struct {
         help_s = help_s.fg(zz.Color.gray(10));
         help_s = help_s.inline_style(true);
 
-        const content = std.fmt.allocPrint(alloc,
+        const content = std.fmt.allocPrint(
+            alloc,
             "{s}\n\n{s}\n\n{s}\n\n{s}\n\n{s}",
             .{
                 title,
