@@ -380,4 +380,13 @@ pub const Options = struct {
 
     /// Enable suspend/resume with Ctrl+Z
     suspend_enabled: bool = true,
+
+    /// How long a lone ESC waits for the rest of an escape sequence before it
+    /// is delivered as the Escape key (milliseconds).
+    ///
+    /// A bare ESC is byte-for-byte the start of every arrow key, function key
+    /// and mouse report, so the two can only be told apart by whether more
+    /// input follows. Lower values make Escape feel snappier; raise it if
+    /// sequences arrive in pieces over a slow link (ssh, serial).
+    escape_timeout_ms: u32 = 50,
 };

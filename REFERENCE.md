@@ -838,12 +838,19 @@ var program = zz.Program(Model).initWithOptions(init.gpa, init.io, init.environ_
     },
     .unicode_width_strategy = null, // null=auto, .legacy_wcwidth, .unicode
     .suspend_enabled = true,    // Enable Ctrl+Z suspend/resume
+    .escape_timeout_ms = 50,    // How long a lone ESC waits for a sequence
     .title = "My App",         // Window title
     .log_file = "debug.log",   // Debug log file path
     .input = custom_stdin,      // Custom input (for testing/piping)
     .output = custom_stdout,    // Custom output (for testing/piping)
 });
 ```
+
+`escape_timeout_ms` exists because a bare `ESC` is byte-for-byte the beginning of
+every arrow key, function key and mouse report. The runtime holds a lone `ESC`
+for this long, and delivers it as the Escape key only if nothing follows.
+Lower it for a snappier Escape; raise it when sequences arrive in pieces over a
+slow link.
 
 Unicode width strategy can also be overridden per-process with `ZZ_UNICODE_WIDTH=auto|legacy|unicode`.
 By default (`null`/`auto`), ZigZag:
@@ -911,6 +918,41 @@ pub const Msg = union(enum) {
     paste: []const u8,  // Receives full pasted text
 };
 ```
+
+A paste arrives as one event. Very large pastes (beyond the parser's internal
+buffer) stream in as several consecutive `paste` events instead, split only on
+codepoint boundaries — append them rather than replacing.
+
+### Parsing terminal input yourself
+
+`zz.InputParser` is the decoder the runtime uses, exposed for custom input
+loops. It matters because terminals do not deliver whole sequences: a read
+lands wherever the kernel had bytes ready, so an SGR mouse report is routinely
+cut in half during fast scrolling. Parsing each read on its own turns the
+leading `ESC` into an Escape key press and spills the remaining bytes into the
+application as text.
+
+```zig
+var parser: zz.InputParser = .{};
+
+// Every loop iteration, including the ones that read nothing — a lone ESC is
+// only released once `escape_timeout_ns` has passed without more input.
+const n = try terminal.readInput(&buf, 0);
+const events = try parser.feed(allocator, buf[0..n], now_ns);
+for (events) |event| switch (event) {
+    .key => |k| ...,
+    .mouse => |m| ...,
+    .none => {},
+};
+```
+
+Terminal replies that are not key presses (device attributes, cursor position
+reports, OSC clipboard answers, Kitty graphics acknowledgements) are consumed
+and discarded rather than surfacing as text.
+
+For a buffer that is known to be complete — a test fixture, a recorded
+session — `zz.input.keyboard.parseAll` decodes it in one call without any
+retained state.
 
 ### OSC 52 clipboard
 

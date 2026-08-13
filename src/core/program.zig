@@ -24,6 +24,13 @@ const PendingImage = union(enum) {
     place_cached: command.PlaceCachedImage,
 };
 
+/// Bytes pulled from the terminal per read.
+const read_chunk_size = 1024;
+
+/// Upper bound on reads per tick, so a firehose on stdin cannot starve
+/// rendering.
+const max_reads_per_tick = 8;
+
 /// Program runtime that manages the application lifecycle
 pub fn Program(comptime Model: type) type {
     // Ensure Model has required declarations
@@ -77,6 +84,8 @@ pub fn Program(comptime Model: type) type {
         last_line_count: usize,
         pending_image: ?PendingImage,
         logger: ?Logger,
+        /// Retains escape sequences that a read cut in half.
+        input_parser: keyboard.InputParser,
 
         /// Message filter function
         filter: ?*const fn (UserMsg) ?UserMsg,
@@ -123,6 +132,7 @@ pub fn Program(comptime Model: type) type {
                 .last_line_count = 0,
                 .pending_image = null,
                 .logger = null,
+                .input_parser = .{},
                 .filter = null,
             };
 
@@ -198,6 +208,9 @@ pub fn Program(comptime Model: type) type {
                 .osc52 = self.options.osc52,
             });
 
+            self.input_parser.escape_timeout_ns =
+                @as(u64, self.options.escape_timeout_ms) * std.time.ns_per_ms;
+
             // Set title if provided
             if (self.options.title) |title| {
                 try self.terminal.?.setTitle(title);
@@ -266,23 +279,7 @@ pub fn Program(comptime Model: type) type {
                 }
             }
 
-            // Non-blocking drain; input typed during pacing sits in the TTY buffer.
-            var input_buf: [256]u8 = undefined;
-            const bytes_read = try self.terminal.?.readInput(&input_buf, 0);
-
-            if (bytes_read > 0) {
-                const events = try keyboard.parseAll(self.context.allocator, input_buf[0..bytes_read]);
-                for (events) |event| {
-                    const user_cmd = switch (event) {
-                        .key => |k| self.processKeyEvent(k),
-                        .mouse => |m| self.processMouseEvent(m),
-                        .none => null,
-                    };
-                    if (user_cmd) |cmd| {
-                        try self.processCommand(cmd);
-                    }
-                }
-            }
+            try self.drainInput();
 
             // Handle pending tick
             if (self.pending_tick) |tick_ns| {
@@ -346,6 +343,42 @@ pub fn Program(comptime Model: type) type {
                     });
                     deadline.wait(self.io) catch unreachable;
                 }
+            }
+        }
+
+        /// Read whatever the terminal has ready and dispatch the events it
+        /// decodes into.
+        ///
+        /// Reads are non-blocking, so a burst that outgrows one buffer (paste,
+        /// or a trackpad producing mouse reports faster than a frame) is
+        /// picked up within the same tick instead of trickling in over the
+        /// following ones. `InputParser` stitches sequences back together when
+        /// a read lands in the middle of one.
+        fn drainInput(self: *Self) !void {
+            var input_buf: [read_chunk_size]u8 = undefined;
+
+            var reads: usize = 0;
+            while (reads < max_reads_per_tick) : (reads += 1) {
+                const bytes_read = try self.terminal.?.readInput(&input_buf, 0);
+
+                const events = try self.input_parser.feed(
+                    self.context.allocator,
+                    input_buf[0..bytes_read],
+                    self.context.elapsed,
+                );
+                for (events) |event| {
+                    const user_cmd = switch (event) {
+                        .key => |k| self.processKeyEvent(k),
+                        .mouse => |m| self.processMouseEvent(m),
+                        .none => null,
+                    };
+                    if (user_cmd) |cmd| {
+                        try self.processCommand(cmd);
+                    }
+                }
+
+                // A short read means the terminal has nothing left for now.
+                if (bytes_read < input_buf.len) break;
             }
         }
 
@@ -440,6 +473,10 @@ pub fn Program(comptime Model: type) type {
             if (self.terminal) |*term| {
                 term.setup() catch {};
             }
+
+            // Whatever was mid-sequence when we stopped will never be
+            // completed; drop it instead of merging it with post-resume input.
+            self.input_parser.reset();
 
             // Avoid a large post-resume delta, and rebase the pacing anchor so we
             // don't burst-render to "catch up" the suspended interval. Advance the

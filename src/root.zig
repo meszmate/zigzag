@@ -93,6 +93,7 @@ pub const input = struct {
     pub const mouse = @import("input/mouse.zig");
     pub const keys = @import("input/keys.zig");
 };
+pub const InputParser = input.keyboard.InputParser;
 pub const Key = input.keys.Key;
 pub const KeyEvent = input.keys.KeyEvent;
 pub const Modifiers = input.keys.Modifiers;

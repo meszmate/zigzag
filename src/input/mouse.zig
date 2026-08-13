@@ -86,6 +86,13 @@ pub fn disableSequence(mode: TrackingMode) []const u8 {
     };
 }
 
+/// Append a decimal digit to a parameter, saturating rather than overflowing
+/// on coordinates larger than a u16 can hold.
+fn accumulateParam(value: u16, digit: u8) u16 {
+    const scaled = std.math.mul(u16, value, 10) catch return std.math.maxInt(u16);
+    return std.math.add(u16, scaled, digit - '0') catch std.math.maxInt(u16);
+}
+
 /// Parse SGR mouse event (\x1b[<...M or \x1b[<...m)
 pub fn parseSgr(data: []const u8) ?struct { event: MouseEvent, consumed: usize } {
     // Format: \x1b[<Cb;Cx;CyM or \x1b[<Cb;Cx;Cym
@@ -99,7 +106,7 @@ pub fn parseSgr(data: []const u8) ?struct { event: MouseEvent, consumed: usize }
     while (idx < data.len and param_idx < 3) {
         const c = data[idx];
         if (c >= '0' and c <= '9') {
-            params[param_idx] = params[param_idx] * 10 + @as(u16, @intCast(c - '0'));
+            params[param_idx] = accumulateParam(params[param_idx], c);
             idx += 1;
         } else if (c == ';') {
             param_idx += 1;
@@ -160,5 +167,64 @@ pub fn parseSgr(data: []const u8) ?struct { event: MouseEvent, consumed: usize }
             .modifiers = modifiers,
         },
         .consumed = idx,
+    };
+}
+
+/// Length of an X10 mouse report: `ESC [ M` plus three payload bytes.
+pub const x10_report_len = 6;
+
+/// Parse an X10 mouse report (\x1b[M Cb Cx Cy).
+///
+/// Terminals that ignore the SGR request (mode 1006) answer in this older
+/// encoding, where the three bytes after `CSI M` are values biased by 32.
+/// Decoding them matters even when SGR is expected: unparsed, the payload
+/// reaches the application as three arbitrary characters.
+pub fn parseX10(data: []const u8) ?MouseEvent {
+    if (data.len < x10_report_len) return null;
+    if (!std.mem.startsWith(u8, data, "\x1b[M")) return null;
+
+    const cb: u16 = data[3] -% 32;
+    const raw_x: u16 = data[4] -% 32;
+    const raw_y: u16 = data[5] -% 32;
+
+    var modifiers = keys.Modifiers{};
+    if (cb & 4 != 0) modifiers.shift = true;
+    if (cb & 8 != 0) modifiers.alt = true;
+    if (cb & 16 != 0) modifiers.ctrl = true;
+
+    const is_motion = cb & 32 != 0;
+    const is_wheel = cb & 64 != 0;
+    const low = cb & 0b11;
+
+    const button: Button = if (is_wheel) switch (low) {
+        0 => .wheel_up,
+        1 => .wheel_down,
+        2 => .wheel_left,
+        else => .wheel_right,
+    } else switch (low) {
+        0 => .left,
+        1 => .middle,
+        2 => .right,
+        // X10 does not report which button was let go of.
+        else => .none,
+    };
+
+    const event_type: EventType = if (is_wheel)
+        .press
+    else if (is_motion and button == .none)
+        .move
+    else if (is_motion)
+        .drag
+    else if (low == 3)
+        .release
+    else
+        .press;
+
+    return .{
+        .x = if (raw_x > 0) raw_x - 1 else 0,
+        .y = if (raw_y > 0) raw_y - 1 else 0,
+        .button = button,
+        .event_type = event_type,
+        .modifiers = modifiers,
     };
 }

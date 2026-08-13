@@ -92,6 +92,7 @@ pub fn build(b: *std.Build) void {
     const test_files = [_][]const u8{
         "tests/style_tests.zig",
         "tests/input_tests.zig",
+        "tests/input_stream_tests.zig",
         "tests/layout_tests.zig",
         "tests/unicode_tests.zig",
         "tests/program_tests.zig",
