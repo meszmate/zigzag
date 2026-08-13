@@ -75,6 +75,41 @@ return .{ .delete_image = .{ .by_id = 1 } };  // Free cached image
 return .{ .delete_image = .all };              // Free all cached images
 ```
 
+#### Batch lifetimes
+
+`batch` and `sequence` hold a **slice**, which the runtime reads after `update`
+has returned. A `&.{ ... }` literal only lives in static memory when every
+element is comptime-known — one runtime value in there and the array becomes a
+stack temporary that is gone by the time the runtime walks it:
+
+```zig
+// Wrong: `row` is a runtime value, so this slice dangles on return.
+return .{ .batch = &.{
+    .{ .cache_image = .{ .source = .{ .file = path }, .image_id = 1 } },
+    .{ .place_cached_image = .{ .image_id = 1, .row = row } },
+} };
+```
+
+Either copy it into the frame allocator:
+
+```zig
+return try zz.Cmd(Msg).batchAlloc(ctx.allocator, &.{
+    .{ .cache_image = .{ .source = .{ .file = path }, .image_id = 1 } },
+    .{ .place_cached_image = .{ .image_id = 1, .row = row } },
+});
+```
+
+or keep the storage on the model, which outlives any single `update`:
+
+```zig
+pending_batch: [2]zz.Cmd(Msg) = undefined,
+// ...
+self.pending_batch = .{ cache_cmd, place_cmd };
+return .{ .batch = &self.pending_batch };
+```
+
+A batch of nothing but comptime-known commands is fine as a literal.
+
 ### Styling
 
 Build styles by chaining properties:

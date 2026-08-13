@@ -21,6 +21,9 @@ const Model = struct {
     image_path: []const u8,
     protocol: zz.ImageProtocol,
     caps: zz.ImageCapabilities,
+    /// Backing storage for a `.batch` command. It lives on the model because
+    /// the runtime reads the slice after `update` has returned.
+    pending_batch: [2]zz.Cmd(Msg) = undefined,
 
     const image_gap_lines: u16 = 1;
     const cache_id: u32 = 42;
@@ -75,7 +78,11 @@ const Model = struct {
                                 self.image_visible = true;
                                 self.image_cached = true;
                                 const layout = self.computeImageLayout(ctx);
-                                return .{ .batch = &.{
+                                // Held on the model, not built as a `&.{ ... }`
+                                // literal: a batch containing runtime values
+                                // would be a stack temporary that dangles the
+                                // moment this function returns.
+                                self.pending_batch = .{
                                     .{ .cache_image = .{
                                         .source = .{ .file = self.image_path },
                                         .image_id = cache_id,
@@ -89,7 +96,8 @@ const Model = struct {
                                         .col = layout.col,
                                         .move_cursor = false,
                                     } },
-                                } };
+                                };
+                                return .{ .batch = &self.pending_batch };
                             }
                         },
                         // Toggle z-index (behind text)

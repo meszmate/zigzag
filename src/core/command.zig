@@ -154,10 +154,17 @@ pub fn Cmd(comptime Msg: type) type {
         /// Request repeating tick at interval (nanoseconds)
         every: u64,
 
-        /// Execute a batch of commands
+        /// Execute a batch of commands.
+        ///
+        /// The slice has to outlive the command. `&.{ ... }` is only safe when
+        /// every element is comptime-known; one runtime value in there makes
+        /// the array a stack temporary that dangles as soon as `update`
+        /// returns. Use `batchAlloc` with the frame allocator, or point at an
+        /// array declared outside the function.
         batch: []const Cmd(Msg),
 
-        /// Execute commands in sequence (wait for each to complete)
+        /// Execute commands in sequence (wait for each to complete).
+        /// Same lifetime rule as `batch`.
         sequence: []const Cmd(Msg),
 
         /// Send a message to the update function
@@ -231,14 +238,37 @@ pub fn Cmd(comptime Msg: type) type {
             return .{ .every = sec * std.time.ns_per_s };
         }
 
-        /// Create a batch of commands
+        /// Create a batch of commands from a slice that already outlives the
+        /// command. See the lifetime note on `batch`.
         pub fn batchOf(cmds: []const Self) Self {
             return .{ .batch = cmds };
         }
 
-        /// Create a sequence of commands
+        /// Create a sequence of commands from a slice that already outlives
+        /// the command. See the lifetime note on `batch`.
         pub fn sequenceOf(cmds: []const Self) Self {
             return .{ .sequence = cmds };
+        }
+
+        /// Create a batch by copying `cmds` into `allocator`.
+        ///
+        /// This is the safe way to build a batch out of runtime values:
+        ///
+        ///     return try zz.Cmd(Msg).batchAlloc(ctx.allocator, &.{
+        ///         .{ .set_title = title },
+        ///         .{ .image_file = .{ .path = path, .row = row } },
+        ///     });
+        ///
+        /// The frame allocator is the right choice — commands are processed
+        /// during the tick that produced them, and it is reset on the next one.
+        pub fn batchAlloc(allocator: std.mem.Allocator, cmds: []const Self) !Self {
+            return .{ .batch = try allocator.dupe(Self, cmds) };
+        }
+
+        /// Create a sequence by copying `cmds` into `allocator`.
+        /// See `batchAlloc`.
+        pub fn sequenceAlloc(allocator: std.mem.Allocator, cmds: []const Self) !Self {
+            return .{ .sequence = try allocator.dupe(Self, cmds) };
         }
 
         /// Send a message
