@@ -21,6 +21,34 @@ test "measure.width - ANSI sequences excluded" {
     try testing.expectEqual(@as(usize, 5), zz.width("\x1b[1;32mhello\x1b[0m"));
 }
 
+test "measure.width - string sequences carry no width" {
+    // OSC, terminated by BEL and by ST.
+    try testing.expectEqual(@as(usize, 5), zz.width("\x1b]8;;https://example.com\x07hello"));
+    try testing.expectEqual(@as(usize, 5), zz.width("\x1b]8;;https://example.com\x1b\\hello"));
+
+    // A whole hyperlink, opened and closed.
+    try testing.expectEqual(
+        @as(usize, 5),
+        zz.width("\x1b]8;;https://example.com\x07hello\x1b]8;;\x07"),
+    );
+
+    // DCS — how tmux passthrough and terminal replies are wrapped.
+    try testing.expectEqual(@as(usize, 5), zz.width("\x1bPtmux;\x1b\\hello"));
+
+    // APC — the Kitty graphics protocol. Its payload is base64, which used to
+    // be measured character by character and blow the line width apart.
+    try testing.expectEqual(@as(usize, 5), zz.width("\x1b_Gf=100,a=T;iVBORw0K\x1b\\hello"));
+
+    // PM and SOS.
+    try testing.expectEqual(@as(usize, 5), zz.width("\x1b^private\x1b\\hello"));
+    try testing.expectEqual(@as(usize, 5), zz.width("\x1bXstring\x1b\\hello"));
+}
+
+test "measure.maxLineWidth - string sequences carry no width" {
+    const framed = "\x1b_Gf=100,a=T;iVBORw0KGgoAAAANSUhEUg\x1b\\short\nlonger line";
+    try testing.expectEqual(@as(usize, 11), zz.measure.maxLineWidth(framed));
+}
+
 test "measure.height - simple" {
     try testing.expectEqual(@as(usize, 1), zz.height("hello"));
     try testing.expectEqual(@as(usize, 0), zz.height(""));

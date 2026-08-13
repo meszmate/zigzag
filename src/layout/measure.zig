@@ -32,10 +32,15 @@ pub fn width(str: []const u8) usize {
                     in_escape = false;
                     escape_bracket = false;
                 }
-            } else if (c == ']') {
-                // OSC sequence - skip until BEL or ST
+            } else if (c == ']' or c == 'P' or c == '_' or c == '^' or c == 'X') {
+                // A string sequence: OSC, DCS, APC, PM or SOS. The payload is
+                // not text on screen — a Kitty graphics command (APC) or a tmux
+                // passthrough (DCS) would otherwise be counted character by
+                // character. Runs until ST, or BEL for OSC.
+                const bel_terminates = c == ']';
                 i += 1;
-                while (i < str.len and str[i] != 0x07) {
+                while (i < str.len) {
+                    if (bel_terminates and str[i] == 0x07) break;
                     if (str[i] == 0x1b and i + 1 < str.len and str[i + 1] == '\\') {
                         i += 1;
                         break;
