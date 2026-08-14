@@ -29,6 +29,11 @@ coverage/
 # OS files
 Thumbs.db
 desktop.ini
+# macOS writes an AppleDouble sidecar next to every file on a filesystem that
+# cannot hold extended attributes (exFAT, NTFS, most network shares). They are
+# metadata for a file that is already tracked, and they turn up in their
+# thousands.
+._*
 
 # Temporary files
 *.tmp
