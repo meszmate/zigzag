@@ -46,6 +46,23 @@ jobs:
           version: ${{ env.ZIG_VERSION }}
       - run: zig build test
 
+  # Debug catches overflow and bounds violations by panicking; the release
+  # modes are where a wrong assumption turns into wrong output instead. Run
+  # both, on Linux only, since these catch codegen and safety differences
+  # rather than platform ones.
+  test-release:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        optimize: [ReleaseSafe, ReleaseFast]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+      - run: zig build test -Doptimize=${{ matrix.optimize }}
+
   cross-compile:
     runs-on: ubuntu-latest
     strategy:
