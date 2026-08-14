@@ -62,6 +62,59 @@ pub const unicode_width_mode_disable = CSI ++ "?2027l";
 pub const kitty_keyboard_enable = CSI ++ ">1u";
 pub const kitty_keyboard_disable = CSI ++ "<u";
 
+/// Length in bytes of the escape sequence starting at `text[pos]`, or 0 when
+/// there is no sequence there.
+///
+/// This is framing only — the sequence is not interpreted. Anything that walks
+/// styled text (measuring, truncating, wrapping) needs to step over sequences
+/// as units, and getting that wrong is subtle: a CSI can end in any byte from
+/// 0x40 to 0x7E, not just a letter, and OSC/DCS/APC payloads carry arbitrary
+/// text that must not be read as content.
+///
+/// A sequence left unfinished by the end of `text` reports the remaining
+/// length, so callers always make progress.
+pub fn escapeSequenceLen(text: []const u8, pos: usize) usize {
+    if (pos >= text.len or text[pos] != ESC[0]) return 0;
+    if (pos + 1 >= text.len) return 1;
+
+    return switch (text[pos + 1]) {
+        '[' => csiLen(text, pos),
+        // SS3: ESC O plus one final byte.
+        'O' => @min(3, text.len - pos),
+        // OSC also accepts BEL as a terminator.
+        ']' => stringLen(text, pos, true),
+        // DCS, APC, PM, SOS.
+        'P', '_', '^', 'X' => stringLen(text, pos, false),
+        else => 2,
+    };
+}
+
+/// ESC [ <params 0x30-0x3F> <intermediates 0x20-0x2F> <final 0x40-0x7E>
+fn csiLen(text: []const u8, pos: usize) usize {
+    var i = pos + 2;
+    while (i < text.len and text[i] >= 0x30 and text[i] <= 0x3f) : (i += 1) {}
+    while (i < text.len and text[i] >= 0x20 and text[i] <= 0x2f) : (i += 1) {}
+    if (i >= text.len) return i - pos;
+    // A byte outside the final range cannot belong to the sequence; stop
+    // before it rather than swallowing text.
+    if (text[i] < 0x40 or text[i] > 0x7e) return i - pos;
+    return i + 1 - pos;
+}
+
+/// A string sequence runs until ST (ESC \), and until BEL when it is an OSC.
+fn stringLen(text: []const u8, pos: usize, bel_terminates: bool) usize {
+    var i = pos + 2;
+    while (i < text.len) : (i += 1) {
+        if (bel_terminates and text[i] == 0x07) return i + 1 - pos;
+        if (text[i] == ESC[0]) {
+            if (i + 1 < text.len and text[i + 1] == '\\') return i + 2 - pos;
+            // A bare ESC aborts the string.
+            return i - pos;
+        }
+    }
+    return i - pos;
+}
+
 /// Move cursor to position (1-indexed)
 pub fn cursorTo(writer: *Writer, row: u16, col: u16) !void {
     try writer.print(CSI ++ "{d};{d}H", .{ row, col });
@@ -341,6 +394,49 @@ pub fn iterm2InlineImage(writer: *Writer, params: []const u8, payload: []const u
     try writer.writeAll(":");
     try writer.writeAll(payload);
     try writer.writeAll("\x07");
+}
+
+test "escapeSequenceLen: not a sequence" {
+    try std.testing.expectEqual(@as(usize, 0), escapeSequenceLen("abc", 0));
+    try std.testing.expectEqual(@as(usize, 0), escapeSequenceLen("", 0));
+    try std.testing.expectEqual(@as(usize, 0), escapeSequenceLen("a\x1b[0m", 0));
+}
+
+test "escapeSequenceLen: CSI" {
+    try std.testing.expectEqual(@as(usize, 4), escapeSequenceLen("\x1b[0mtail", 0));
+    try std.testing.expectEqual(@as(usize, 13), escapeSequenceLen("\x1b[38;2;1;2;3mtail", 0));
+    // Final bytes that are not letters, which a scan for A-Za-z would run past.
+    try std.testing.expectEqual(@as(usize, 4), escapeSequenceLen("\x1b[3~tail", 0));
+    try std.testing.expectEqual(@as(usize, 6), escapeSequenceLen("\x1b[?25htail", 0));
+    // Private and intermediate bytes.
+    try std.testing.expectEqual(@as(usize, 9), escapeSequenceLen("\x1b[?2027$ptail", 0));
+}
+
+test "escapeSequenceLen: string sequences" {
+    try std.testing.expectEqual(@as(usize, 10), escapeSequenceLen("\x1b]0;title\x07tail", 0));
+    try std.testing.expectEqual(@as(usize, 11), escapeSequenceLen("\x1b]0;title\x1b\\tail", 0));
+    try std.testing.expectEqual(@as(usize, 10), escapeSequenceLen("\x1bPtmux;q\x1b\\tail", 0));
+    try std.testing.expectEqual(@as(usize, 13), escapeSequenceLen("\x1b_Gf=100;ab\x1b\\tail", 0));
+    // BEL is content inside a DCS, not a terminator.
+    try std.testing.expectEqual(@as(usize, 7), escapeSequenceLen("\x1bPa\x07b\x1b\\tail", 0));
+}
+
+test "escapeSequenceLen: SS3 and two-byte escapes" {
+    try std.testing.expectEqual(@as(usize, 3), escapeSequenceLen("\x1bOPtail", 0));
+    try std.testing.expectEqual(@as(usize, 2), escapeSequenceLen("\x1bMtail", 0));
+}
+
+test "escapeSequenceLen: truncated input still advances" {
+    for ([_][]const u8{ "\x1b", "\x1b[", "\x1b[38;2", "\x1b]0;partial", "\x1bP", "\x1bO" }) |input| {
+        const len = escapeSequenceLen(input, 0);
+        try std.testing.expect(len > 0);
+        try std.testing.expect(len <= input.len);
+    }
+}
+
+test "escapeSequenceLen: offset within a string" {
+    const text = "ab\x1b[31mcd";
+    try std.testing.expectEqual(@as(usize, 5), escapeSequenceLen(text, 2));
 }
 
 test "osc52Encoded direct BEL" {

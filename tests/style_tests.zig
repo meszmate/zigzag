@@ -98,3 +98,118 @@ test "Style with border" {
     try testing.expect(style.border_sides.left);
     try testing.expect(style.border_sides.right);
 }
+
+// ---------------------------------------------------------------------------
+// Overflow and compression around escape sequences
+// ---------------------------------------------------------------------------
+
+const hyperlink = "\x1b]8;;https://example.com\x07";
+const link_end = "\x1b]8;;\x07";
+const kitty_image = "\x1b_Gf=100,a=T;iVBORw0KGgoAAAANSUhEUg\x1b\\";
+
+test "overflow.hidden measures a hyperlink as zero width" {
+    const allocator = testing.allocator;
+    const input = hyperlink ++ "Hello, World!" ++ link_end;
+
+    const result = try zz.applyOverflow(allocator, input, 5, .hidden);
+    defer allocator.free(result);
+
+    // The link opener is carried through; only five columns of text survive.
+    try testing.expectEqualStrings(hyperlink ++ "Hello", result);
+}
+
+test "overflow.hidden steps over an image sequence" {
+    const allocator = testing.allocator;
+    const input = kitty_image ++ "Hello, World!";
+
+    const result = try zz.applyOverflow(allocator, input, 5, .hidden);
+    defer allocator.free(result);
+
+    try testing.expectEqualStrings(kitty_image ++ "Hello", result);
+}
+
+test "overflow.hidden handles CSI sequences ending in a non-letter" {
+    const allocator = testing.allocator;
+    // `CSI ? 2 5 h` ends in 'h'; a scan for the first A-Za-z used to run past
+    // it and eat the 'H' of the text.
+    const input = "\x1b[?25hHello, World!";
+
+    const result = try zz.applyOverflow(allocator, input, 5, .hidden);
+    defer allocator.free(result);
+
+    try testing.expectEqualStrings("\x1b[?25hHello", result);
+}
+
+test "overflow.ellipsis measures a hyperlink as zero width" {
+    const allocator = testing.allocator;
+    const input = hyperlink ++ "Hello, World!" ++ link_end;
+
+    const result = try zz.applyOverflow(allocator, input, 6, .ellipsis);
+    defer allocator.free(result);
+
+    try testing.expectEqualStrings(hyperlink ++ "Hello\xe2\x80\xa6", result);
+}
+
+test "overflow.char_wrap measures a hyperlink as zero width" {
+    const allocator = testing.allocator;
+    const input = hyperlink ++ "abcdef";
+
+    const result = try zz.applyOverflow(allocator, input, 3, .char_wrap);
+    defer allocator.free(result);
+
+    try testing.expectEqualStrings(hyperlink ++ "abc\ndef", result);
+}
+
+test "overflow.word_wrap measures a hyperlink as zero width" {
+    const allocator = testing.allocator;
+    const input = hyperlink ++ "alpha beta";
+
+    const result = try zz.applyOverflow(allocator, input, 5, .word_wrap);
+    defer allocator.free(result);
+
+    try testing.expectEqualStrings(hyperlink ++ "alpha\nbeta", result);
+}
+
+test "overflow uses shared width tables for wide characters" {
+    const allocator = testing.allocator;
+
+    // Two double-width characters fill four columns exactly.
+    const fits = try zz.applyOverflow(allocator, "日本語", 4, .hidden);
+    defer allocator.free(fits);
+    try testing.expectEqualStrings("日本", fits);
+
+    // A combining mark adds no width, so all four base characters survive.
+    const combining = try zz.applyOverflow(allocator, "a\u{0301}bcd", 4, .hidden);
+    defer allocator.free(combining);
+    try testing.expectEqualStrings("a\u{0301}bcd", combining);
+}
+
+test "compressAnsi leaves string sequence payloads alone" {
+    const allocator = testing.allocator;
+
+    // A tmux passthrough carries SGR bytes inside its payload by design.
+    const input = "\x1bPtmux;\x1b\x1b[0m\x1b\\text";
+    const result = try zz.compressAnsi(allocator, input);
+    defer allocator.free(result);
+
+    try testing.expectEqualStrings(input, result);
+}
+
+test "compressAnsi still collapses repeated resets" {
+    const allocator = testing.allocator;
+
+    const result = try zz.compressAnsi(allocator, "a\x1b[0m\x1b[0m\x1b[0mb");
+    defer allocator.free(result);
+
+    try testing.expectEqualStrings("a\x1b[0mb", result);
+}
+
+test "compressAnsi keeps CSI sequences ending in a non-letter intact" {
+    const allocator = testing.allocator;
+
+    const input = "\x1b[3~\x1b[0m\x1b[0mtail";
+    const result = try zz.compressAnsi(allocator, input);
+    defer allocator.free(result);
+
+    try testing.expectEqualStrings("\x1b[3~\x1b[0mtail", result);
+}

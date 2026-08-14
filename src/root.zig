@@ -356,7 +356,9 @@ pub const CompleteColor = color.CompleteColor;
 pub const CompleteAdaptiveColor = color.CompleteAdaptiveColor;
 
 // Overflow
+pub const overflow = @import("style/overflow.zig");
 pub const Overflow = style.Overflow;
+pub const applyOverflow = overflow.applyOverflow;
 
 // Style utilities
 pub const StyleRange = style.StyleRange;
