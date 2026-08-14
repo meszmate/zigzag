@@ -105,12 +105,16 @@ pub const MouseState = struct {
             self.pressed = false;
         }
 
+        // Wheel events are checked before the boundary crossing: a trackpad
+        // reports movement and scrolling in the same event, and returning
+        // `enter` there would drop the scroll entirely. The crossing is still
+        // visible to the caller as `self.hover`.
+        if (inside and event.button == .wheel_up) return .scroll_up;
+        if (inside and event.button == .wheel_down) return .scroll_down;
+
         if (inside and !was_hover) return .enter;
         if (!inside and was_hover) return .leave;
         if (inside and event.event_type == .move) return .hover;
-
-        if (event.button == .wheel_up and inside) return .scroll_up;
-        if (event.button == .wheel_down and inside) return .scroll_down;
 
         return .none;
     }
