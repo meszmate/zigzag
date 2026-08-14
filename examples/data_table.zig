@@ -35,10 +35,10 @@ const Model = struct {
         &.{ "10", "Judy", "Platform", "Tokyo", "Engineer", "3y", "4.2", "$118k" },
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         var t = zz.components.DataTable.init(ctx.persistent_allocator);
         t.setColumns(&headers) catch return .quit;
-        for (rows) |r| t.addRow(r) catch {};
+        for (rows) |r| try t.addRow(r);
         t.setSize(60, 15);
         t.setFrozenColumns(2); // id + name stay visible while you scroll right.
         self.* = .{ .table = t };
@@ -61,29 +61,29 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.cyan);
         title_style = title_style.inline_style(true);
-        const title = title_style.render(alloc, "DataTable — frozen columns + cell cursor") catch "";
+        const title = try title_style.render(alloc, "DataTable — frozen columns + cell cursor");
 
         var table_mut = @constCast(&self.table);
-        const table_view = table_mut.view(alloc) catch "";
+        const table_view = try table_mut.view(alloc);
 
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(10));
         help_style = help_style.inline_style(true);
-        const help_text = std.fmt.allocPrint(
+        const help_text = try std.fmt.allocPrint(
             alloc,
             "cursor row {d}, col {d}   |   ←→↑↓ / hjkl move   home/end col   g/G row   q quit",
             .{ self.table.cursor_row, self.table.cursor_col },
-        ) catch "";
-        const help = help_style.render(alloc, help_text) catch "";
+        );
+        const help = try help_style.render(alloc, help_text);
 
-        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}", .{ title, table_view, help }) catch "Error";
+        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}", .{ title, table_view, help });
     }
 
     pub fn deinit(self: *Model) void {

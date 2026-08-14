@@ -123,35 +123,35 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
-        const menu_view = self.menu.view(ctx.allocator, ctx.width) catch "error";
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
+        const menu_view = try self.menu.view(ctx.allocator, ctx.width);
 
         var content_style = zz.Style{};
         content_style = content_style.fg(zz.Color.gray(16));
         content_style = content_style.inline_style(true);
 
-        const content = content_style.render(
+        const content = try content_style.render(
             ctx.allocator,
             "Press F9 or Alt+F/E/V/H to open menus\nUse arrow keys to navigate, Enter to select",
-        ) catch "";
+        );
 
         var status_style = zz.Style{};
         status_style = status_style.fg(zz.Color.cyan);
         status_style = status_style.bold(true);
         status_style = status_style.inline_style(true);
-        const status = std.fmt.allocPrint(ctx.allocator, "Status: {s}", .{self.status}) catch "?";
-        const styled_status = status_style.render(ctx.allocator, status) catch status;
+        const status = try std.fmt.allocPrint(ctx.allocator, "Status: {s}", .{self.status});
+        const styled_status = try status_style.render(ctx.allocator, status);
 
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const help = help_style.render(ctx.allocator, "F9: activate menu | Alt+letter: open menu | q/Esc: quit") catch "";
+        const help = try help_style.render(ctx.allocator, "F9: activate menu | Alt+letter: open menu | q/Esc: quit");
 
         return std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}\n\n{s}\n\n{s}",
             .{ menu_view, content, styled_status, help },
-        ) catch "Error";
+        );
     }
 };
 

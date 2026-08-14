@@ -16,7 +16,7 @@ const Model = struct {
         tick: zz.msg.Tick,
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         self.toast = zz.Toast.init(ctx.persistent_allocator);
         self.toast.position = .top_right;
         self.toast.show_countdown = true;
@@ -27,8 +27,8 @@ const Model = struct {
         self.width_preset_idx = 1;
         self.border_style_idx = 0;
 
-        // Initial welcome toast
-        self.toast.push("Welcome to the Toast demo!", .info, 5000, 0) catch {};
+        try // Initial welcome toast
+        self.toast.push("Welcome to the Toast demo!", .info, 5000, 0);
 
         return .{ .every = 100_000_000 };
     }
@@ -103,12 +103,12 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.magenta);
         title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "Toast Notifications") catch "Toast";
+        const title = try title_style.render(ctx.allocator, "Toast Notifications");
 
         const pos_name = self.positionName();
         const order_name: []const u8 = if (self.toast.stack_order == .newest_first) "newest first" else "oldest first";
@@ -121,7 +121,7 @@ const Model = struct {
         var info_style = zz.Style{};
         info_style = info_style.fg(zz.Color.cyan);
         info_style = info_style.inline_style(true);
-        const info = std.fmt.allocPrint(
+        const info = try std.fmt.allocPrint(
             ctx.allocator,
             "Position: {s} | Order: {s} | Active: {d} | Width: {d}-{d} | Border style: {s} | Borders: {s} | Icons: {s} | Countdown: {s}",
             .{
@@ -135,28 +135,28 @@ const Model = struct {
                 if (self.toast.show_icons) "on" else "off",
                 if (self.toast.show_countdown) "on" else "off",
             },
-        ) catch "?";
-        const styled_info = info_style.render(ctx.allocator, info) catch info;
+        );
+        const styled_info = try info_style.render(ctx.allocator, info);
 
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const help = help_style.render(ctx.allocator,
+        const help = try help_style.render(ctx.allocator,
             \\Quick start: press p to move the toast around the screen.
             \\1: info  2: success  3: warning  4: error  5: persistent  6: long toast
             \\d: dismiss newest  x: dismiss oldest  D: dismiss all
             \\b: borders  i: icons  c: countdown  w: width preset  t: border style
             \\p/P: switch position  s: stack order  q: quit
-        ) catch "";
+        );
 
         // Render toast notifications
-        const toast_view = self.toast.viewPositioned(ctx.allocator, ctx.width, ctx.height -| 8, self.last_elapsed) catch "";
+        const toast_view = try self.toast.viewPositioned(ctx.allocator, ctx.width, ctx.height -| 8, self.last_elapsed);
 
         return std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n{s}\n\n{s}\n\n{s}",
             .{ title, styled_info, help, toast_view },
-        ) catch "Error";
+        );
     }
 
     pub fn deinit(self: *Model) void {

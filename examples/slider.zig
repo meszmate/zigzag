@@ -76,31 +76,31 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.magenta);
         title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "Slider Example") catch "Slider Example";
+        const title = try title_style.render(ctx.allocator, "Slider Example");
 
-        const vol = self.volume.view(ctx.allocator) catch "error";
-        const bright = self.brightness.view(ctx.allocator) catch "error";
-        const temp = self.temperature.view(ctx.allocator) catch "error";
-        const spd = self.progress_slider.view(ctx.allocator) catch "error";
+        const vol = try self.volume.view(ctx.allocator);
+        const bright = try self.brightness.view(ctx.allocator);
+        const temp = try self.temperature.view(ctx.allocator);
+        const spd = try self.progress_slider.view(ctx.allocator);
 
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const help = help_style.render(
+        const help = try help_style.render(
             ctx.allocator,
             "Tab: switch | Left/Right or h/l: adjust | Home/End: min/max | PgUp/PgDn: large step | q: quit",
-        ) catch "";
+        );
 
         return std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}\n\n{s}\n\n{s}\n\n{s}\n\n{s}",
             .{ title, vol, bright, temp, spd, help },
-        ) catch "Error";
+        );
     }
 };
 

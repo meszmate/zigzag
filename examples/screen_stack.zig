@@ -159,24 +159,24 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
-        const view_str = self.stack.view(ctx, ctx.allocator) catch "Error";
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
+        const view_str = try self.stack.view(ctx, ctx.allocator);
 
         var trail: Writer.Allocating = .init(ctx.allocator);
         defer trail.deinit();
         const w = &trail.writer;
-        w.writeAll("stack: ") catch {};
+        try w.writeAll("stack: ");
         for (self.stack.stack.items, 0..) |s, i| {
-            if (i > 0) w.writeAll(" › ") catch {};
-            w.writeAll(s.title) catch {};
+            if (i > 0) try w.writeAll(" › ");
+            try w.writeAll(s.title);
         }
 
         var trail_style = zz.Style{};
         trail_style = trail_style.fg(zz.Color.gray(10));
         trail_style = trail_style.inline_style(true);
-        const trail_str = trail_style.render(ctx.allocator, trail.writer.buffered()) catch "";
+        const trail_str = try trail_style.render(ctx.allocator, trail.writer.buffered());
 
-        return std.fmt.allocPrint(ctx.allocator, "{s}\n\n{s}", .{ trail_str, view_str }) catch view_str;
+        return std.fmt.allocPrint(ctx.allocator, "{s}\n\n{s}", .{ trail_str, view_str });
     }
 
     pub fn deinit(self: *Model) void {

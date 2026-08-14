@@ -56,20 +56,20 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
-        const form_view = self.form.view(ctx.allocator) catch "error";
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
+        const form_view = try self.form.view(ctx.allocator);
 
         var status_style = zz.Style{};
         status_style = status_style.fg(zz.Color.green);
         status_style = status_style.bold(true);
         status_style = status_style.inline_style(true);
-        const styled_status = status_style.render(ctx.allocator, self.status) catch self.status;
+        const styled_status = try status_style.render(ctx.allocator, self.status);
 
         return std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}",
             .{ form_view, styled_status },
-        ) catch "Error";
+        );
     }
 
     pub fn deinit(self: *Model) void {

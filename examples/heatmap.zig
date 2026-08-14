@@ -25,7 +25,7 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(_: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(_: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         // Activity heatmap (7 days x 12 weeks)
@@ -69,11 +69,11 @@ const Model = struct {
         help_s = help_s.fg(zz.Color.gray(10));
         help_s = help_s.inline_style(true);
 
-        const content = std.fmt.allocPrint(alloc, "{s}\n\n\n{s}\n\n{s}", .{
+        const content = try std.fmt.allocPrint(alloc, "{s}\n\n\n{s}\n\n{s}", .{
             activity_view,
             load_view,
-            help_s.render(alloc, "Press q to quit") catch "",
-        }) catch "Error";
+            try help_s.render(alloc, "Press q to quit"),
+        });
 
         return content;
     }

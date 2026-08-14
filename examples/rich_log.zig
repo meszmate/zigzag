@@ -15,16 +15,16 @@ const Model = struct {
         tick: zz.msg.Tick,
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         var log = zz.components.RichLog.init(ctx.persistent_allocator, 500);
         log.setSize(80, 14);
         log.show_timestamps = true;
 
-        // Seed with a few entries.
-        log.append(ctx.io, .info, "RichLog example started") catch {};
-        log.append(ctx.io, .debug, "buffer capacity = 500 entries") catch {};
-        log.append(ctx.io, .info, "follow-mode enabled — new entries scroll into view") catch {};
-        log.append(ctx.io, .warn, "press '/' to filter, 'l' to cycle min level") catch {};
+        try // Seed with a few entries.
+        log.append(ctx.io, .info, "RichLog example started");
+        try log.append(ctx.io, .debug, "buffer capacity = 500 entries");
+        try log.append(ctx.io, .info, "follow-mode enabled — new entries scroll into view");
+        try log.append(ctx.io, .warn, "press '/' to filter, 'l' to cycle min level");
 
         self.* = .{
             .log = log,
@@ -116,26 +116,26 @@ const Model = struct {
         }
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
         var log_mut = @constCast(&self.log);
-        const log_view = log_mut.view(alloc) catch "";
+        const log_view = try log_mut.view(alloc);
 
         var box = zz.Style{};
         box = box.borderAll(zz.Border.rounded);
         box = box.borderForeground(zz.Color.gray(8));
-        const boxed = box.render(alloc, log_view) catch log_view;
+        const boxed = try box.render(alloc, log_view);
 
         var title = zz.Style{};
         title = title.bold(true);
         title = title.fg(zz.Color.cyan);
         title = title.inline_style(true);
-        const t = title.render(alloc, "RichLog — append-only with level filter & search") catch "";
+        const t = try title.render(alloc, "RichLog — append-only with level filter & search");
 
         const status = if (self.typing_search)
-            std.fmt.allocPrint(alloc, "search: {s}_  (enter to apply, esc to cancel)", .{self.search_term.items}) catch ""
+            try std.fmt.allocPrint(alloc, "search: {s}_  (enter to apply, esc to cancel)", .{self.search_term.items})
         else
-            std.fmt.allocPrint(
+            try std.fmt.allocPrint(
                 alloc,
                 "follow={s}  level≥{s}  search={s}",
                 .{
@@ -143,20 +143,20 @@ const Model = struct {
                     self.log.min_level.label(),
                     if (self.log.search_term.items.len == 0) "—" else self.log.search_term.items,
                 },
-            ) catch "";
+            );
 
         var status_style = zz.Style{};
         status_style = status_style.fg(zz.Color.gray(12));
         status_style = status_style.inline_style(true);
-        const status_str = status_style.render(alloc, status) catch "";
+        const status_str = try status_style.render(alloc, status);
 
         var help = zz.Style{};
         help = help.fg(zz.Color.gray(10));
         help = help.inline_style(true);
         const help_text = "↑↓ scroll · g/G top/bottom · / search · c clear · l cycle level · q quit";
-        const help_str = help.render(alloc, help_text) catch "";
+        const help_str = try help.render(alloc, help_text);
 
-        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}\n{s}", .{ t, boxed, status_str, help_str }) catch "Error";
+        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}\n{s}", .{ t, boxed, status_str, help_str });
     }
 };
 

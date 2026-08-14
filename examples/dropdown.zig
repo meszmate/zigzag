@@ -19,11 +19,11 @@ const Model = struct {
         key: zz.KeyEvent,
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         self.color_dropdown = zz.Dropdown(Color).init(ctx.persistent_allocator);
         self.color_dropdown.label = "Color:";
         self.color_dropdown.placeholder = "Pick a color...";
-        self.color_dropdown.addItems(&.{
+        try self.color_dropdown.addItems(&.{
             .{ .value = .red, .label = "Red", .description = "", .enabled = true },
             .{ .value = .green, .label = "Green", .description = "", .enabled = true },
             .{ .value = .blue, .label = "Blue", .description = "", .enabled = true },
@@ -31,7 +31,7 @@ const Model = struct {
             .{ .value = .magenta, .label = "Magenta", .description = "", .enabled = true },
             .{ .value = .cyan, .label = "Cyan", .description = "", .enabled = true },
             .{ .value = .white, .label = "White", .description = "", .enabled = false },
-        }) catch {};
+        });
 
         self.topping_dropdown = zz.Dropdown(Topping).init(ctx.persistent_allocator);
         self.topping_dropdown.label = "Toppings:";
@@ -39,7 +39,7 @@ const Model = struct {
         self.topping_dropdown.multi_select = true;
         self.topping_dropdown.close_on_select = false;
         self.topping_dropdown.max_visible = 5;
-        self.topping_dropdown.addItems(&.{
+        try self.topping_dropdown.addItems(&.{
             .{ .value = .cheese, .label = "Cheese", .description = "", .enabled = true },
             .{ .value = .pepperoni, .label = "Pepperoni", .description = "", .enabled = true },
             .{ .value = .mushrooms, .label = "Mushrooms", .description = "", .enabled = true },
@@ -48,7 +48,7 @@ const Model = struct {
             .{ .value = .olives, .label = "Olives", .description = "", .enabled = true },
             .{ .value = .bacon, .label = "Bacon", .description = "", .enabled = true },
             .{ .value = .pineapple, .label = "Pineapple", .description = "", .enabled = true },
-        }) catch {};
+        });
 
         self.focus_group = .{};
         self.focus_group.add(&self.color_dropdown);
@@ -79,38 +79,35 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.magenta);
         title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "Dropdown Example") catch "Dropdown Example";
+        const title = try title_style.render(ctx.allocator, "Dropdown Example");
 
-        const color_view = self.color_dropdown.view(ctx.allocator) catch "error";
-        const topping_view = self.topping_dropdown.view(ctx.allocator) catch "error";
+        const color_view = try self.color_dropdown.view(ctx.allocator);
+        const topping_view = try self.topping_dropdown.view(ctx.allocator);
 
         // Selection info
-        const color_info = if (self.color_dropdown.selectedItem()) |item|
-            std.fmt.allocPrint(ctx.allocator, "Selected color: {s}", .{item.label}) catch "?"
-        else
-            "No color selected";
+        const color_info = if (self.color_dropdown.selectedItem()) |item| try std.fmt.allocPrint(ctx.allocator, "Selected color: {s}", .{item.label}) else "No color selected";
 
         const topping_count = self.topping_dropdown.selected_indices.count();
-        const topping_info = std.fmt.allocPrint(ctx.allocator, "Selected toppings: {d}", .{topping_count}) catch "?";
+        const topping_info = try std.fmt.allocPrint(ctx.allocator, "Selected toppings: {d}", .{topping_count});
 
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const help = help_style.render(
+        const help = try help_style.render(
             ctx.allocator,
             "Tab: switch | Enter/Space: open/select | Esc: close | /: filter | q: quit",
-        ) catch "";
+        );
 
         return std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}\n{s}\n\n{s}\n{s}\n\n{s}",
             .{ title, color_view, color_info, topping_view, topping_info, help },
-        ) catch "Error";
+        );
     }
 
     pub fn deinit(self: *Model) void {

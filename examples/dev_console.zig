@@ -58,16 +58,16 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title = zz.Style{};
         title = title.bold(true);
         title = title.fg(zz.Color.cyan);
         title = title.inline_style(true);
-        const t = title.render(alloc, "DevConsole — log streamer") catch "";
+        const t = try title.render(alloc, "DevConsole — log streamer");
 
-        const body = std.fmt.allocPrint(
+        const body = try std.fmt.allocPrint(
             alloc,
             \\Counter: {d}
             \\
@@ -82,20 +82,20 @@ const Model = struct {
             \\You'll see entries stream in as you press keys here.
         ,
             .{self.counter},
-        ) catch "";
+        );
 
         var box = zz.Style{};
         box = box.borderAll(zz.Border.rounded);
         box = box.borderForeground(zz.Color.gray(8));
         box = box.paddingAll(1);
-        const boxed = box.render(alloc, body) catch body;
+        const boxed = try box.render(alloc, body);
 
         var help = zz.Style{};
         help = help.fg(zz.Color.gray(10));
         help = help.inline_style(true);
-        const help_str = help.render(alloc, "space warn · r reset · q quit") catch "";
+        const help_str = try help.render(alloc, "space warn · r reset · q quit");
 
-        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}", .{ t, boxed, help_str }) catch "Error";
+        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}", .{ t, boxed, help_str });
     }
 };
 

@@ -13,14 +13,14 @@ const Model = struct {
         key: zz.KeyEvent,
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         self.file_picker = zz.components.FilePicker.init(ctx.persistent_allocator);
         self.file_picker.height = ctx.height -| 10;
         self.file_picker.setHomePath(ctx.home_dir);
 
         // Start at home directory
         self.file_picker.navigateHome(ctx.io) catch {
-            self.file_picker.navigate(ctx.io, "/") catch {};
+            try self.file_picker.navigate(ctx.io, "/");
         };
 
         self.preview = std.array_list.Managed(u8).init(ctx.persistent_allocator);
@@ -85,16 +85,16 @@ const Model = struct {
         }
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         // Title
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.cyan);
         title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "File Browser") catch "File Browser";
+        const title = try title_style.render(ctx.allocator, "File Browser");
 
         // File picker
-        const picker_view = self.file_picker.view(ctx.allocator) catch "";
+        const picker_view = try self.file_picker.view(ctx.allocator);
 
         // Preview section
         var preview_section: []const u8 = "";
@@ -102,7 +102,7 @@ const Model = struct {
             var path_style = zz.Style{};
             path_style = path_style.fg(zz.Color.green);
             path_style = path_style.inline_style(true);
-            const path_display = path_style.render(ctx.allocator, path) catch path;
+            const path_display = try path_style.render(ctx.allocator, path);
 
             var preview_style = zz.Style{};
             preview_style = preview_style.borderAll(zz.Border.normal);
@@ -115,23 +115,23 @@ const Model = struct {
             else
                 "(empty file)";
 
-            const preview_box = preview_style.render(ctx.allocator, preview_content) catch preview_content;
+            const preview_box = try preview_style.render(ctx.allocator, preview_content);
 
-            preview_section = std.fmt.allocPrint(
+            preview_section = try std.fmt.allocPrint(
                 ctx.allocator,
                 "\nSelected: {s}\n\n{s}",
                 .{ path_display, preview_box },
-            ) catch "";
+            );
         }
 
         // Help
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const help = help_style.render(
+        const help = try help_style.render(
             ctx.allocator,
             "Up/Down: Navigate  Enter: Open/Select  Backspace: Parent  h: Toggle hidden  ~: Home  q: Quit",
-        ) catch "";
+        );
 
         // Get max width for centering title and help
         const picker_width = zz.measure.maxLineWidth(picker_view);
@@ -140,16 +140,16 @@ const Model = struct {
         const max_width = @max(picker_width, @max(title_width, help_width));
 
         // Center title and help
-        const centered_title = zz.place.place(ctx.allocator, max_width, 1, .center, .top, title) catch title;
-        const centered_help = zz.place.place(ctx.allocator, max_width, 1, .center, .top, help) catch help;
+        const centered_title = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, title);
+        const centered_help = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, help);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}{s}\n\n{s}",
             .{ centered_title, picker_view, preview_section, centered_help },
-        ) catch "Error";
+        );
 
-        // Center horizontally, but keep at top vertically (file browser needs vertical space)
+        // Center horizontally but keep at top vertically (file browser needs vertical space)
         return zz.place.place(
             ctx.allocator,
             ctx.width,
@@ -157,7 +157,7 @@ const Model = struct {
             .center,
             .top,
             content,
-        ) catch content;
+        );
     }
 
     pub fn deinit(self: *Model) void {

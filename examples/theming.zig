@@ -58,36 +58,36 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const t = &self.tm.current;
         const p = &t.palette;
 
         // Title
         const title_style = zz.Theme.boldStyleWith(p.primary);
-        const title = title_style.render(ctx.allocator, "Theme Preview (ThemeManager)") catch "Theme Preview";
+        const title = try title_style.render(ctx.allocator, "Theme Preview (ThemeManager)");
 
         // Theme name and count
         const name_style = zz.Theme.boldStyleWith(p.accent);
-        const theme_name = name_style.render(ctx.allocator, self.tm.currentName()) catch "?";
-        const theme_line = std.fmt.allocPrint(
+        const theme_name = try name_style.render(ctx.allocator, self.tm.currentName());
+        const theme_line = try std.fmt.allocPrint(
             ctx.allocator,
             "Current: {s}  ({d}/{d})",
             .{ theme_name, self.tm.palette_index + 1, zz.ThemeManager.builtinCount() },
-        ) catch "?";
+        );
 
         // Color swatches in two rows
-        const primary_s = zz.Theme.boldStyleWith(p.primary).render(ctx.allocator, "██ Primary") catch "";
-        const secondary_s = zz.Theme.boldStyleWith(p.secondary).render(ctx.allocator, "██ Secondary") catch "";
-        const accent_s = zz.Theme.boldStyleWith(p.accent).render(ctx.allocator, "██ Accent") catch "";
-        const success_s = zz.Theme.styleWith(p.success).render(ctx.allocator, "██ Success") catch "";
-        const warning_s = zz.Theme.styleWith(p.warning).render(ctx.allocator, "██ Warning") catch "";
-        const danger_s = zz.Theme.styleWith(p.danger).render(ctx.allocator, "██ Danger") catch "";
-        const info_s = zz.Theme.styleWith(p.info).render(ctx.allocator, "██ Info") catch "";
+        const primary_s = try zz.Theme.boldStyleWith(p.primary).render(ctx.allocator, "██ Primary");
+        const secondary_s = try zz.Theme.boldStyleWith(p.secondary).render(ctx.allocator, "██ Secondary");
+        const accent_s = try zz.Theme.boldStyleWith(p.accent).render(ctx.allocator, "██ Accent");
+        const success_s = try zz.Theme.styleWith(p.success).render(ctx.allocator, "██ Success");
+        const warning_s = try zz.Theme.styleWith(p.warning).render(ctx.allocator, "██ Warning");
+        const danger_s = try zz.Theme.styleWith(p.danger).render(ctx.allocator, "██ Danger");
+        const info_s = try zz.Theme.styleWith(p.info).render(ctx.allocator, "██ Info");
 
         // Text styles
-        const fg_s = zz.Theme.styleWith(p.foreground).render(ctx.allocator, "Foreground text") catch "";
-        const muted_s = zz.Theme.styleWith(p.muted).render(ctx.allocator, "Muted text") catch "";
-        const subtle_s = zz.Theme.styleWith(p.subtle).render(ctx.allocator, "Subtle text") catch "";
+        const fg_s = try zz.Theme.styleWith(p.foreground).render(ctx.allocator, "Foreground text");
+        const muted_s = try zz.Theme.styleWith(p.muted).render(ctx.allocator, "Muted text");
+        const subtle_s = try zz.Theme.styleWith(p.subtle).render(ctx.allocator, "Subtle text");
 
         // Border preview
         var box_style = zz.Style{};
@@ -95,8 +95,8 @@ const Model = struct {
         box_style = box_style.borderForeground(p.border_focus);
         box_style = box_style.paddingAll(1);
         box_style = box_style.fg(p.foreground);
-        const box_content = std.fmt.allocPrint(ctx.allocator, "{s}\n{s}\n{s}", .{ fg_s, muted_s, subtle_s }) catch "?";
-        const bordered = box_style.render(ctx.allocator, box_content) catch box_content;
+        const box_content = try std.fmt.allocPrint(ctx.allocator, "{s}\n{s}\n{s}", .{ fg_s, muted_s, subtle_s });
+        const bordered = try box_style.render(ctx.allocator, box_content);
 
         // Surface/overlay preview
         var surface_style = zz.Style{};
@@ -105,7 +105,7 @@ const Model = struct {
         surface_style = surface_style.bg(p.surface);
         surface_style = surface_style.fg(p.foreground);
         surface_style = surface_style.paddingLeft(1).paddingRight(1);
-        const surface_box = surface_style.render(ctx.allocator, "Surface") catch "Surface";
+        const surface_box = try surface_style.render(ctx.allocator, "Surface");
 
         var overlay_style = zz.Style{};
         overlay_style = overlay_style.borderAll(zz.Border.normal);
@@ -113,14 +113,14 @@ const Model = struct {
         overlay_style = overlay_style.bg(p.overlay);
         overlay_style = overlay_style.fg(p.foreground);
         overlay_style = overlay_style.paddingLeft(1).paddingRight(1);
-        const overlay_box = overlay_style.render(ctx.allocator, "Overlay") catch "Overlay";
+        const overlay_box = try overlay_style.render(ctx.allocator, "Overlay");
 
         // Highlight preview
         var hl_style = zz.Style{};
         hl_style = hl_style.bg(p.highlight);
         hl_style = hl_style.fg(p.highlight_text);
         hl_style = hl_style.inline_style(true);
-        const hl_box = hl_style.render(ctx.allocator, " Highlighted ") catch "Highlighted";
+        const hl_box = try hl_style.render(ctx.allocator, " Highlighted ");
 
         // Progress bar using theme colors
         var prog = zz.Progress.init();
@@ -134,21 +134,21 @@ const Model = struct {
         empty_s = empty_s.fg(p.subtle);
         empty_s = empty_s.inline_style(true);
         prog.empty_style = empty_s;
-        const prog_view = prog.view(ctx.allocator) catch "error";
+        const prog_view = try prog.view(ctx.allocator);
 
         // Help
         const help_style = zz.Theme.styleWith(p.muted);
-        const help = help_style.render(ctx.allocator,
+        const help = try help_style.render(ctx.allocator,
             \\Left/Right or n/p: switch theme | q: quit
             \\All built-in palettes: Default Dark/Light, Catppuccin,
             \\Dracula, Nord, Tokyo Night, Gruvbox, Solarized, High Contrast
-        ) catch "";
+        );
 
         return std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n{s}\n\n{s}  {s}  {s}\n{s}  {s}  {s}  {s}\n\n{s}\n\n{s}  {s}  {s}\n\nProgress: {s}\n\n{s}",
             .{ title, theme_line, primary_s, secondary_s, accent_s, success_s, warning_s, danger_s, info_s, bordered, surface_box, overlay_box, hl_box, prog_view, help },
-        ) catch "Error";
+        );
     }
 };
 

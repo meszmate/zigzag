@@ -25,7 +25,7 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(_: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(_: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
         const long_text = "The quick brown fox jumps over the lazy dog. This is a long sentence that demonstrates how text overflow policies work in the ZigZag TUI framework.";
         const box_width: u16 = 35;
@@ -35,7 +35,7 @@ const Model = struct {
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.cyan);
         title_style = title_style.inline_style(true);
-        const title = title_style.render(alloc, "Text Overflow Policies") catch "Text Overflow Policies";
+        const title = try title_style.render(alloc, "Text Overflow Policies");
 
         // visible (no overflow handling)
         var vis_style = zz.Style{};
@@ -43,7 +43,7 @@ const Model = struct {
         vis_style = vis_style.borderAll(zz.Border.rounded);
         vis_style = vis_style.borderForeground(zz.Color.gray(8));
         vis_style = vis_style.overflow(.visible);
-        const vis = vis_style.render(alloc, long_text) catch "";
+        const vis = try vis_style.render(alloc, long_text);
 
         // hidden (clip)
         var clip_style = zz.Style{};
@@ -51,7 +51,7 @@ const Model = struct {
         clip_style = clip_style.borderAll(zz.Border.rounded);
         clip_style = clip_style.borderForeground(zz.Color.yellow);
         clip_style = clip_style.overflow(.hidden);
-        const clip = clip_style.render(alloc, long_text) catch "";
+        const clip = try clip_style.render(alloc, long_text);
 
         // ellipsis
         var ell_style = zz.Style{};
@@ -59,7 +59,7 @@ const Model = struct {
         ell_style = ell_style.borderAll(zz.Border.rounded);
         ell_style = ell_style.borderForeground(zz.Color.green);
         ell_style = ell_style.overflow(.ellipsis);
-        const ell = ell_style.render(alloc, long_text) catch "";
+        const ell = try ell_style.render(alloc, long_text);
 
         // word_wrap
         var ww_style = zz.Style{};
@@ -67,7 +67,7 @@ const Model = struct {
         ww_style = ww_style.borderAll(zz.Border.rounded);
         ww_style = ww_style.borderForeground(zz.Color.blue);
         ww_style = ww_style.overflow(.word_wrap);
-        const ww = ww_style.render(alloc, long_text) catch "";
+        const ww = try ww_style.render(alloc, long_text);
 
         // char_wrap
         var cw_style = zz.Style{};
@@ -75,30 +75,30 @@ const Model = struct {
         cw_style = cw_style.borderAll(zz.Border.rounded);
         cw_style = cw_style.borderForeground(zz.Color.magenta);
         cw_style = cw_style.overflow(.char_wrap);
-        const cw = cw_style.render(alloc, long_text) catch "";
+        const cw = try cw_style.render(alloc, long_text);
 
         // Labels
         var label_style = zz.Style{};
         label_style = label_style.fg(zz.Color.gray(12));
         label_style = label_style.inline_style(true);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             alloc,
             "{s}\n\n{s} visible (default):\n{s}\n\n{s} hidden (clip):\n{s}\n\n{s} ellipsis:\n{s}\n\n{s} word_wrap:\n{s}\n\n{s} char_wrap:\n{s}\n\nPress q to quit",
             .{
                 title,
-                label_style.render(alloc, "\xe2\x96\xb8") catch ">",
+                try label_style.render(alloc, "\xe2\x96\xb8"),
                 vis,
-                label_style.render(alloc, "\xe2\x96\xb8") catch ">",
+                try label_style.render(alloc, "\xe2\x96\xb8"),
                 clip,
-                label_style.render(alloc, "\xe2\x96\xb8") catch ">",
+                try label_style.render(alloc, "\xe2\x96\xb8"),
                 ell,
-                label_style.render(alloc, "\xe2\x96\xb8") catch ">",
+                try label_style.render(alloc, "\xe2\x96\xb8"),
                 ww,
-                label_style.render(alloc, "\xe2\x96\xb8") catch ">",
+                try label_style.render(alloc, "\xe2\x96\xb8"),
                 cw,
             },
-        ) catch "Error";
+        );
 
         return content;
     }

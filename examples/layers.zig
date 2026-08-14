@@ -41,7 +41,7 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
         const w: u16 = @intCast(@min(ctx.width, std.math.maxInt(u16)));
         const h: u16 = @intCast(@min(ctx.height, std.math.maxInt(u16)));
@@ -56,13 +56,13 @@ const Model = struct {
 
         var bg_content = std.array_list.Managed(u8).init(alloc);
         for (0..h) |row| {
-            if (row > 0) bg_content.append('\n') catch {};
+            if (row > 0) try bg_content.append('\n');
             for (0..w) |col| {
                 const c: u8 = if ((row + col) % 2 == 0) '.' else ' ';
-                bg_content.append(c) catch {};
+                try bg_content.append(c);
             }
         }
-        stack.push(.{ .content = bg_content.items, .z = 0, .transparent = false }) catch {};
+        try stack.push(.{ .content = bg_content.items, .z = 0, .transparent = false });
 
         // Main info panel (z=1)
         var info_style = zz.Style{};
@@ -73,8 +73,8 @@ const Model = struct {
         info_style = info_style.height(8);
 
         const info_text = "Layer Compositing Demo\n\np: toggle popup\nt: toggle tooltip\nq: quit";
-        const info_panel = info_style.render(alloc, info_text) catch info_text;
-        stack.push(.{ .content = info_panel, .x = 5, .y = 2, .z = 1 }) catch {};
+        const info_panel = try info_style.render(alloc, info_text);
+        try stack.push(.{ .content = info_panel, .x = 5, .y = 2, .z = 1 });
 
         // Popup (z=10)
         if (self.show_popup) {
@@ -86,10 +86,10 @@ const Model = struct {
             popup_style = popup_style.height(5);
 
             const popup_text = "Modal Popup\n\nThis is on top!\nEsc to close";
-            const popup = popup_style.render(alloc, popup_text) catch popup_text;
+            const popup = try popup_style.render(alloc, popup_text);
             const px: u16 = if (w > 34) (w - 34) / 2 else 0;
             const py: u16 = if (h > 9) (h - 9) / 2 else 0;
-            stack.push(.{ .content = popup, .x = px, .y = py, .z = 10 }) catch {};
+            try stack.push(.{ .content = popup, .x = px, .y = py, .z = 10 });
         }
 
         // Tooltip (z=20)
@@ -99,8 +99,8 @@ const Model = struct {
             tt_style = tt_style.borderForeground(zz.Color.green);
             tt_style = tt_style.width(20);
 
-            const tt = tt_style.render(alloc, "Tooltip z=20") catch "tooltip";
-            stack.push(.{ .content = tt, .x = 15, .y = 5, .z = 20 }) catch {};
+            const tt = try tt_style.render(alloc, "Tooltip z=20");
+            try stack.push(.{ .content = tt, .x = 15, .y = 5, .z = 20 });
         }
 
         return stack.render(alloc);

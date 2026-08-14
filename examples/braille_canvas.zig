@@ -70,7 +70,7 @@ const Model = struct {
         self.ball_y = std.math.clamp(self.ball_y, 4, max_y - 4);
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
         var c = @constCast(&self.canvas);
         c.clear();
@@ -101,31 +101,31 @@ const Model = struct {
         ball_style = ball_style.inline_style(true);
         c.drawCircleStyled(tx, ty, 1, ball_style);
 
-        const canvas_view = c.view(alloc) catch "";
+        const canvas_view = try c.view(alloc);
 
         var title = zz.Style{};
         title = title.bold(true);
         title = title.fg(zz.Color.cyan);
         title = title.inline_style(true);
-        const t = title.render(alloc, "BrailleCanvas — bouncing ball") catch "";
+        const t = try title.render(alloc, "BrailleCanvas — bouncing ball");
 
         var box = zz.Style{};
         box = box.borderAll(zz.Border.rounded);
         box = box.borderForeground(zz.Color.gray(8));
-        const boxed = box.render(alloc, canvas_view) catch canvas_view;
+        const boxed = try box.render(alloc, canvas_view);
 
         var help = zz.Style{};
         help = help.fg(zz.Color.gray(10));
         help = help.inline_style(true);
         const status = if (self.paused) "PAUSED  " else "        ";
-        const help_text = std.fmt.allocPrint(
+        const help_text = try std.fmt.allocPrint(
             alloc,
             "{s}space pause  r reset  q quit   |   frame {d}",
             .{ status, self.frame },
-        ) catch "";
-        const help_str = help.render(alloc, help_text) catch "";
+        );
+        const help_str = try help.render(alloc, help_text);
 
-        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}", .{ t, boxed, help_str }) catch "Error";
+        return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}", .{ t, boxed, help_str });
     }
 
     pub fn deinit(self: *Model) void {

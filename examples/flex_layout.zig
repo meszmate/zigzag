@@ -37,7 +37,7 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
         const w: u16 = @intCast(@min(ctx.width, std.math.maxInt(u16)));
         const h: u16 = @intCast(@min(ctx.height, std.math.maxInt(u16)));
@@ -80,14 +80,14 @@ const Model = struct {
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const footer_text = help_style.render(alloc, "Tab: cycle panels  1/2/3: select panel  q: quit") catch "Tab: cycle  q: quit";
+        const footer_text = try help_style.render(alloc, "Tab: cycle panels  1/2/3: select panel  q: quit");
         const footer = renderPanel(alloc, footer_text, rows[2].width, rows[2].height, zz.Color.gray(8), false);
 
         // Compose the body row: sidebar | main
-        const body = zz.join.horizontal(alloc, .top, &.{ sidebar, main_panel }) catch main_panel;
+        const body = try zz.join.horizontal(alloc, .top, &.{ sidebar, main_panel });
 
         // Stack vertically
-        return zz.join.vertical(alloc, .left, &.{ header, body, footer }) catch "render error";
+        return zz.join.vertical(alloc, .left, &.{ header, body, footer });
     }
 
     fn renderPanel(alloc: std.mem.Allocator, content: []const u8, w: u16, h: u16, border_color: zz.Color, highlight: bool) []const u8 {

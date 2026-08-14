@@ -32,9 +32,9 @@ const Counter = struct {
         return .none;
     }
 
-    pub fn view(self: *const Counter, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Counter, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
-        return std.fmt.allocPrint(alloc, "{s}: {d}", .{ self.label, self.count }) catch "?";
+        return std.fmt.allocPrint(alloc, "{s}: {d}", .{ self.label, self.count });
     }
 };
 
@@ -85,7 +85,7 @@ const Model = struct {
         }
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title_s = zz.Style{};
@@ -106,10 +106,10 @@ const Model = struct {
         box_b = box_b.paddingAll(1);
         box_b = box_b.width(30);
 
-        const view_a = box_a.render(alloc, self.counter_a.view(ctx)) catch "";
-        const view_b = box_b.render(alloc, self.counter_b.view(ctx)) catch "";
+        const view_a = try box_a.render(alloc, try self.counter_a.view(ctx));
+        const view_b = try box_b.render(alloc, try self.counter_b.view(ctx));
 
-        const panels = zz.join.horizontal(alloc, .top, &.{ view_a, view_b }) catch "";
+        const panels = try zz.join.horizontal(alloc, .top, &.{ view_a, view_b });
 
         var help_s = zz.Style{};
         help_s = help_s.fg(zz.Color.gray(10));
@@ -117,18 +117,18 @@ const Model = struct {
 
         const active_label = if (self.active == 0) "A" else "B";
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             alloc,
             "{s}\n\nActive: {s}\n\n{s}\n\n{s}",
             .{
-                title_s.render(alloc, "Sub-Program Demo") catch "Sub-Program",
+                try title_s.render(alloc, "Sub-Program Demo"),
                 active_label,
                 panels,
-                help_s.render(alloc, "Tab: switch  Up/Down: count  r: reset  q: quit") catch "",
+                try help_s.render(alloc, "Tab: switch  Up/Down: count  r: reset  q: quit"),
             },
-        ) catch "Error";
+        );
 
-        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content) catch content;
+        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content);
     }
 };
 

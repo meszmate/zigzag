@@ -143,10 +143,10 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         @constCast(self).syncChartsLayout(ctx);
         const content = self.composeContent(ctx) catch return "Error rendering charts";
-        return zz.place.place(ctx.allocator, ctx.width, ctx.height, .center, .top, content) catch content;
+        return zz.place.place(ctx.allocator, ctx.width, ctx.height, .center, .top, content);
     }
 
     fn chartsCompact(ctx: *const zz.Context) bool {

@@ -82,60 +82,60 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.magenta);
         title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "Context Menu Example") catch "Context Menu";
+        const title = try title_style.render(ctx.allocator, "Context Menu Example");
 
         // File list
         var list_buf: Writer.Allocating = .init(ctx.allocator);
         const lw = &list_buf.writer;
         for (self.items, 0..) |item, i| {
-            if (i > 0) lw.writeByte('\n') catch {};
+            if (i > 0) try lw.writeByte('\n');
             if (i == self.selected) {
                 var sel_style = zz.Style{};
                 sel_style = sel_style.bold(true);
                 sel_style = sel_style.fg(zz.Color.cyan);
                 sel_style = sel_style.inline_style(true);
-                const line = std.fmt.allocPrint(ctx.allocator, "  > {s}", .{item}) catch "";
-                const styled = sel_style.render(ctx.allocator, line) catch line;
-                lw.writeAll(styled) catch {};
+                const line = try std.fmt.allocPrint(ctx.allocator, "  > {s}", .{item});
+                const styled = try sel_style.render(ctx.allocator, line);
+                try lw.writeAll(styled);
             } else {
-                const line = std.fmt.allocPrint(ctx.allocator, "    {s}", .{item}) catch "";
-                lw.writeAll(line) catch {};
+                const line = try std.fmt.allocPrint(ctx.allocator, "    {s}", .{item});
+                try lw.writeAll(line);
             }
         }
-        const file_list = list_buf.toOwnedSlice() catch "";
+        const file_list = try list_buf.toOwnedSlice();
 
         // Status
         var status_style = zz.Style{};
         status_style = status_style.fg(zz.Color.green);
         status_style = status_style.inline_style(true);
-        const styled_status = status_style.render(ctx.allocator, self.status) catch self.status;
+        const styled_status = try status_style.render(ctx.allocator, self.status);
 
         // Context menu overlay
-        const menu_view = self.menu.view(ctx.allocator) catch "";
+        const menu_view = try self.menu.view(ctx.allocator);
 
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const help = help_style.render(ctx.allocator, "Up/Down: navigate | Space/Enter: context menu | Esc: close | q: quit") catch "";
+        const help = try help_style.render(ctx.allocator, "Up/Down: navigate | Space/Enter: context menu | Esc: close | q: quit");
 
         if (self.menu.isVisible()) {
             return std.fmt.allocPrint(
                 ctx.allocator,
                 "{s}\n\n{s}\n\n{s}\n\n{s}\n\n{s}",
                 .{ title, file_list, menu_view, styled_status, help },
-            ) catch "Error";
+            );
         }
 
         return std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}\n\n{s}\n\n{s}",
             .{ title, file_list, styled_status, help },
-        ) catch "Error";
+        );
     }
 };
 

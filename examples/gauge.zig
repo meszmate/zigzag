@@ -43,14 +43,14 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title_s = zz.Style{};
         title_s = title_s.bold(true);
         title_s = title_s.fg(zz.Color.cyan);
         title_s = title_s.inline_style(true);
-        const title = title_s.render(alloc, "Gauge Component Demo") catch "Gauge Demo";
+        const title = try title_s.render(alloc, "Gauge Component Demo");
 
         const thresholds = &[_]zz.Gauge.Threshold{
             .{ .value = 70, .color = zz.Color.yellow },
@@ -90,7 +90,7 @@ const Model = struct {
         help_s = help_s.fg(zz.Color.gray(10));
         help_s = help_s.inline_style(true);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             alloc,
             "{s}\n\n{s}\n\n{s}\n\n{s}\n\n{s}",
             .{
@@ -98,11 +98,11 @@ const Model = struct {
                 bar_view,
                 level_view,
                 blocks_view,
-                help_s.render(alloc, "Up/Down: adjust  r: reset  q: quit") catch "",
+                try help_s.render(alloc, "Up/Down: adjust  r: reset  q: quit"),
             },
-        ) catch "Error";
+        );
 
-        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content) catch content;
+        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content);
     }
 };
 

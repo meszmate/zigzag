@@ -81,35 +81,35 @@ const Model = struct {
         return zz.Cmd(Msg).tickMs(16);
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         // Title
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.hex("#FF6B6B"));
         title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "Dashboard") catch "Dashboard";
+        const title = try title_style.render(ctx.allocator, "Dashboard");
 
         // Stats section
-        const stats_box = self.renderStats(ctx) catch "";
+        const stats_box = try self.renderStats(ctx);
 
         // Progress section
-        const progress_box = self.renderProgress(ctx) catch "";
+        const progress_box = try self.renderProgress(ctx);
 
         // Activity section
-        const activity_box = self.renderActivity(ctx) catch "";
+        const activity_box = try self.renderActivity(ctx);
 
         // Layout - join horizontally
-        const top_row = zz.joinHorizontal(ctx.allocator, &.{ stats_box, "  ", progress_box }) catch stats_box;
-        const main_content = zz.joinVertical(ctx.allocator, &.{ top_row, "", activity_box }) catch top_row;
+        const top_row = try zz.joinHorizontal(ctx.allocator, &.{ stats_box, "  ", progress_box });
+        const main_content = try zz.joinVertical(ctx.allocator, &.{ top_row, "", activity_box });
 
         // Help
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const help = help_style.render(
+        const help = try help_style.render(
             ctx.allocator,
             "Space: Pause/Resume timer  r: Reset  q: Quit",
-        ) catch "";
+        );
 
         // Get max width for centering
         const main_width = zz.measure.maxLineWidth(main_content);
@@ -118,15 +118,15 @@ const Model = struct {
         const max_width = @max(main_width, @max(title_width, help_width));
 
         // Center elements
-        const centered_title = zz.place.place(ctx.allocator, max_width, 1, .center, .top, title) catch title;
-        const centered_main = zz.place.place(ctx.allocator, max_width, zz.measure.height(main_content), .center, .top, main_content) catch main_content;
-        const centered_help = zz.place.place(ctx.allocator, max_width, 1, .center, .top, help) catch help;
+        const centered_title = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, title);
+        const centered_main = try zz.place.place(ctx.allocator, max_width, zz.measure.height(main_content), .center, .top, main_content);
+        const centered_help = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, help);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}\n\n{s}",
             .{ centered_title, centered_main, centered_help },
-        ) catch "Error";
+        );
 
         // Center in terminal
         return zz.place.place(
@@ -136,7 +136,7 @@ const Model = struct {
             .center,
             .middle,
             content,
-        ) catch content;
+        );
     }
 
     fn renderStats(self: *const Model, ctx: *const zz.Context) ![]const u8 {

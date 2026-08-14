@@ -67,7 +67,7 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title_s = zz.Style{};
@@ -93,22 +93,22 @@ const Model = struct {
         box_s = box_s.paddingAll(1);
 
         const code_output = cv.view(alloc);
-        const boxed = box_s.render(alloc, code_output) catch code_output;
+        const boxed = try box_s.render(alloc, code_output);
 
         var help_s = zz.Style{};
         help_s = help_s.fg(zz.Color.gray(10));
         help_s = help_s.inline_style(true);
 
-        const header = std.fmt.allocPrint(alloc, "{s}  [{s}]", .{
-            title_s.render(alloc, "Code Viewer") catch "Code Viewer",
+        const header = try std.fmt.allocPrint(alloc, "{s}  [{s}]", .{
+            try title_s.render(alloc, "Code Viewer"),
             lang_name,
-        }) catch "";
+        });
 
         return std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}", .{
             header,
             boxed,
-            help_s.render(alloc, "1: Zig  2: Python  Tab: switch  q: quit") catch "",
-        }) catch "Error";
+            try help_s.render(alloc, "1: Zig  2: Python  Tab: switch  q: quit"),
+        });
     }
 };
 

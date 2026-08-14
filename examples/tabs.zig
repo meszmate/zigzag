@@ -74,7 +74,7 @@ const Model = struct {
         key: zz.KeyEvent,
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         self.tabs = zz.TabGroup.init(ctx.persistent_allocator);
         self.tabs.show_numbers = true;
         self.tabs.max_width = 60;
@@ -82,7 +82,7 @@ const Model = struct {
         self.home = .{};
         self.counter = .{};
 
-        _ = self.tabs.addTab(.{
+        _ = try self.tabs.addTab(.{
             .id = "home",
             .title = "Home",
             .route = .{
@@ -91,9 +91,9 @@ const Model = struct {
                 .key_fn = ScreenA.onKey,
                 .on_enter_fn = ScreenA.onEnter,
             },
-        }) catch {};
+        });
 
-        _ = self.tabs.addTab(.{
+        _ = try self.tabs.addTab(.{
             .id = "counter",
             .title = "Counter",
             .route = .{
@@ -101,7 +101,7 @@ const Model = struct {
                 .render_fn = ScreenB.render,
                 .key_fn = ScreenB.onKey,
             },
-        }) catch {};
+        });
 
         return .none;
     }
@@ -120,15 +120,15 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
-        const body = self.tabs.viewWithContent(ctx.allocator, "No active route") catch "render error";
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
+        const body = try self.tabs.viewWithContent(ctx.allocator, "No active route");
 
         var hint_style = zz.Style{};
         hint_style = hint_style.fg(zz.Color.gray(12));
         hint_style = hint_style.inline_style(true);
-        const help = hint_style.render(ctx.allocator, "q: quit | ←/→: switch | 1..9: jump | +/- or ↑/↓: counter actions") catch "";
+        const help = try hint_style.render(ctx.allocator, "q: quit | ←/→: switch | 1..9: jump | +/- or ↑/↓: counter actions");
 
-        return std.fmt.allocPrint(ctx.allocator, "{s}\n\n{s}", .{ body, help }) catch body;
+        return std.fmt.allocPrint(ctx.allocator, "{s}\n\n{s}", .{ body, help });
     }
 };
 

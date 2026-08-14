@@ -72,7 +72,7 @@ const Model = struct {
         window_size: struct { width: u16, height: u16 },
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         // Dashboard
         self.spinner = zz.Spinner.init();
         self.spinner.setFrames(zz.Spinner.Styles.dots);
@@ -161,16 +161,16 @@ const Model = struct {
         self.table.alt_row_style = alt_style;
         self.table.visible_rows = 8;
 
-        self.table.addRow(.{ "web-01", "online", "45d 3h", "0.42" }) catch {};
-        self.table.addRow(.{ "web-02", "online", "45d 3h", "0.38" }) catch {};
-        self.table.addRow(.{ "db-01", "online", "120d 7h", "0.71" }) catch {};
-        self.table.addRow(.{ "db-02", "standby", "120d 7h", "0.12" }) catch {};
-        self.table.addRow(.{ "cache-01", "online", "30d 2h", "0.55" }) catch {};
-        self.table.addRow(.{ "cache-02", "warning", "30d 2h", "0.89" }) catch {};
-        self.table.addRow(.{ "worker-01", "online", "15d 8h", "0.63" }) catch {};
-        self.table.addRow(.{ "worker-02", "offline", "0d 0h", "0.00" }) catch {};
-        self.table.addRow(.{ "monitor", "online", "60d 1h", "0.22" }) catch {};
-        self.table.addRow(.{ "lb-01", "online", "90d 5h", "0.45" }) catch {};
+        try self.table.addRow(.{ "web-01", "online", "45d 3h", "0.42" });
+        try self.table.addRow(.{ "web-02", "online", "45d 3h", "0.38" });
+        try self.table.addRow(.{ "db-01", "online", "120d 7h", "0.71" });
+        try self.table.addRow(.{ "db-02", "standby", "120d 7h", "0.12" });
+        try self.table.addRow(.{ "cache-01", "online", "30d 2h", "0.55" });
+        try self.table.addRow(.{ "cache-02", "warning", "30d 2h", "0.89" });
+        try self.table.addRow(.{ "worker-01", "online", "15d 8h", "0.63" });
+        try self.table.addRow(.{ "worker-02", "offline", "0d 0h", "0.00" });
+        try self.table.addRow(.{ "monitor", "online", "60d 1h", "0.22" });
+        try self.table.addRow(.{ "lb-01", "online", "90d 5h", "0.45" });
         self.table.focus();
 
         // Tree
@@ -183,31 +183,31 @@ const Model = struct {
         };
         const root = self.tree.addRoot({}, "project/") catch 0;
         const src = self.tree.addChild(root, {}, "src/") catch 0;
-        _ = self.tree.addChild(src, {}, "main.zig") catch {};
-        _ = self.tree.addChild(src, {}, "lib.zig") catch {};
+        _ = try self.tree.addChild(src, {}, "main.zig");
+        _ = try self.tree.addChild(src, {}, "lib.zig");
         const comp = self.tree.addChild(src, {}, "components/") catch 0;
-        _ = self.tree.addChild(comp, {}, "button.zig") catch {};
-        _ = self.tree.addChild(comp, {}, "input.zig") catch {};
+        _ = try self.tree.addChild(comp, {}, "button.zig");
+        _ = try self.tree.addChild(comp, {}, "input.zig");
         const tests = self.tree.addChild(root, {}, "tests/") catch 0;
-        _ = self.tree.addChild(tests, {}, "unit_test.zig") catch {};
-        _ = self.tree.addChild(root, {}, "build.zig") catch {};
-        _ = self.tree.addChild(root, {}, "README.md") catch {};
+        _ = try self.tree.addChild(tests, {}, "unit_test.zig");
+        _ = try self.tree.addChild(root, {}, "build.zig");
+        _ = try self.tree.addChild(root, {}, "README.md");
 
         // Styled list
         self.styled_list = zz.StyledList.init(ctx.persistent_allocator);
         self.styled_list.setEnumerator(.roman);
-        self.styled_list.addItem("Setup development environment") catch {};
-        self.styled_list.addItem("Implement core features") catch {};
-        self.styled_list.addItemNested("Style system", 1) catch {};
-        self.styled_list.addItemNested("Component library", 1) catch {};
-        self.styled_list.addItem("Write tests") catch {};
-        self.styled_list.addItem("Deploy to production") catch {};
+        try self.styled_list.addItem("Setup development environment");
+        try self.styled_list.addItem("Implement core features");
+        try self.styled_list.addItemNested("Style system", 1);
+        try self.styled_list.addItemNested("Component library", 1);
+        try self.styled_list.addItem("Write tests");
+        try self.styled_list.addItem("Deploy to production");
 
         self.data_focus = .table_focus;
 
         // Files tab - viewport
         self.file_viewport = zz.components.Viewport.init(ctx.persistent_allocator, 60, 15);
-        self.file_viewport.setContent(
+        try self.file_viewport.setContent(
             \\  Directory listing:
             \\
             \\  drwxr-xr-x  src/
@@ -220,14 +220,14 @@ const Model = struct {
             \\  -rw-r--r--  .gitignore
             \\
             \\  Use j/k to scroll, Tab to switch tabs.
-        ) catch {};
+        );
 
         // Editor tab
         self.text_area = zz.TextArea.init(ctx.persistent_allocator);
         self.text_area.setSize(@min(ctx.width -| 4, 70), @min(ctx.height -| 8, 20));
         self.text_area.line_numbers = true;
         self.text_area.word_wrap = true;
-        self.text_area.setValue(
+        try self.text_area.setValue(
             \\const std = @import("std");
             \\
             \\pub fn main() !void {
@@ -237,7 +237,7 @@ const Model = struct {
             \\// Edit this code with the text area component.
             \\// Supports line numbers, word wrap, and full
             \\// cursor navigation.
-        ) catch {};
+        );
 
         // Global
         self.active_tab = .dashboard;
@@ -245,9 +245,9 @@ const Model = struct {
         self.show_quit_confirm = false;
 
         self.help = zz.components.Help.init(ctx.persistent_allocator);
-        self.help.addBinding("1-6", "tabs") catch {};
-        self.help.addBinding("Tab", "next tab") catch {};
-        self.help.addBinding("Ctrl+Q", "quit") catch {};
+        try self.help.addBinding("1-6", "tabs");
+        try self.help.addBinding("Tab", "next tab");
+        try self.help.addBinding("Ctrl+Q", "quit");
 
         return zz.Cmd(Msg).tickMs(16);
     }
@@ -454,7 +454,7 @@ const Model = struct {
         }
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         // Build layout
         const tab_bar = self.renderTabBar(ctx) catch return "Error rendering tab bar";
         const content = self.renderActiveTab(ctx) catch return "Error rendering content";
@@ -462,15 +462,15 @@ const Model = struct {
 
         // Confirmation overlay
         const confirm_view = if (self.show_quit_confirm)
-            self.confirm.view(ctx.allocator) catch ""
+            try self.confirm.view(ctx.allocator)
         else
             "";
 
         // Compose full view
         const main_view = if (self.show_quit_confirm)
-            zz.joinVertical(ctx.allocator, &.{ tab_bar, "", content, "", confirm_view, "", status }) catch tab_bar
+            try zz.joinVertical(ctx.allocator, &.{ tab_bar, "", content, "", confirm_view, "", status })
         else
-            zz.joinVertical(ctx.allocator, &.{ tab_bar, "", content, "", status }) catch tab_bar;
+            try zz.joinVertical(ctx.allocator, &.{ tab_bar, "", content, "", status });
 
         return zz.place.place(
             ctx.allocator,
@@ -479,7 +479,7 @@ const Model = struct {
             .center,
             .top,
             main_view,
-        ) catch main_view;
+        );
     }
 
     fn chartsCompact(ctx: *const zz.Context) bool {

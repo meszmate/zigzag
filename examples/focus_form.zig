@@ -81,19 +81,19 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         // Title
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.hex("#FF6B6B"));
         title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "Contact Form") catch "Contact Form";
+        const title = try title_style.render(ctx.allocator, "Contact Form");
 
         // Subtitle
         var sub_style = zz.Style{};
         sub_style = sub_style.fg(zz.Color.gray(15));
         sub_style = sub_style.inline_style(true);
-        const subtitle = sub_style.render(ctx.allocator, "Tab/Shift+Tab to navigate • Enter to submit • Esc to quit") catch "";
+        const subtitle = try sub_style.render(ctx.allocator, "Tab/Shift+Tab to navigate • Enter to submit • Esc to quit");
 
         // Field labels
         var label_style = zz.Style{};
@@ -107,24 +107,24 @@ const Model = struct {
 
         // Render each field with focus indicator
         const name_label = if (self.focus_group.isFocused(0))
-            focused_label.render(ctx.allocator, "▸ Name") catch "Name"
+            try focused_label.render(ctx.allocator, "▸ Name")
         else
-            label_style.render(ctx.allocator, "  Name") catch "Name";
+            try label_style.render(ctx.allocator, "  Name");
 
         const email_label = if (self.focus_group.isFocused(1))
-            focused_label.render(ctx.allocator, "▸ Email") catch "Email"
+            try focused_label.render(ctx.allocator, "▸ Email")
         else
-            label_style.render(ctx.allocator, "  Email") catch "Email";
+            try label_style.render(ctx.allocator, "  Email");
 
         const message_label = if (self.focus_group.isFocused(2))
-            focused_label.render(ctx.allocator, "▸ Message") catch "Message"
+            try focused_label.render(ctx.allocator, "▸ Message")
         else
-            label_style.render(ctx.allocator, "  Message") catch "Message";
+            try label_style.render(ctx.allocator, "  Message");
 
         // Render inputs
-        const name_view = self.name_input.view(ctx.allocator) catch "";
-        const email_view = self.email_input.view(ctx.allocator) catch "";
-        const message_view = self.message_input.view(ctx.allocator) catch "";
+        const name_view = try self.name_input.view(ctx.allocator);
+        const email_view = try self.email_input.view(ctx.allocator);
+        const message_view = try self.message_input.view(ctx.allocator);
 
         // Wrap each input in a focus-styled box
         const name_box = self.renderField(ctx, name_label, name_view, 0);
@@ -142,7 +142,7 @@ const Model = struct {
             const email_val = self.email_input.getValue();
             const msg_val = self.message_input.getValue();
 
-            const text = std.fmt.allocPrint(
+            const text = try std.fmt.allocPrint(
                 ctx.allocator,
                 "✓ Submitted! Name: {s}, Email: {s}, Message: {s}",
                 .{
@@ -150,8 +150,8 @@ const Model = struct {
                     if (email_val.len > 0) email_val else "(empty)",
                     if (msg_val.len > 0) msg_val else "(empty)",
                 },
-            ) catch "✓ Submitted!";
-            break :blk success_style.render(ctx.allocator, text) catch text;
+            );
+            break :blk try success_style.render(ctx.allocator, text);
         } else blk: {
             var hint_style = zz.Style{};
             hint_style = hint_style.fg(zz.Color.gray(12));
@@ -162,12 +162,12 @@ const Model = struct {
                 2 => "Message",
                 else => "?",
             };
-            const text = std.fmt.allocPrint(
+            const text = try std.fmt.allocPrint(
                 ctx.allocator,
                 "Editing: {s} (field {d}/{d})",
                 .{ field_name, self.focus_group.focused() + 1, self.focus_group.len() },
-            ) catch "";
-            break :blk hint_style.render(ctx.allocator, text) catch text;
+            );
+            break :blk try hint_style.render(ctx.allocator, text);
         };
 
         // Get max width
@@ -178,15 +178,15 @@ const Model = struct {
         const max_width = @max(box_width, @max(zz.measure.width(title), zz.measure.width(subtitle)));
 
         // Center elements
-        const centered_title = zz.place.place(ctx.allocator, max_width, 1, .center, .top, title) catch title;
-        const centered_sub = zz.place.place(ctx.allocator, max_width, 1, .center, .top, subtitle) catch subtitle;
-        const centered_status = zz.place.place(ctx.allocator, max_width, 1, .center, .top, status) catch status;
+        const centered_title = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, title);
+        const centered_sub = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, subtitle);
+        const centered_status = try zz.place.place(ctx.allocator, max_width, 1, .center, .top, status);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n{s}\n\n{s}\n{s}\n{s}\n\n{s}",
             .{ centered_title, centered_sub, name_box, email_box, message_box, centered_status },
-        ) catch "Error rendering view";
+        );
 
         return zz.place.place(
             ctx.allocator,
@@ -195,7 +195,7 @@ const Model = struct {
             .center,
             .middle,
             content,
-        ) catch content;
+        );
     }
 
     fn renderField(self: *const Model, ctx: *const zz.Context, label: []const u8, input_view: []const u8, index: usize) []const u8 {

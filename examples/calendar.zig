@@ -42,7 +42,7 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title_s = zz.Style{};
@@ -56,28 +56,28 @@ const Model = struct {
         box_style = box_style.paddingAll(1);
 
         const cal_view = self.cal.view(alloc);
-        const boxed = box_style.render(alloc, cal_view) catch cal_view;
+        const boxed = try box_style.render(alloc, cal_view);
 
-        const selected_str = std.fmt.allocPrint(alloc, "Selected: {d}/{d}/{d}", .{
+        const selected_str = try std.fmt.allocPrint(alloc, "Selected: {d}/{d}/{d}", .{
             self.cal.selected_day, self.cal.month, self.cal.year,
-        }) catch "";
+        });
 
         var help_s = zz.Style{};
         help_s = help_s.fg(zz.Color.gray(10));
         help_s = help_s.inline_style(true);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             alloc,
             "{s}\n\n{s}\n\n{s}\n\n{s}",
             .{
-                title_s.render(alloc, "Calendar Demo") catch "Calendar",
+                try title_s.render(alloc, "Calendar Demo"),
                 boxed,
                 selected_str,
-                help_s.render(alloc, "Arrows: navigate  Enter: select  Shift+L/R: month  PgUp/Dn: month  q: quit") catch "",
+                try help_s.render(alloc, "Arrows: navigate  Enter: select  Shift+L/R: month  PgUp/Dn: month  q: quit"),
             },
-        ) catch "Error";
+        );
 
-        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content) catch content;
+        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content);
     }
 };
 

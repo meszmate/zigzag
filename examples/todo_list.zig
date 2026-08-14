@@ -21,7 +21,7 @@ const Model = struct {
         key: zz.KeyEvent,
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         self.list = zz.List(Todo).init(ctx.persistent_allocator);
         self.list.multi_select = true;
         self.list.height = 10;
@@ -30,11 +30,11 @@ const Model = struct {
 
         // Add some sample items
         const Item = zz.List(Todo).Item;
-        self.list.addItem(Item.init(.{ .id = 1, .done = false }, "Learn Zig")) catch {};
-        self.list.addItem(Item.init(.{ .id = 2, .done = true }, "Build a TUI app")) catch {};
-        self.list.addItem(Item.init(.{ .id = 3, .done = false }, "Write documentation")) catch {};
-        self.list.addItem(Item.init(.{ .id = 4, .done = false }, "Add more features")) catch {};
-        self.list.addItem(Item.init(.{ .id = 5, .done = false }, "Test everything")) catch {};
+        try self.list.addItem(Item.init(.{ .id = 1, .done = false }, "Learn Zig"));
+        try self.list.addItem(Item.init(.{ .id = 2, .done = true }, "Build a TUI app"));
+        try self.list.addItem(Item.init(.{ .id = 3, .done = false }, "Write documentation"));
+        try self.list.addItem(Item.init(.{ .id = 4, .done = false }, "Add more features"));
+        try self.list.addItem(Item.init(.{ .id = 5, .done = false }, "Test everything"));
 
         self.input_mode = false;
         self.input = zz.TextInput.init(ctx.persistent_allocator);
@@ -135,7 +135,7 @@ const Model = struct {
         }
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.cyan);
@@ -146,7 +146,7 @@ const Model = struct {
         box_style = box_style.borderForeground(zz.Color.gray(15));
         box_style = box_style.paddingAll(1);
 
-        const title = title_style.render(ctx.allocator, "Todo List") catch "Todo List";
+        const title = try title_style.render(ctx.allocator, "Todo List");
 
         // Build todo list display using filtered_indices
         var list_content: Writer.Allocating = .init(ctx.allocator);
@@ -157,31 +157,31 @@ const Model = struct {
             var filter_style = zz.Style{};
             filter_style = filter_style.fg(zz.Color.yellow);
             filter_style = filter_style.inline_style(true);
-            const filter_text = std.fmt.allocPrint(ctx.allocator, "Filter: {s}", .{self.list.filter_text.items}) catch "Filter:";
-            const styled_filter = filter_style.render(ctx.allocator, filter_text) catch filter_text;
-            writer.writeAll(styled_filter) catch {};
-            writer.writeByte('\n') catch {};
+            const filter_text = try std.fmt.allocPrint(ctx.allocator, "Filter: {s}", .{self.list.filter_text.items});
+            const styled_filter = try filter_style.render(ctx.allocator, filter_text);
+            try writer.writeAll(styled_filter);
+            try writer.writeByte('\n');
         }
 
         const visible = self.list.filtered_indices.items;
 
         for (visible, 0..) |item_idx, i| {
-            if (i > 0) writer.writeByte('\n') catch {};
+            if (i > 0) try writer.writeByte('\n');
 
             const item = self.list.items.items[item_idx];
 
             // Cursor indicator
             if (i == self.list.cursor) {
-                writer.writeAll("> ") catch {};
+                try writer.writeAll("> ");
             } else {
-                writer.writeAll("  ") catch {};
+                try writer.writeAll("  ");
             }
 
             // Checkbox
             if (item.value.done) {
-                writer.writeAll("[x] ") catch {};
+                try writer.writeAll("[x] ");
             } else {
-                writer.writeAll("[ ] ") catch {};
+                try writer.writeAll("[ ] ");
             }
 
             // Title with strikethrough if done
@@ -190,26 +190,26 @@ const Model = struct {
                 done_style = done_style.strikethrough(true);
                 done_style = done_style.fg(zz.Color.gray(12));
                 done_style = done_style.inline_style(true);
-                const styled = done_style.render(ctx.allocator, item.title) catch item.title;
-                writer.writeAll(styled) catch {};
+                const styled = try done_style.render(ctx.allocator, item.title);
+                try writer.writeAll(styled);
             } else if (i == self.list.cursor) {
                 var selected_style = zz.Style{};
                 selected_style = selected_style.bold(true);
                 selected_style = selected_style.fg(zz.Color.magenta);
                 selected_style = selected_style.inline_style(true);
-                const styled = selected_style.render(ctx.allocator, item.title) catch item.title;
-                writer.writeAll(styled) catch {};
+                const styled = try selected_style.render(ctx.allocator, item.title);
+                try writer.writeAll(styled);
             } else {
-                writer.writeAll(item.title) catch {};
+                try writer.writeAll(item.title);
             }
         }
 
-        const list_view = list_content.toOwnedSlice() catch "";
-        const boxed_list = box_style.render(ctx.allocator, list_view) catch list_view;
+        const list_view = try list_content.toOwnedSlice();
+        const boxed_list = try box_style.render(ctx.allocator, list_view);
 
         // Input line
         const input_line = if (self.input_mode)
-            self.input.view(ctx.allocator) catch ""
+            try self.input.view(ctx.allocator)
         else
             "";
 
@@ -223,7 +223,7 @@ const Model = struct {
             "Type to filter  Esc: Clear filter"
         else
             "j/k: Navigate  Space: Select  x: Toggle  a: Add  d: Delete  /: Filter  q: Quit";
-        const help = help_style.render(ctx.allocator, help_text) catch "";
+        const help = try help_style.render(ctx.allocator, help_text);
 
         // Get the max width of all elements for proper centering
         const box_width = zz.measure.maxLineWidth(boxed_list);
@@ -232,49 +232,49 @@ const Model = struct {
         const max_width = @max(box_width, @max(help_width, title_width));
 
         // Center all elements to the max width
-        const centered_title = zz.place.place(
+        const centered_title = try zz.place.place(
             ctx.allocator,
             max_width,
             1,
             .center,
             .top,
             title,
-        ) catch title;
+        );
 
-        const centered_box = zz.place.place(
+        const centered_box = try zz.place.place(
             ctx.allocator,
             max_width,
             zz.measure.height(boxed_list),
             .center,
             .top,
             boxed_list,
-        ) catch boxed_list;
+        );
 
-        const centered_help = zz.place.place(
+        const centered_help = try zz.place.place(
             ctx.allocator,
             max_width,
             1,
             .center,
             .top,
             help,
-        ) catch help;
+        );
 
         // Build content
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\n{s}\n\n{s}{s}",
             .{ centered_title, centered_box, input_line, centered_help },
-        ) catch "Error";
+        );
 
         // Center the content in the terminal
-        const centered = zz.place.place(
+        const centered = try zz.place.place(
             ctx.allocator,
             ctx.width,
             ctx.height,
             .center,
             .middle,
             content,
-        ) catch content;
+        );
 
         return centered;
     }

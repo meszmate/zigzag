@@ -35,7 +35,7 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title_s = zz.Style{};
@@ -48,23 +48,23 @@ const Model = struct {
         box_s = box_s.borderForeground(zz.Color.cyan);
 
         const list_view = self.vlist.view(alloc);
-        const boxed = box_s.render(alloc, list_view) catch list_view;
+        const boxed = try box_s.render(alloc, list_view);
 
         var help_s = zz.Style{};
         help_s = help_s.fg(zz.Color.gray(10));
         help_s = help_s.inline_style(true);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             alloc,
             "{s}\n\n{s}\n\n{s}",
             .{
-                title_s.render(alloc, std.fmt.allocPrint(alloc, "Virtual List - {d} items", .{TOTAL_ITEMS}) catch "Virtual List") catch "Virtual List",
+                try title_s.render(alloc, try std.fmt.allocPrint(alloc, "Virtual List - {d} items", .{TOTAL_ITEMS})),
                 boxed,
-                help_s.render(alloc, "Up/Down: navigate  PgUp/PgDn: page  Home/End: jump  q: quit") catch "",
+                try help_s.render(alloc, "Up/Down: navigate  PgUp/PgDn: page  Home/End: jump  q: quit"),
             },
-        ) catch "Error";
+        );
 
-        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content) catch content;
+        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content);
     }
 
     fn renderItem(item: usize, _: usize, _: bool, allocator: std.mem.Allocator) []const u8 {

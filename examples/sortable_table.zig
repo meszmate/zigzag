@@ -11,17 +11,17 @@ const Model = struct {
         key: zz.KeyEvent,
     };
 
-    pub fn init(self: *Model, _: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, _: *zz.Context) !zz.Cmd(Msg) {
         self.table = zz.components.sortable_table.SortableTable(4).init(std.heap.page_allocator);
         self.table.setHeaders(.{ "Name", "Role", "City", "Score" });
-        self.table.addRow(.{ "Alice", "Engineer", "NYC", "95" }) catch {};
-        self.table.addRow(.{ "Bob", "Designer", "London", "87" }) catch {};
-        self.table.addRow(.{ "Carol", "Manager", "Tokyo", "92" }) catch {};
-        self.table.addRow(.{ "Dave", "Engineer", "Berlin", "78" }) catch {};
-        self.table.addRow(.{ "Eve", "Designer", "Paris", "91" }) catch {};
-        self.table.addRow(.{ "Frank", "Manager", "NYC", "85" }) catch {};
-        self.table.addRow(.{ "Grace", "Engineer", "London", "99" }) catch {};
-        self.table.addRow(.{ "Hank", "Designer", "Tokyo", "72" }) catch {};
+        try self.table.addRow(.{ "Alice", "Engineer", "NYC", "95" });
+        try self.table.addRow(.{ "Bob", "Designer", "London", "87" });
+        try self.table.addRow(.{ "Carol", "Manager", "Tokyo", "92" });
+        try self.table.addRow(.{ "Dave", "Engineer", "Berlin", "78" });
+        try self.table.addRow(.{ "Eve", "Designer", "Paris", "91" });
+        try self.table.addRow(.{ "Frank", "Manager", "NYC", "85" });
+        try self.table.addRow(.{ "Grace", "Engineer", "London", "99" });
+        try self.table.addRow(.{ "Hank", "Designer", "Tokyo", "72" });
         return .none;
     }
 
@@ -39,7 +39,7 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title_s = zz.Style{};
@@ -53,23 +53,23 @@ const Model = struct {
         box_s = box_s.paddingAll(1);
 
         const table_view = self.table.view(alloc);
-        const boxed = box_s.render(alloc, table_view) catch table_view;
+        const boxed = try box_s.render(alloc, table_view);
 
         var help_s = zz.Style{};
         help_s = help_s.fg(zz.Color.gray(10));
         help_s = help_s.inline_style(true);
 
-        const content = std.fmt.allocPrint(
+        const content = try std.fmt.allocPrint(
             alloc,
             "{s}\n\n{s}\n\n{s}",
             .{
-                title_s.render(alloc, "Sortable Table Demo") catch "",
+                try title_s.render(alloc, "Sortable Table Demo"),
                 boxed,
-                help_s.render(alloc, "1-4: sort by column  /: filter  Up/Down: navigate  q: quit") catch "",
+                try help_s.render(alloc, "1-4: sort by column  /: filter  Up/Down: navigate  q: quit"),
             },
-        ) catch "Error";
+        );
 
-        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content) catch content;
+        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content);
     }
 };
 

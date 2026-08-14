@@ -56,36 +56,36 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var title_s = zz.Style{};
         title_s = title_s.bold(true);
         title_s = title_s.fg(zz.Color.cyan);
         title_s = title_s.inline_style(true);
-        const title = title_s.render(ctx.allocator, "ZigZag WASM Demo") catch "ZigZag WASM";
+        const title = try title_s.render(ctx.allocator, "ZigZag WASM Demo");
 
         var count_s = zz.Style{};
         count_s = count_s.fg(zz.Color.green);
         count_s = count_s.bold(true);
         count_s = count_s.inline_style(true);
-        const count_text = std.fmt.allocPrint(ctx.allocator, "{d}", .{self.count}) catch "?";
-        const count_styled = count_s.render(ctx.allocator, count_text) catch count_text;
+        const count_text = try std.fmt.allocPrint(ctx.allocator, "{d}", .{self.count});
+        const count_styled = try count_s.render(ctx.allocator, count_text);
 
-        const size_info = std.fmt.allocPrint(
+        const size_info = try std.fmt.allocPrint(
             ctx.allocator,
             "Terminal: {d}x{d}",
             .{ ctx.width, ctx.height },
-        ) catch "";
+        );
 
         var help_s = zz.Style{};
         help_s = help_s.fg(zz.Color.gray(12));
         help_s = help_s.inline_style(true);
-        const help = help_s.render(ctx.allocator, "Up/Down: change count | q: quit") catch "";
+        const help = try help_s.render(ctx.allocator, "Up/Down: change count | q: quit");
 
         return std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n\nCount: {s}\nLast key: {s}\n{s}\n\n{s}",
             .{ title, count_styled, self.last_key, size_info, help },
-        ) catch "Error";
+        );
     }
 };
 

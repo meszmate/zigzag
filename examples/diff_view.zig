@@ -58,7 +58,7 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title_s = zz.Style{};
@@ -79,7 +79,7 @@ const Model = struct {
         box_s = box_s.paddingAll(1);
 
         const diff_output = dv.view(alloc);
-        const boxed = box_s.render(alloc, diff_output) catch diff_output;
+        const boxed = try box_s.render(alloc, diff_output);
 
         const mode_label: []const u8 = if (self.side_by_side) "side-by-side" else "unified";
 
@@ -88,11 +88,11 @@ const Model = struct {
         help_s = help_s.inline_style(true);
 
         return std.fmt.allocPrint(alloc, "{s}  [{s}]\n\n{s}\n\n{s}", .{
-            title_s.render(alloc, "Diff Viewer") catch "Diff Viewer",
+            try title_s.render(alloc, "Diff Viewer"),
             mode_label,
             boxed,
-            help_s.render(alloc, "m: toggle mode  q: quit") catch "",
-        }) catch "Error";
+            try help_s.render(alloc, "m: toggle mode  q: quit"),
+        });
     }
 };
 

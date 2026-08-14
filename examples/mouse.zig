@@ -88,24 +88,24 @@ const Model = struct {
         return zz.HitBox.init(x, 4, 14, 3);
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.white);
         title_style = title_style.inline_style(true);
-        const title = title_style.render(ctx.allocator, "Mouse Demo") catch "Mouse Demo";
+        const title = try title_style.render(ctx.allocator, "Mouse Demo");
 
-        const coords = std.fmt.allocPrint(
+        const coords = try std.fmt.allocPrint(
             ctx.allocator,
             "Mouse: ({d}, {d})  |  {s}",
             .{ self.mouse_x, self.mouse_y, self.last_event },
-        ) catch "";
+        );
 
-        const count_str = std.fmt.allocPrint(
+        const count_str = try std.fmt.allocPrint(
             ctx.allocator,
             "Click count: {d}",
             .{self.click_count},
-        ) catch "";
+        );
 
         // Render each button as its own bordered box, then place the boxes
         // side by side with joinHorizontal. Each box is multi-line, so simply
@@ -122,22 +122,22 @@ const Model = struct {
             }
             s = s.fg(btn.color);
             s = s.inline_style(false);
-            boxes[i] = s.render(ctx.allocator, btn.label) catch btn.label;
+            boxes[i] = try s.render(ctx.allocator, btn.label);
         }
-        const buttons = zz.joinHorizontal(ctx.allocator, &.{
+        const buttons = try zz.joinHorizontal(ctx.allocator, &.{
             boxes[0], "  ", boxes[1], "  ", boxes[2],
-        }) catch boxes[0];
+        });
 
         var help_s = zz.Style{};
         help_s = help_s.fg(zz.Color.gray(12));
         help_s = help_s.inline_style(true);
-        const help = help_s.render(ctx.allocator, "Click the buttons above | q: quit") catch "";
+        const help = try help_s.render(ctx.allocator, "Click the buttons above | q: quit");
 
         return std.fmt.allocPrint(
             ctx.allocator,
             "{s}\n{s}\n{s}\n\n{s}\n\n{s}",
             .{ title, coords, count_str, buttons, help },
-        ) catch "Error";
+        );
     }
 };
 

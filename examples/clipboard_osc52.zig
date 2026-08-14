@@ -150,7 +150,7 @@ const Model = struct {
         };
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         var title_style = zz.Style{};
         title_style = title_style.bold(true);
         title_style = title_style.fg(zz.Color.cyan);
@@ -164,23 +164,23 @@ const Model = struct {
         hint_style = hint_style.fg(zz.Color.gray(12));
         hint_style = hint_style.inline_style(true);
 
-        const title = title_style.render(ctx.allocator, "OSC 52 Clipboard Demo") catch "OSC 52 Clipboard Demo";
-        const mode_line = std.fmt.allocPrint(ctx.allocator, "terminator={s}  passthrough={s}", .{
+        const title = try title_style.render(ctx.allocator, "OSC 52 Clipboard Demo");
+        const mode_line = try std.fmt.allocPrint(ctx.allocator, "terminator={s}  passthrough={s}", .{
             self.terminatorName(),
             self.passthroughName(),
-        }) catch "";
-        const mode = info_style.render(ctx.allocator, mode_line) catch mode_line;
-        const status = info_style.render(ctx.allocator, self.status) catch self.status;
-        const hints = hint_style.render(ctx.allocator, "c copy(default)  g read(query)  paste shortcut sends Msg.paste  1/2/3/4 target(c/p/q/s)  t terminator  p passthrough  q quit") catch "";
+        });
+        const mode = try info_style.render(ctx.allocator, mode_line);
+        const status = try info_style.render(ctx.allocator, self.status);
+        const hints = try hint_style.render(ctx.allocator, "c copy(default)  g read(query)  paste shortcut sends Msg.paste  1/2/3/4 target(c/p/q/s)  t terminator  p passthrough  q quit");
 
-        const content = std.fmt.allocPrint(ctx.allocator, "{s}\n\n{s}\n{s}\n\n{s}", .{
+        const content = try std.fmt.allocPrint(ctx.allocator, "{s}\n\n{s}\n{s}\n\n{s}", .{
             title,
             mode,
             status,
             hints,
-        }) catch "render error";
+        });
 
-        return zz.place.place(ctx.allocator, ctx.width, ctx.height, .center, .middle, content) catch content;
+        return zz.place.place(ctx.allocator, ctx.width, ctx.height, .center, .middle, content);
     }
 };
 

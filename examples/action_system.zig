@@ -15,69 +15,69 @@ const Model = struct {
         key: zz.KeyEvent,
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         const persistent = ctx.persistent_allocator;
         var reg = zz.ActionRegistry.init(persistent);
 
-        // Footer-visible actions.
+        try // Footer-visible actions.
         reg.register(.{
             .id = "app.quit",
             .label = "Quit",
             .description = "Exit the program",
             .binding = .{ .key = .{ .char = 'q' } },
             .show_in_footer = true,
-        }) catch {};
-        reg.register(.{
+        });
+        try reg.register(.{
             .id = "counter.inc",
             .label = "Increment",
             .description = "Add one to the counter",
             .binding = .{ .key = .{ .char = '+' } },
             .show_in_footer = true,
-        }) catch {};
-        reg.register(.{
+        });
+        try reg.register(.{
             .id = "counter.dec",
             .label = "Decrement",
             .description = "Subtract one from the counter",
             .binding = .{ .key = .{ .char = '-' } },
             .show_in_footer = true,
-        }) catch {};
-        reg.register(.{
+        });
+        try reg.register(.{
             .id = "palette.open",
             .label = "Command Palette",
             .description = "Open the searchable command list",
             .binding = .{ .key = .{ .char = 'p' }, .modifiers = .{ .ctrl = true } },
             .show_in_footer = true,
-        }) catch {};
+        });
 
-        // Hidden-from-footer actions still show up in the palette.
+        try // Hidden-from-footer actions still show up in the palette.
         reg.register(.{
             .id = "counter.reset",
             .label = "Reset counter",
             .description = "Set the counter back to zero",
             .category = "Counter",
-        }) catch {};
-        reg.register(.{
+        });
+        try reg.register(.{
             .id = "counter.times_ten",
             .label = "Multiply by 10",
             .description = "Multiply the counter by ten",
             .category = "Counter",
-        }) catch {};
-        reg.register(.{
+        });
+        try reg.register(.{
             .id = "counter.negate",
             .label = "Negate",
             .description = "Flip the counter sign",
             .category = "Counter",
-        }) catch {};
-        reg.register(.{
+        });
+        try reg.register(.{
             .id = "help.about",
             .label = "About this demo",
             .description = "Show what this example illustrates",
             .category = "Help",
-        }) catch {};
+        });
 
-        // Aliases let multiple keys map to the same action.
-        reg.addAlias("counter.inc", .{ .key = .up }) catch {};
-        reg.addAlias("counter.dec", .{ .key = .down }) catch {};
+        try // Aliases let multiple keys map to the same action.
+        reg.addAlias("counter.inc", .{ .key = .up });
+        try reg.addAlias("counter.dec", .{ .key = .down });
 
         var palette = zz.CommandPalette.init(persistent) catch return .quit;
         palette.placeholder = "Search commands…";
@@ -93,7 +93,7 @@ const Model = struct {
         // One-shot integration: pull every registered action into the
         // palette, formatting bindings as shortcut hints. The palette owns
         // the strings, so no lifetime tracking on our side.
-        self.palette.setFromRegistry(&self.registry) catch {};
+        try self.palette.setFromRegistry(&self.registry);
 
         return .none;
     }
@@ -151,16 +151,16 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         var title = zz.Style{};
         title = title.bold(true);
         title = title.fg(zz.Color.cyan);
         title = title.inline_style(true);
-        const title_str = title.render(alloc, "ActionRegistry — one source of truth") catch "";
+        const title_str = try title.render(alloc, "ActionRegistry — one source of truth");
 
-        const body = std.fmt.allocPrint(
+        const body = try std.fmt.allocPrint(
             alloc,
             \\Counter        {d}
             \\Last action    {s}
@@ -170,28 +170,28 @@ const Model = struct {
             \\including ones with no key binding (try "negate" or "ten").
         ,
             .{ self.counter, self.last_action },
-        ) catch "";
+        );
 
         var box = zz.Style{};
         box = box.borderAll(zz.Border.rounded);
         box = box.borderForeground(zz.Color.gray(8));
         box = box.paddingAll(1);
-        const boxed = box.render(alloc, body) catch body;
+        const boxed = try box.render(alloc, body);
 
         var footer = zz.ActionFooter.init(&self.registry);
         footer.setWidth(@intCast(ctx.width));
-        const footer_str = footer.view(alloc) catch "";
+        const footer_str = try footer.view(alloc);
 
-        const main_view = std.fmt.allocPrint(
+        const main_view = try std.fmt.allocPrint(
             alloc,
             "{s}\n\n{s}\n\n{s}",
             .{ title_str, boxed, footer_str },
-        ) catch "";
+        );
 
         if (!self.palette_open) return main_view;
 
         // Overlay the palette centered on top of the main view.
-        const palette_view = self.palette.view(alloc) catch "";
+        const palette_view = try self.palette.view(alloc);
         return zz.place.placeFloat(
             alloc,
             ctx.width,
@@ -199,7 +199,7 @@ const Model = struct {
             0.5,
             0.5,
             palette_view,
-        ) catch main_view;
+        );
     }
 };
 

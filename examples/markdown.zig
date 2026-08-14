@@ -48,7 +48,7 @@ const Model = struct {
         key: zz.KeyEvent,
     };
 
-    pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         self.md = zz.Markdown.init();
         self.md.width = @min(ctx.width -| 4, 80);
 
@@ -56,9 +56,9 @@ const Model = struct {
         // Viewport.setContent dupes; render output is ephemeral.
         if (self.md.render(ctx.persistent_allocator, sample_md)) |rendered| {
             defer ctx.persistent_allocator.free(rendered);
-            self.viewport.setContent(rendered) catch {};
+            try self.viewport.setContent(rendered);
         } else |_| {
-            self.viewport.setContent("render error") catch {};
+            try self.viewport.setContent("render error");
         }
 
         return .none;
@@ -78,15 +78,15 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
-        const content = self.viewport.view(ctx.allocator) catch "error";
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
+        const content = try self.viewport.view(ctx.allocator);
 
         var help_style = zz.Style{};
         help_style = help_style.fg(zz.Color.gray(12));
         help_style = help_style.inline_style(true);
-        const help = help_style.render(ctx.allocator, "j/k or Up/Down: scroll | q: quit") catch "";
+        const help = try help_style.render(ctx.allocator, "j/k or Up/Down: scroll | q: quit");
 
-        return std.fmt.allocPrint(ctx.allocator, "{s}\n{s}", .{ content, help }) catch "Error";
+        return std.fmt.allocPrint(ctx.allocator, "{s}\n{s}", .{ content, help });
     }
 
     pub fn deinit(self: *Model) void {

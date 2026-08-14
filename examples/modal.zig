@@ -110,12 +110,12 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         // If modal is visible, render it with backdrop
         if (self.modal.isVisible()) {
-            return self.modal.viewWithBackdrop(alloc, ctx.width, ctx.height) catch "Error";
+            return self.modal.viewWithBackdrop(alloc, ctx.width, ctx.height);
         }
 
         // Main view
@@ -131,16 +131,16 @@ const Model = struct {
         var status_s = zz.Style{};
         status_s = status_s.fg(zz.Color.gray(12)).inline_style(true);
 
-        const title = title_s.render(alloc, "Modal Component Demo") catch "Modal Component Demo";
-        const hint = hint_s.render(alloc, "1: Info  2: Confirm  3: Warning  4: Error  5: Custom  q: Quit") catch "";
-        const result_label = result_s.render(alloc, std.fmt.allocPrint(alloc, "Last result: {s}", .{self.last_result}) catch "") catch "";
-        const status = status_s.render(alloc, self.status) catch "";
+        const title = try title_s.render(alloc, "Modal Component Demo");
+        const hint = try hint_s.render(alloc, "1: Info  2: Confirm  3: Warning  4: Error  5: Custom  q: Quit");
+        const result_label = try result_s.render(alloc, try std.fmt.allocPrint(alloc, "Last result: {s}", .{self.last_result}));
+        const status = try status_s.render(alloc, self.status);
 
-        const content = std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}\n{s}", .{
+        const content = try std.fmt.allocPrint(alloc, "{s}\n\n{s}\n\n{s}\n{s}", .{
             title, hint, result_label, status,
-        }) catch "Error";
+        });
 
-        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content) catch content;
+        return zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content);
     }
 };
 

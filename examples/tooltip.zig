@@ -115,18 +115,18 @@ const Model = struct {
         return .none;
     }
 
-    pub fn view(self: *Model, ctx: *const zz.Context) []const u8 {
+    pub fn view(self: *Model, ctx: *const zz.Context) ![]const u8 {
         const alloc = ctx.allocator;
 
         // Title
         var title_s = zz.Style{};
         title_s = title_s.bold(true).fg(zz.Color.hex("#FF6B6B")).inline_style(true);
-        const title = title_s.render(alloc, "Tooltip Component Demo") catch "Tooltip Component Demo";
+        const title = try title_s.render(alloc, "Tooltip Component Demo");
 
         // Status
         var status_s = zz.Style{};
         status_s = status_s.fg(zz.Color.gray(12)).inline_style(true);
-        const status = status_s.render(alloc, self.status) catch "";
+        const status = try status_s.render(alloc, self.status);
 
         // Button labels
         const labels = [_][]const u8{
@@ -145,21 +145,21 @@ const Model = struct {
 
         var btn_parts: [7][]const u8 = undefined;
         for (labels, 0..) |label, i| {
-            const padded = std.fmt.allocPrint(alloc, " {s} ", .{label}) catch label;
-            btn_parts[i] = btn_s.render(alloc, padded) catch padded;
+            const padded = try std.fmt.allocPrint(alloc, " {s} ", .{label});
+            btn_parts[i] = try btn_s.render(alloc, padded);
         }
 
         // Join buttons with gaps
-        const row1 = std.fmt.allocPrint(alloc, "{s}  {s}  {s}  {s}", .{
+        const row1 = try std.fmt.allocPrint(alloc, "{s}  {s}  {s}  {s}", .{
             btn_parts[0], btn_parts[1], btn_parts[2], btn_parts[3],
-        }) catch "";
-        const row2 = std.fmt.allocPrint(alloc, "{s}  {s}  {s}", .{
+        });
+        const row2 = try std.fmt.allocPrint(alloc, "{s}  {s}  {s}", .{
             btn_parts[4], btn_parts[5], btn_parts[6],
-        }) catch "";
+        });
 
-        const content = std.fmt.allocPrint(alloc, "{s}\n\n{s}\n{s}\n\n{s}", .{
+        const content = try std.fmt.allocPrint(alloc, "{s}\n\n{s}\n{s}\n\n{s}", .{
             title, row1, row2, status,
-        }) catch "Error";
+        });
 
         // Center content
         const content_w = zz.measure.maxLineWidth(content);
@@ -167,7 +167,7 @@ const Model = struct {
         const h_pad = if (ctx.width > content_w) (ctx.width - content_w) / 2 else 0;
         const v_pad = if (ctx.height > content_h) (ctx.height - content_h) / 2 else 0;
 
-        const base = zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content) catch content;
+        const base = try zz.place.place(alloc, ctx.width, ctx.height, .center, .middle, content);
 
         // Compute button positions for tooltip targeting
         // Row 1 buttons: title line is at v_pad, blank line, then row1 at v_pad+2
@@ -201,7 +201,7 @@ const Model = struct {
 
         // Overlay tooltip if visible
         if (self.tooltip.isVisible()) {
-            return self.tooltip.overlay(alloc, base, ctx.width, ctx.height) catch base;
+            return self.tooltip.overlay(alloc, base, ctx.width, ctx.height);
         }
 
         return base;
