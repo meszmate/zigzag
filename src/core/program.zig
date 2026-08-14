@@ -468,13 +468,16 @@ pub fn Program(comptime Model: type) type {
                 term.cleanup();
             }
 
-            // Raise SIGTSTP to suspend process
+            // Raise SIGTSTP to suspend process. If the signal cannot be
+            // raised we simply never stop; carrying on is better than dying.
             if (builtin.os.tag != .windows) {
                 const posix = std.posix;
                 _ = posix.raise(posix.SIG.TSTP) catch {};
             }
 
-            // When we resume (after `fg`), re-setup terminal
+            // When we resume (after `fg`), re-setup terminal. A failure here
+            // leaves the terminal in the shell's mode, which renders badly but
+            // still runs -- and there is no caller to report it to.
             if (self.terminal) |*term| {
                 term.setup() catch {};
             }
@@ -626,27 +629,30 @@ pub fn Program(comptime Model: type) type {
                 },
                 .cache_image => |cache| {
                     if (self.terminal) |*term| {
+                        // An unsupported protocol returns false rather than an
+                        // error, so anything that does surface here is a real
+                        // I/O failure, the same as in `flushPendingImage`.
                         switch (cache.source) {
                             .file => |path| {
-                                _ = term.transmitKittyImageFromFile(path, .{
+                                _ = try term.transmitKittyImageFromFile(path, .{
                                     .image_id = cache.image_id,
                                     .format = @enumFromInt(@intFromEnum(cache.format)),
                                     .quiet = cache.quiet,
                                     .pixel_width = cache.pixel_width,
                                     .pixel_height = cache.pixel_height,
-                                }) catch {};
+                                });
                             },
                             .data => |data| {
-                                _ = term.transmitKittyImage(data, .{
+                                _ = try term.transmitKittyImage(data, .{
                                     .image_id = cache.image_id,
                                     .format = @enumFromInt(@intFromEnum(cache.format)),
                                     .quiet = cache.quiet,
                                     .pixel_width = cache.pixel_width,
                                     .pixel_height = cache.pixel_height,
-                                }) catch {};
+                                });
                             },
                         }
-                        term.flush() catch {};
+                        try term.flush();
                     }
                 },
                 .place_cached_image => |place| {
@@ -659,8 +665,8 @@ pub fn Program(comptime Model: type) type {
                             .by_placement => |bp| .{ .by_placement = .{ .image_id = bp.image_id, .placement_id = bp.placement_id } },
                             .all => .all,
                         };
-                        _ = term.deleteKittyImage(target) catch {};
-                        term.flush() catch {};
+                        _ = try term.deleteKittyImage(target);
+                        try term.flush();
                     }
                 },
             }

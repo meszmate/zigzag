@@ -173,7 +173,7 @@ test "layer.LayerStack - multibyte UTF-8 chars occupy one cell" {
 
     try stack.push(.{ .content = "╭─╮", .transparent = false });
 
-    try testing.expectEqualStrings("╭─╮  ", stack.render(allocator));
+    try testing.expectEqualStrings("╭─╮  ", try stack.render(allocator));
 }
 
 test "layer.LayerStack - styled multibyte border chars stay intact" {
@@ -189,7 +189,7 @@ test "layer.LayerStack - styled multibyte border chars stay intact" {
 
     try testing.expectEqualStrings(
         "\x1b[36m─\x1b[0m\x1b[36m│\x1b[0m  ",
-        stack.render(allocator),
+        try stack.render(allocator),
     );
 }
 
@@ -205,7 +205,7 @@ test "layer.LayerStack - overlay aligns on UTF-8 background" {
     try stack.push(.{ .content = "──────", .z = 0, .transparent = false });
     try stack.push(.{ .content = "AB", .x = 2, .z = 1 });
 
-    try testing.expectEqualStrings("──AB──", stack.render(allocator));
+    try testing.expectEqualStrings("──AB──", try stack.render(allocator));
 }
 
 test "layer.LayerStack - wide characters cover two cells" {
@@ -219,5 +219,32 @@ test "layer.LayerStack - wide characters cover two cells" {
 
     try stack.push(.{ .content = "你a", .transparent = false });
 
-    try testing.expectEqualStrings("你a ", stack.render(allocator));
+    try testing.expectEqualStrings("你a ", try stack.render(allocator));
+}
+
+test "layer.LayerStack - reports allocation failure instead of truncating" {
+    // The old signature had no way to say an allocation failed, so it returned
+    // a short frame — which reaches the screen looking like a rendering bug.
+    // Fail at each allocation in turn and check the result is always either a
+    // whole frame or an error, never something in between.
+    var fail_index: usize = 0;
+    while (fail_index < 8) : (fail_index += 1) {
+        var arena = std.heap.ArenaAllocator.init(testing.allocator);
+        defer arena.deinit();
+
+        var failing = std.testing.FailingAllocator.init(
+            arena.allocator(),
+            .{ .fail_index = fail_index },
+        );
+        const allocator = failing.allocator();
+
+        var stack = zz.layout.layer.LayerStack.init(allocator);
+        defer stack.deinit();
+        stack.setSize(40, 10);
+
+        stack.push(.{ .content = "hello", .transparent = false }) catch continue;
+
+        const out = stack.render(allocator) catch continue;
+        try testing.expectEqual(@as(usize, 10), zz.height(out));
+    }
 }

@@ -54,13 +54,17 @@ pub const LayerStack = struct {
     }
 
     /// Composite all layers and return the final rendered string.
-    pub fn render(self: *const LayerStack, allocator: std.mem.Allocator) []const u8 {
+    ///
+    /// Fallible on purpose: an allocation failure part-way through used to
+    /// return an empty or truncated frame, which reaches the screen looking
+    /// like a rendering bug rather than an error.
+    pub fn render(self: *const LayerStack, allocator: std.mem.Allocator) ![]const u8 {
         const w: usize = self.width;
         const h: usize = self.height;
 
         // Create cell buffer: each cell stores a byte slice (content) and ANSI state
         // For simplicity, we use a 2D grid of cells that stores display characters
-        const grid = allocator.alloc(Cell, w * h) catch return "";
+        const grid = try allocator.alloc(Cell, w * h);
 
         // Fill with background
         const bg = [1]u8{self.background};
@@ -69,7 +73,7 @@ pub const LayerStack = struct {
         }
 
         // Sort layers by z-index
-        const sorted = allocator.alloc(Layer, self.layers.items.len) catch return "";
+        const sorted = try allocator.alloc(Layer, self.layers.items.len);
         @memcpy(sorted, self.layers.items);
         std.mem.sort(Layer, sorted, {}, struct {
             fn lessThan(_: void, a: Layer, b: Layer) bool {
@@ -87,17 +91,17 @@ pub const LayerStack = struct {
         const writer = &result.writer;
 
         for (0..h) |row| {
-            if (row > 0) writer.writeByte('\n') catch {};
+            if (row > 0) try writer.writeByte('\n');
             for (0..w) |col| {
                 const cell = grid[row * w + col];
                 // Empty content marks the second column of a wide character
                 if (cell.content.len == 0) continue;
                 if (cell.ansi_prefix.len > 0) {
-                    writer.writeAll(cell.ansi_prefix) catch {};
-                    writer.writeAll(cell.content) catch {};
-                    writer.writeAll("\x1b[0m") catch {};
+                    try writer.writeAll(cell.ansi_prefix);
+                    try writer.writeAll(cell.content);
+                    try writer.writeAll("\x1b[0m");
                 } else {
-                    writer.writeAll(cell.content) catch {};
+                    try writer.writeAll(cell.content);
                 }
             }
         }

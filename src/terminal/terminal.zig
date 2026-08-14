@@ -315,6 +315,8 @@ pub const Terminal = struct {
 
     pub fn setup(self: *Terminal) !void {
         // Setup signal handlers
+        // Resize notifications are a nicety: without the handler the program
+        // still runs, it just stops noticing the window changing size.
         platform.setupSignals() catch {};
 
         // Enable raw mode
@@ -357,6 +359,11 @@ pub const Terminal = struct {
         try self.flush();
     }
 
+    /// Put the terminal back the way it was found.
+    ///
+    /// Every write here is best-effort. This runs on the way out, often while
+    /// already unwinding from a failure, and there is nobody left to report to
+    /// — so a broken pipe must not stop the remaining modes from being reset.
     pub fn cleanup(self: *Terminal) void {
         // Disable Kitty keyboard protocol
         if (self.config.kitty_keyboard) {

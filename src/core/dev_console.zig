@@ -237,8 +237,10 @@ pub const DevConsole = struct {
                             }
                             if (!still_alive) conn.close(io);
                         }
+                        // `keep` is a subset of what was just cleared, so the
+                        // capacity is already there and this cannot fail.
                         tcp.connections.clearRetainingCapacity();
-                        tcp.connections.appendSlice(keep.items) catch {};
+                        tcp.connections.appendSliceAssumeCapacity(keep.items);
                     }
                 },
             }
