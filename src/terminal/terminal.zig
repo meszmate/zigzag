@@ -5,7 +5,6 @@ const std = @import("std");
 const FixedWriter = std.Io.Writer.fixed;
 const builtin = @import("builtin");
 pub const ansi = @import("ansi.zig");
-pub const screen = @import("screen.zig");
 const unicode = @import("../unicode.zig");
 const Environment = @import("../core/environment.zig").Environment;
 
