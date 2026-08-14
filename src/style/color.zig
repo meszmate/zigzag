@@ -257,13 +257,16 @@ pub const ColorProfile = enum {
 
     /// Detect terminal color profile from values captured at startup.
     pub fn detect(hints: DetectionHints) ColorProfile {
+        // NO_COLOR is a cross-platform convention, so it is honoured before
+        // any platform assumption. Checking it after the Windows shortcut
+        // meant a user who set it on Windows still got colour.
+        if (hints.no_color) {
+            return .ascii;
+        }
+
         if (comptime builtin.os.tag == .windows) {
             // Windows Terminal supports true color VT sequences
             return .true_color;
-        }
-
-        if (hints.no_color) {
-            return .ascii;
         }
 
         if (std.mem.eql(u8, hints.color_term, "truecolor") or
@@ -297,10 +300,8 @@ pub const ColorProfile = enum {
 
 /// Detect if terminal has a dark background from the COLORFGBG value captured at startup.
 pub fn hasDarkBackground(color_fg_bg: []const u8) bool {
-    if (comptime builtin.os.tag == .windows) {
-        return true;
-    }
-
+    // Windows rarely sets COLORFGBG, but when a terminal does set it there is
+    // no reason to ignore it and assume dark.
     if (color_fg_bg.len > 0) {
         // Format: "foreground;background"
         if (std.mem.lastIndexOfScalar(u8, color_fg_bg, ';')) |idx| {

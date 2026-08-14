@@ -1,6 +1,7 @@
 //! Colour model tests: parsing, conversion, profile detection and contrast.
 
 const std = @import("std");
+const builtin = @import("builtin");
 const testing = std.testing;
 const zz = @import("zigzag");
 
@@ -117,6 +118,14 @@ test "profile detection" {
 
     try testing.expectEqual(P.true_color, P.detect(.{ .color_term = "truecolor" }));
     try testing.expectEqual(P.true_color, P.detect(.{ .color_term = "24bit" }));
+
+    // Windows Terminal speaks true colour regardless of TERM, so the rest of
+    // the ladder only applies elsewhere.
+    if (builtin.os.tag == .windows) {
+        try testing.expectEqual(P.true_color, P.detect(.{ .term = "xterm" }));
+        return;
+    }
+
     try testing.expectEqual(P.ansi256, P.detect(.{ .term = "xterm-256color" }));
     try testing.expectEqual(P.ansi256, P.detect(.{ .term = "screen-256color" }));
     try testing.expectEqual(P.ansi, P.detect(.{ .term = "xterm" }));
@@ -150,7 +159,8 @@ test "adaptive colour resolves by capability" {
 }
 
 test "dark background detection from COLORFGBG" {
-    // "foreground;background" — a low background number means dark.
+    // "foreground;background" — a low background number means dark. Honoured
+    // on every platform: a terminal that reports it is worth believing.
     try testing.expect(zz.color.hasDarkBackground("15;0"));
     try testing.expect(zz.color.hasDarkBackground("7;0"));
     try testing.expect(!zz.color.hasDarkBackground("0;15"));
