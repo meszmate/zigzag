@@ -84,7 +84,7 @@ pub const Renderer = struct {
         const line_count = if (use_diff)
             try self.writeDiff(writer, view, size)
         else
-            try self.writeFull(writer, view);
+            try self.writeFull(writer, view, size);
         try writer.writeAll(ansi.sync_end);
 
         self.remember(view, line_count, hash);
@@ -111,26 +111,21 @@ pub const Renderer = struct {
         self.dirty = false;
     }
 
-    /// Rewrite the whole frame from the top-left corner.
-    fn writeFull(self: *Renderer, writer: *Writer, view: []const u8) !usize {
-        try writer.writeAll(ansi.cursor_home);
-
+    fn writeFull(self: *Renderer, writer: *Writer, view: []const u8, size: Size) !usize {
         var lines = std.mem.splitScalar(u8, view, '\n');
-        var first = true;
         var line_count: usize = 0;
         while (lines.next()) |line| {
-            if (!first) try writer.writeAll("\r\n");
-            first = false;
-            try writer.writeAll(line);
-            try writer.writeAll(ansi.line_clear_right);
+            try ansi.cursorTo0(writer, @intCast(line_count), 0);
             line_count += 1;
+            try writer.writeAll(line);
+            if (measure.width(line) < size.width) {
+                try writer.writeAll(ansi.line_clear_right);
+            }
         }
-
-        // Clear the rows the previous frame used and this one does not.
         if (self.last_line_count > line_count) {
-            var remaining = self.last_line_count - line_count;
-            while (remaining > 0) : (remaining -= 1) {
-                try writer.writeAll("\r\n");
+            var row = line_count;
+            while (row < self.last_line_count and row < size.height) : (row += 1) {
+                try ansi.cursorTo0(writer, @intCast(row), 0);
                 try writer.writeAll(ansi.line_clear);
             }
         }
@@ -158,7 +153,12 @@ pub const Renderer = struct {
 
             try ansi.cursorTo0(writer, row, 0);
             try writer.writeAll(line);
-            try writer.writeAll(ansi.line_clear_right);
+            // Mirror writeFull: a full-width line has nothing after it to
+            // erase, and the erase would destroy its last character in
+            // terminals with wrap-pending semantics.
+            if (measure.width(line) < size.width) {
+                try writer.writeAll(ansi.line_clear_right);
+            }
         }
 
         // Clear the rows the previous frame used and this one does not.
