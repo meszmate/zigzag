@@ -174,7 +174,7 @@ test "first frame is painted in full" {
 
     const out = try h.render("alpha\nbeta\ngamma", size_80x24);
 
-    try testing.expect(std.mem.indexOf(u8, out, "\x1b[H") != null);
+    try testing.expect(std.mem.indexOf(u8, out, "\x1b[1;1H") != null);
     try h.expectScreen("alpha\nbeta\ngamma");
 }
 
@@ -315,7 +315,7 @@ test "a line wider than the terminal falls back to a full repaint" {
 
     // Wrapping shifts every row below it, so absolute addressing is off the
     // table: the whole frame is rewritten from home.
-    try testing.expect(std.mem.indexOf(u8, out, "\x1b[H") != null);
+    try testing.expect(std.mem.indexOf(u8, out, "\x1b[1;1H") != null);
     try testing.expect(std.mem.indexOf(u8, out, "short") != null);
 }
 
@@ -327,11 +327,11 @@ test "a frame taller than the terminal falls back to a full repaint" {
     _ = try h.render("a\nb\nc", short);
 
     const out = try h.render("a\nb\nc\nd", short);
-    try testing.expect(std.mem.indexOf(u8, out, "\x1b[H") != null);
+    try testing.expect(std.mem.indexOf(u8, out, "\x1b[1;1H") != null);
 
     // The frame scrolled, so the one after it cannot be diffed either.
     const next = try h.render("a\nb\nc\ne", short);
-    try testing.expect(std.mem.indexOf(u8, next, "\x1b[H") != null);
+    try testing.expect(std.mem.indexOf(u8, next, "\x1b[1;1H") != null);
 }
 
 test "a style left open disables diffing for the following frame" {
@@ -343,7 +343,7 @@ test "a style left open disables diffing for the following frame" {
     _ = try h.render("\x1b[41mred background\nstill red", size_80x24);
     const out = try h.render("\x1b[41mred background\nSTILL RED", size_80x24);
 
-    try testing.expect(std.mem.indexOf(u8, out, "\x1b[H") != null);
+    try testing.expect(std.mem.indexOf(u8, out, "\x1b[1;1H") != null);
     try testing.expect(std.mem.indexOf(u8, out, "red background") != null);
 }
 
@@ -354,7 +354,7 @@ test "styles closed per line still diff" {
     _ = try h.render("\x1b[31mred\x1b[0m\n\x1b[1mbold\x1b[0m plain", size_80x24);
     const out = try h.render("\x1b[31mred\x1b[0m\n\x1b[1mbold\x1b[0m PLAIN", size_80x24);
 
-    try testing.expect(std.mem.indexOf(u8, out, "\x1b[H") == null);
+    try testing.expect(std.mem.indexOf(u8, out, "\x1b[1;1H") == null);
     try testing.expect(std.mem.indexOf(u8, out, "PLAIN") != null);
 }
 
@@ -367,7 +367,7 @@ test "truecolor sequences do not read as a reset" {
     _ = try h.render("\x1b[38;2;255;0;0mred\nsecond", size_80x24);
     const out = try h.render("\x1b[38;2;255;0;0mred\nSECOND", size_80x24);
 
-    try testing.expect(std.mem.indexOf(u8, out, "\x1b[H") != null);
+    try testing.expect(std.mem.indexOf(u8, out, "\x1b[1;1H") != null);
 }
 
 test "invalidate forces a repaint of an unchanged view" {
@@ -381,7 +381,7 @@ test "invalidate forces a repaint of an unchanged view" {
     try testing.expect(h.renderer.needsRepaint());
 
     const out = try h.render("stable\nframe", size_80x24);
-    try testing.expect(std.mem.indexOf(u8, out, "\x1b[H") != null);
+    try testing.expect(std.mem.indexOf(u8, out, "\x1b[1;1H") != null);
     try testing.expect(!h.renderer.needsRepaint());
 }
 
@@ -392,7 +392,7 @@ test "full mode always rewrites every line" {
     _ = try h.render("alpha\nbeta\ngamma", size_80x24);
     const out = try h.render("alpha\nBETA\ngamma", size_80x24);
 
-    try testing.expect(std.mem.indexOf(u8, out, "\x1b[H") != null);
+    try testing.expect(std.mem.indexOf(u8, out, "\x1b[1;1H") != null);
     try testing.expect(std.mem.indexOf(u8, out, "alpha") != null);
     try testing.expect(std.mem.indexOf(u8, out, "gamma") != null);
 }
@@ -420,7 +420,7 @@ test "wide characters are measured by display width, not bytes" {
     _ = try h.render("日本語だ\nplain", narrow);
     const out = try h.render("日本語だ\nPLAIN", narrow);
 
-    try testing.expect(std.mem.indexOf(u8, out, "\x1b[H") == null);
+    try testing.expect(std.mem.indexOf(u8, out, "\x1b[1;1H") == null);
 }
 
 test "empty view is handled" {
