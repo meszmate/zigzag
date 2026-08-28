@@ -84,7 +84,7 @@ pub const Renderer = struct {
         const line_count = if (use_diff)
             try self.writeDiff(writer, view, size)
         else
-            try self.writeFull(writer, view);
+            try self.writeFull(writer, view, size);
         try writer.writeAll(ansi.sync_end);
 
         self.remember(view, line_count, hash);
@@ -111,28 +111,35 @@ pub const Renderer = struct {
         self.dirty = false;
     }
 
-    /// Rewrite the whole frame from the top-left corner.
-    fn writeFull(self: *Renderer, writer: *Writer, view: []const u8) !usize {
-        try writer.writeAll(ansi.cursor_home);
+    /// Rewrite the whole frame, addressing every row absolutely.
+    ///
+    /// Absolute addressing rather than `\r\n` between lines: a newline on the
+    /// bottom row scrolls the screen, which silently shifts every row of the
+    /// frame up by one and leaves the diff path writing to the wrong rows from
+    /// then on.
+    fn writeFull(self: *Renderer, writer: *Writer, view: []const u8, size: Size) !usize {
+        const max_row = addressableRows(size);
 
         var lines = std.mem.splitScalar(u8, view, '\n');
-        var first = true;
         var line_count: usize = 0;
         while (lines.next()) |line| {
-            if (!first) try writer.writeAll("\r\n");
-            first = false;
+            defer line_count += 1;
+            // A row past the bottom cannot be addressed — the terminal clamps
+            // the cursor to the last row, so every line beyond it would land
+            // on top of the one before. Count them so `last_line_count` still
+            // describes the frame, but do not draw them.
+            if (line_count >= max_row) continue;
+
+            try ansi.cursorTo0(writer, @intCast(line_count), 0);
             try writer.writeAll(line);
-            try writer.writeAll(ansi.line_clear_right);
-            line_count += 1;
+            if (!fillsRow(line, size)) try writer.writeAll(ansi.line_clear_right);
         }
 
         // Clear the rows the previous frame used and this one does not.
-        if (self.last_line_count > line_count) {
-            var remaining = self.last_line_count - line_count;
-            while (remaining > 0) : (remaining -= 1) {
-                try writer.writeAll("\r\n");
-                try writer.writeAll(ansi.line_clear);
-            }
+        var row = line_count;
+        while (row < self.last_line_count and row < max_row) : (row += 1) {
+            try ansi.cursorTo0(writer, @intCast(row), 0);
+            try writer.writeAll(ansi.line_clear);
         }
 
         return line_count;
@@ -158,12 +165,12 @@ pub const Renderer = struct {
 
             try ansi.cursorTo0(writer, row, 0);
             try writer.writeAll(line);
-            try writer.writeAll(ansi.line_clear_right);
+            if (!fillsRow(line, size)) try writer.writeAll(ansi.line_clear_right);
         }
 
         // Clear the rows the previous frame used and this one does not.
         var row = line_count;
-        while (row < self.last_line_count) : (row += 1) {
+        while (row < self.last_line_count and row < addressableRows(size)) : (row += 1) {
             try ansi.cursorTo0(writer, @intCast(row), 0);
             try writer.writeAll(ansi.line_clear);
         }
@@ -181,6 +188,36 @@ pub const Renderer = struct {
         return line_count;
     }
 };
+
+/// How many rows can be addressed with `CUP`, which carries a `u16` row.
+///
+/// A height of zero means the size is not known — `TIOCGWINSZ` reports it that
+/// way on a terminal whose window size has never been set. Fall back to the
+/// widest row the sequence can express so an oversized view cannot overflow
+/// the row counter.
+fn addressableRows(size: Size) usize {
+    return if (size.height > 0) size.height else std.math.maxInt(u16);
+}
+
+/// Whether writing `line` leaves the cursor parked at the far edge of a row.
+///
+/// A terminal that has just filled the last column keeps the cursor on it with
+/// the wrap deferred until the next character arrives. `EL` erases from the
+/// column the cursor sits on, so issuing it in that state destroys the
+/// character that was just written — the right-hand border of a frame drawn to
+/// the full width of the screen. Nothing follows such a line on its row, so
+/// the erase is skipped rather than fixed up.
+///
+/// A line long enough to wrap lands on the edge whenever its width is an exact
+/// multiple of the row width, not only when it fills a single row.
+fn fillsRow(line: []const u8, size: Size) bool {
+    // Size unknown: erase, because leaving stale text on screen is the worse
+    // of the two failures.
+    if (size.width == 0) return false;
+
+    const w = measure.width(line);
+    return w > 0 and w % size.width == 0;
+}
 
 /// What a frame looks like on screen, as far as the diff path cares.
 const Shape = struct {
@@ -382,6 +419,35 @@ test "leavesStyleOpen: hyperlinks" {
     try std.testing.expect(leavesStyleOpen("\x1b]8;;https://example.com\x07link text"));
     try std.testing.expect(!leavesStyleOpen("\x1b]8;;https://example.com\x07link\x1b]8;;\x07"));
     try std.testing.expect(!leavesStyleOpen("\x1b]8;;https://example.com\x1b\\link\x1b]8;;\x1b\\"));
+}
+
+test "fillsRow: a line that ends on the row edge" {
+    const size = Size{ .width = 5, .height = 4 };
+
+    try std.testing.expect(!fillsRow("", size));
+    try std.testing.expect(!fillsRow("abc", size));
+    try std.testing.expect(fillsRow("abcde", size));
+
+    // A line long enough to wrap comes back to the edge at every multiple of
+    // the row width, not only on the first row it fills.
+    try std.testing.expect(!fillsRow("abcdefgh", size));
+    try std.testing.expect(fillsRow("abcdefghij", size));
+
+    // Escape sequences occupy no columns; double-width characters occupy two.
+    try std.testing.expect(fillsRow("\x1b[31mabcde\x1b[0m", size));
+    try std.testing.expect(!fillsRow("日本", size));
+    try std.testing.expect(fillsRow("日本語だよ", size));
+
+    // An unknown width cannot rule the erase out.
+    try std.testing.expect(!fillsRow("abcde", .{ .width = 0, .height = 0 }));
+}
+
+test "addressableRows: an unknown height falls back to the sequence limit" {
+    try std.testing.expectEqual(@as(usize, 24), addressableRows(.{ .width = 80, .height = 24 }));
+    try std.testing.expectEqual(
+        @as(usize, std.math.maxInt(u16)),
+        addressableRows(.{ .width = 80, .height = 0 }),
+    );
 }
 
 test "scan: frame geometry" {
