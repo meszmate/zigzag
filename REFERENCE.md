@@ -1095,6 +1095,13 @@ Terminal replies that are not key presses (device attributes, cursor position
 reports, OSC clipboard answers, Kitty graphics acknowledgements) are consumed
 and discarded rather than surfacing as text.
 
+Backspace has no single byte: most terminals send DEL (`0x7f`), xterm sends BS
+(`0x08`) unless its `backarrowKey` resource is turned off. Both decode to
+`.backspace`, so the key works everywhere without the application checking.
+The cost is that a legacy encoding cannot distinguish Backspace from Ctrl+H —
+they are the same byte. Bind Ctrl+H only where the Kitty keyboard protocol is
+enabled, which reports it separately as `CSI 104;5u`.
+
 For a buffer that is known to be complete — a test fixture, a recorded
 session — `zz.input.keyboard.parseAll` decodes it in one call without any
 retained state.
