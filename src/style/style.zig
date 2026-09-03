@@ -611,12 +611,15 @@ pub const Style = struct {
         const content_width = measure.width(processed_text);
         const content_height = measure.height(processed_text);
 
-        // Apply size constraints
+        // Apply size constraints. A render always emits at least one line, even
+        // for empty text, so the content box is never shorter than one row.
         var target_width = content_width;
-        var target_height = content_height;
+        var target_height = @max(content_height, 1);
 
         if (self.width_val) |w| target_width = w;
-        if (self.height_val) |h| target_height = h;
+        // height is a minimum: content taller than it grows the box instead of
+        // being silently cut off. max_height is the hard clamp that truncates.
+        if (self.height_val) |h| target_height = @max(target_height, h);
         if (self.max_width_val) |mw| target_width = @min(target_width, mw);
         if (self.max_height_val) |mh| target_height = @min(target_height, mh);
 
@@ -681,7 +684,19 @@ pub const Style = struct {
             @as(usize, if (self.border_sides.top) 1 else 0) -|
             @as(usize, if (self.border_sides.bottom) 1 else 0);
 
-        _ = inner_height;
+        // Fit the content block to inner_height. Short content is padded with
+        // blank lines distributed according to align_vertical; content longer
+        // than the box (only reachable via max_height) has its tail dropped.
+        // Inline output is a single row, so there is nothing to stretch into.
+        const line_count = std.mem.count(u8, text, "\n") + 1;
+        const fill = if (self.inline_mode) 0 else inner_height -| line_count;
+        const fill_top: usize = switch (self.align_vertical) {
+            .top => 0,
+            .middle => fill / 2,
+            .bottom => fill,
+        };
+        const fill_bottom = fill - fill_top;
+        const visible_lines = @min(line_count, inner_height);
 
         // Start style
         try self.writeStyleStart(writer);
@@ -705,10 +720,22 @@ pub const Style = struct {
             try self.writeContentLine(writer, "", inner_width);
         }
 
+        // Vertical fill above the content
+        for (0..fill_top) |_| {
+            try self.writeContentLine(writer, "", inner_width);
+        }
+
         // Content lines
         var lines = std.mem.splitScalar(u8, text, '\n');
-        while (lines.next()) |line| {
+        var emitted: usize = 0;
+        while (emitted < visible_lines) : (emitted += 1) {
+            const line = lines.next() orelse break;
             try self.writeContentLine(writer, line, inner_width);
+        }
+
+        // Vertical fill below the content
+        for (0..fill_bottom) |_| {
+            try self.writeContentLine(writer, "", inner_width);
         }
 
         // Padding bottom

@@ -161,6 +161,21 @@ const style = (zz.Style{})
 const output = try style.render(allocator, "Hello, World!");
 // render() does not append an implicit trailing '\n'
 
+// Sizing
+//
+// `width`/`height` size the content box, so padding and borders are added on
+// top of them. `height` is a minimum: content taller than it grows the block
+// rather than being cut off. Short content is padded with blank rows, placed
+// according to `valign`.
+const panel = (zz.Style{})
+    .borderAll(.rounded)
+    .width(rect.width - 2)     // minus the left and right border columns
+    .height(rect.height - 2)   // minus the top and bottom border rows
+    .valign(.middle);          // .top (default), .middle, .bottom
+
+// `maxHeight` is the hard clamp - it truncates rows that do not fit.
+const clamped = (zz.Style{}).maxHeight(3);
+
 // Text transforms
 const upper_style = (zz.Style{}).transform(.uppercase);
 const shouting = try upper_style.render(allocator, "hello"); // "HELLO"
