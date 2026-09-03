@@ -77,6 +77,65 @@ test "Key parsing - backspace" {
     const result = zz.input.keyboard.parse("\x7f");
     try testing.expect(result.result == .key);
     try testing.expect(result.result.key.key == .backspace);
+    try testing.expect(!result.result.key.modifiers.any());
+}
+
+// xterm sends BS rather than DEL for Backspace unless `backarrowKey` is
+// turned off, so a parser that only knows DEL leaves the key dead there.
+test "Key parsing - backspace sent as BS" {
+    const result = zz.input.keyboard.parse("\x08");
+    try testing.expect(result.result == .key);
+    try testing.expect(result.result.key.key == .backspace);
+    try testing.expect(!result.result.key.modifiers.any());
+    try testing.expectEqual(@as(usize, 1), result.consumed);
+}
+
+test "Key parsing - alt+backspace on both byte spellings" {
+    for ([_][]const u8{ "\x1b\x7f", "\x1b\x08" }) |seq| {
+        const result = zz.input.keyboard.parse(seq);
+        try testing.expect(result.result == .key);
+        try testing.expect(result.result.key.key == .backspace);
+        try testing.expect(result.result.key.modifiers.alt);
+        try testing.expect(!result.result.key.modifiers.ctrl);
+        try testing.expectEqual(@as(usize, 2), result.consumed);
+    }
+}
+
+// BS is the one control byte that is not Ctrl+letter; the rest of the range
+// has to keep working.
+test "Key parsing - control bytes around BS stay ctrl+letter" {
+    const ctrl_g = zz.input.keyboard.parse("\x07");
+    try testing.expect(ctrl_g.result.key.key.eql(.{ .char = 'g' }));
+    try testing.expect(ctrl_g.result.key.modifiers.ctrl);
+
+    const ctrl_i = zz.input.keyboard.parse("\x09");
+    try testing.expect(ctrl_i.result.key.key == .tab);
+}
+
+test "Key parsing - kitty backspace keycodes" {
+    for ([_][]const u8{ "\x1b[127u", "\x1b[8u" }) |seq| {
+        const result = zz.input.keyboard.parse(seq);
+        try testing.expect(result.result == .key);
+        try testing.expect(result.result.key.key == .backspace);
+    }
+
+    // A terminal in Kitty mode can still name Ctrl+H exactly.
+    const ctrl_h = zz.input.keyboard.parse("\x1b[104;5u");
+    try testing.expect(ctrl_h.result == .key);
+    try testing.expect(ctrl_h.result.key.key.eql(.{ .char = 'h' }));
+    try testing.expect(ctrl_h.result.key.modifiers.ctrl);
+}
+
+test "InputParser - BS backspace through the streaming decoder" {
+    const allocator = testing.allocator;
+    var parser: zz.InputParser = .{};
+
+    const events = try parser.feed(allocator, "ab\x08", 0);
+    defer allocator.free(events);
+
+    try testing.expectEqual(@as(usize, 3), events.len);
+    try testing.expect(events[2].key.key == .backspace);
+    try testing.expect(!events[2].key.modifiers.ctrl);
 }
 
 test "Key parsing - enter" {
@@ -175,6 +234,29 @@ test "TextArea accepts multi-character paste commits (IME-like)" {
     const value = try area.getValue(testing.allocator);
     defer testing.allocator.free(value);
     try testing.expectEqualStrings("中文输入", value);
+}
+
+// End to end for issue #146: the byte an xterm actually sends has to reach the
+// editing components as a delete, not as an unhandled Ctrl+H that they drop.
+test "Editing components delete on the BS byte an xterm sends" {
+    const bs = zz.input.keyboard.parse("\x08").result.key;
+
+    var area = zz.TextArea.init(testing.allocator);
+    defer area.deinit();
+    try area.setValue("hello");
+    area.handleKey(.{ .key = .end });
+    area.handleKey(bs);
+
+    const value = try area.getValue(testing.allocator);
+    defer testing.allocator.free(value);
+    try testing.expectEqualStrings("hell", value);
+
+    var input = zz.TextInput.init(testing.allocator);
+    defer input.deinit();
+    try input.setValue("hello");
+    input.handleKey(.{ .key = .end });
+    input.handleKey(bs);
+    try testing.expectEqualStrings("hell", input.getValue());
 }
 
 test "TextArea keeps cursor on UTF-8 boundaries after vertical move" {

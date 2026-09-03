@@ -262,6 +262,13 @@ fn parseFramed(data: []const u8, frame_len: usize) StreamStep {
 fn parseControl(c: u8) KeyEvent {
     return switch (c) {
         0 => .{ .key = .null_key, .modifiers = .{ .ctrl = true } },
+        // 0x08 is BS. Which byte Backspace sends is a terminal setting, not a
+        // standard: xterm sends BS unless `backarrowKey` is off, while most
+        // other terminals send DEL. A legacy encoding has no room to say which
+        // of Backspace and Ctrl+H was pressed, so BS is reported as the key
+        // people actually press. Terminals speaking the Kitty protocol send a
+        // real Ctrl+H as `CSI 104;5u`, which stays distinct.
+        8 => .{ .key = .backspace },
         9 => .{ .key = .tab },
         // In raw mode 0x0a is sent by the terminal itself
         // Some editor-integrated terminals (Zed, possibly VSCode) use this
@@ -272,7 +279,7 @@ fn parseControl(c: u8) KeyEvent {
         10 => .{ .key = .enter, .modifiers = .{ .shift = true } },
         13 => .{ .key = .enter },
         27 => .{ .key = .escape },
-        1...8, 11, 12, 14...26 => .{
+        1...7, 11, 12, 14...26 => .{
             .key = .{ .char = 'a' + c - 1 },
             .modifiers = .{ .ctrl = true },
         },
@@ -424,6 +431,9 @@ fn parseKittyCsi(params: []const u16, sub_params: []const u16, has_colon: bool, 
 
     // Map keycode to Key
     const key: Key = switch (keycode) {
+        // The protocol assigns Backspace the DEL keycode; 8 is accepted too
+        // for terminals that report the BS byte they would have sent.
+        8 => .backspace,
         9 => .tab,
         13 => .enter,
         27 => .escape,
