@@ -77,9 +77,10 @@ pub fn build(b: *std.Build) void {
 
         const run_cmd = b.addRunArtifact(example);
         run_cmd.step.dependOn(&install_example.step);
-        if (b.args) |args| {
-            run_cmd.addArgs(args);
-        }
+        // if (b.args) |args| {
+        //     run_cmd.addArgs(args);
+        // }
+        run_cmd.addPassthruArgs();
 
         const run_step = b.step(
             b.fmt("run-{s}", .{example_name}),
