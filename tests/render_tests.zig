@@ -52,8 +52,10 @@ const VirtualScreen = struct {
     wrap_pending: bool = false,
 
     fn init() VirtualScreen {
-        const blank_row = [_]Cell{.{}} ** max_cols;
-        return .{ .cells = [_][max_cols]Cell{blank_row} ** max_rows };
+        // const blank_row = [_]Cell{.{}} ** max_cols;
+        const blank_row: [max_cols]Cell = @splat(Cell{});
+        const blank_cells: [max_rows][max_cols]Cell = @splat(blank_row);
+        return .{ .cells = blank_cells };
     }
 
     /// A reported size of zero means the terminal never told anyone how big it
