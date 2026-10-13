@@ -52,6 +52,9 @@ pub fn Program(comptime Model: type) type {
         environment: Environment,
         arena: std.heap.ArenaAllocator,
         model: Model,
+        /// Set once `Model.init` has returned, so `deinit` never hands
+        /// `Model.deinit` a model that was never set up.
+        model_initialized: bool,
         terminal: ?Terminal,
         context: Context,
         options: Options,
@@ -109,6 +112,7 @@ pub fn Program(comptime Model: type) type {
                 .environment = .fromEnvMap(environ_map),
                 .arena = arena,
                 .model = undefined,
+                .model_initialized = false,
                 .terminal = null,
                 .context = undefined,
                 .options = options,
@@ -135,6 +139,31 @@ pub fn Program(comptime Model: type) type {
             return self;
         }
 
+        /// Initialize with a model whose fields are already set.
+        ///
+        /// Use it to hand the model whatever `main` created before the program
+        /// starts: a database pool, a config, an open file. `Model.init` still
+        /// runs from `start()` and sees these values through `self`, so it
+        /// should fill in the remaining fields rather than overwrite the whole
+        /// struct:
+        ///
+        /// ```zig
+        /// var program = zz.Program(Model).initWithModel(init.gpa, init.io, init.environ_map, .{
+        ///     .pool = pool,
+        /// }, .{});
+        /// ```
+        pub fn initWithModel(
+            allocator: std.mem.Allocator,
+            io: std.Io,
+            environ_map: *const std.process.Environ.Map,
+            model: Model,
+            options: Options,
+        ) Self {
+            var self = initWithOptions(allocator, io, environ_map, options);
+            self.model = model;
+            return self;
+        }
+
         /// Clean up resources
         pub fn deinit(self: *Self) void {
             if (self.terminal) |*term| {
@@ -146,8 +175,9 @@ pub fn Program(comptime Model: type) type {
             self.renderer.deinit();
             self.arena.deinit();
 
-            // Call model's deinit if it exists
-            if (@hasDecl(Model, "deinit")) {
+            // Call model's deinit if it exists. If `start()` failed before
+            // `Model.init` returned, there is nothing of the model's to free.
+            if (@hasDecl(Model, "deinit") and self.model_initialized) {
                 self.model.deinit();
             }
         }
@@ -237,6 +267,7 @@ pub fn Program(comptime Model: type) type {
                 try self.model.init(&self.context)
             else
                 self.model.init(&self.context);
+            self.model_initialized = true;
             try self.processCommand(init_cmd);
 
             self.running = true;

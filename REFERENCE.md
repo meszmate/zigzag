@@ -514,6 +514,24 @@ if (modal.isVisible()) {
 
 Presets: `Modal.info()`, `Modal.confirm()`, `Modal.warning()`, `Modal.err()`, or `Modal.init()` for full custom.
 
+`title`, `body` and `footer` are borrowed, not copied. To show content that is
+rendered every frame — a `RichLog`, a table, another component's `view()` —
+render it in `view()` and pass it with `withBody`, which returns a copy of the
+modal for that one render:
+
+```zig
+pub fn view(self: *const Model, ctx: *const zz.Context) ![]const u8 {
+    if (self.modal.isVisible()) {
+        const log = try self.log.view(ctx.allocator);
+        return self.modal.withBody(log).viewWithBackdrop(ctx.allocator, ctx.width, ctx.height);
+    }
+    // ...
+}
+```
+
+Assigning a `ctx.allocator` string to `modal.body` in `update()` instead leaves
+the modal pointing at memory the next frame frees.
+
 ### Tooltip
 
 Contextual hint positioned near a target element with cell-based overlay compositing:
@@ -974,7 +992,9 @@ The renderer is usable on its own — `zz.FrameRenderer` over any
 ### Testing a model
 
 `zz.testing.Harness` runs the Model-Update-View cycle with no terminal
-attached, so an application's own tests can drive it like a user would:
+attached, so an application's own tests can drive it like a user would. Use
+`Harness(Model).initWithModel(allocator, io, model, .{})` to hand the model a
+fixture or test double, the way `Program.initWithModel` does:
 
 ```zig
 test "pressing + increments the counter" {
@@ -1021,9 +1041,61 @@ try zz.testing.expectSnapshot(allocator, "tests/snapshots/counter.snap", try h.v
 ### Allocator lifetimes
 
 `ctx.allocator` is a frame allocator that is reset before each `tick()`.
-Use it for temporary values (render strings, per-frame buffers).
+Use it for temporary values (render strings, per-frame buffers). Never store
+one of its slices in the model: it is freed when the next frame starts.
 
-For model state that must live across frames, allocate with `ctx.persistent_allocator`.
+For model state that must live across frames, allocate with
+`ctx.persistent_allocator`, and free it in an optional `deinit`, which
+`program.deinit()` calls once `Model.init` has run:
+
+```zig
+pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
+    self.log = zz.RichLog.init(ctx.persistent_allocator, 500);
+    return .none;
+}
+
+pub fn deinit(self: *Model) void {
+    self.log.deinit();
+}
+```
+
+In a debug build the allocator from `std.process.Init` checks for leaks when
+`main` returns, so anything left unfreed is reported, with stack traces, as
+the program exits.
+
+### Passing data into the model
+
+Resources created in `main` — a database pool, a config, an open file — reach
+the model through `initWithModel`, which takes the model's initial value:
+
+```zig
+const Model = struct {
+    pool: *pg.Pool,
+    rows: []const Row = &.{},
+
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
+        // `pool` is already set; fill in the rest without overwriting it.
+        self.rows = try loadRows(self.pool, ctx.persistent_allocator);
+        return .none;
+    }
+    // ...
+};
+
+pub fn main(init: std.process.Init) !void {
+    const pool = try pg.Pool.initUri(init.io, init.gpa, uri, .{ .size = 5 });
+    defer pool.deinit();
+
+    var program = zz.Program(Model).initWithModel(init.gpa, init.io, init.environ_map, .{
+        .pool = pool,
+    }, .{});
+    defer program.deinit();
+    try program.run();
+}
+```
+
+The last argument is the same `Options` that `initWithOptions` takes. `Model.init`
+still runs from `start()`, so it must assign the fields it owns one by one —
+`self.* = .{ ... }` would replace the values passed in.
 
 ### Custom event loop
 

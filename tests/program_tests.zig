@@ -82,3 +82,57 @@ test "Program.init context allocator is stable before start and can be rebound t
     const rebound_context_allocator_ptr = @intFromPtr(program.context.allocator.ptr);
     try testing.expectEqual(arena_ptr, rebound_context_allocator_ptr);
 }
+
+const SeededModel = struct {
+    greeting: []const u8,
+    deinit_calls: *u32,
+
+    pub const Msg = union(enum) { nop: void };
+
+    pub fn init(_: *SeededModel, _: *zz.Context) zz.Cmd(Msg) {
+        return .none;
+    }
+
+    pub fn deinit(self: *SeededModel) void {
+        self.deinit_calls.* += 1;
+    }
+
+    pub fn update(_: *SeededModel, _: Msg, _: *zz.Context) zz.Cmd(Msg) {
+        return .none;
+    }
+
+    pub fn view(self: *const SeededModel, _: *const zz.Context) []const u8 {
+        return self.greeting;
+    }
+};
+
+test "Program.initWithModel seeds the model before start" {
+    var env_map: std.process.Environ.Map = .init(testing.allocator);
+    defer env_map.deinit();
+    var deinit_calls: u32 = 0;
+
+    var program = zz.Program(SeededModel).initWithModel(testing.allocator, testing.io, &env_map, .{
+        .greeting = "hello",
+        .deinit_calls = &deinit_calls,
+    }, .{ .fps = 30 });
+    defer program.deinit();
+
+    try testing.expectEqualStrings("hello", program.model.greeting);
+    try testing.expectEqual(@as(u32, 30), program.options.fps);
+}
+
+test "Program.deinit does not tear down a model that was never initialized" {
+    var env_map: std.process.Environ.Map = .init(testing.allocator);
+    defer env_map.deinit();
+    var deinit_calls: u32 = 0;
+
+    // `start()` never runs (as when it fails to open the terminal), so
+    // `Model.init` never set anything up for `Model.deinit` to free.
+    var program = zz.Program(SeededModel).initWithModel(testing.allocator, testing.io, &env_map, .{
+        .greeting = "hello",
+        .deinit_calls = &deinit_calls,
+    }, .{});
+    program.deinit();
+
+    try testing.expectEqual(@as(u32, 0), deinit_calls);
+}

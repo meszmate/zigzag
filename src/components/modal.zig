@@ -58,6 +58,8 @@ pub const Modal = struct {
 
     // ── Content ────────────────────────────────────────────────────────
 
+    // Borrowed, not copied: they must outlive every render. For content that
+    // is rendered each frame, see `withBody`.
     title: []const u8 = "",
     body: []const u8 = "",
     footer: ?[]const u8 = null,
@@ -238,6 +240,25 @@ pub const Modal = struct {
     /// Blank modal with no preset content — configure everything yourself.
     pub fn init() Modal {
         return .{};
+    }
+
+    /// A copy of this modal showing `body` instead of its own.
+    ///
+    /// The modal keeps `title`, `body` and `footer` as borrowed slices, so
+    /// they must stay valid for as long as the modal is drawn. Content built
+    /// each frame in `ctx.allocator` (a `RichLog`, a `Table`, any rendered
+    /// component) is freed when the next frame starts, so storing it in
+    /// `body` from `update()` leaves a dangling slice. Pass it here from
+    /// `view()` instead:
+    ///
+    /// ```zig
+    /// const log = try self.log.view(ctx.allocator);
+    /// return self.modal.withBody(log).viewWithBackdrop(ctx.allocator, ctx.width, ctx.height);
+    /// ```
+    pub fn withBody(self: Modal, body: []const u8) Modal {
+        var copy = self;
+        copy.body = body;
+        return copy;
     }
 
     // ── Button Management ──────────────────────────────────────────────
@@ -502,7 +523,7 @@ pub const Modal = struct {
             if (!self.content_bg.isNone() and merged_body.background.isNone()) {
                 merged_body = merged_body.bg(self.content_bg);
             }
-            try writer.writeAll(try merged_body.render(allocator, line));
+            try writeRestyled(allocator, writer, merged_body, line);
 
             // Right fill
             const line_w = measure.width(line);
@@ -694,6 +715,31 @@ pub const Modal = struct {
         if (self.footer != null) e += 2;
         if (self.button_count > 0) e += 2;
         return e;
+    }
+
+    /// Write `line` in `style`, picking the style back up after every reset
+    /// the line carries. Pre-styled content (a rendered `RichLog`, say) ends
+    /// each of its spans with a reset, which would otherwise drop the body
+    /// colour and `content_bg` for the rest of the line.
+    fn writeRestyled(allocator: std.mem.Allocator, writer: *Writer, style: style_mod.Style, line: []const u8) !void {
+        var rest = line;
+        while (rest.len > 0) {
+            const next = nextReset(rest);
+            const end = if (next) |r| r.pos + r.len else rest.len;
+            try writer.writeAll(try style.render(allocator, rest[0..end]));
+            rest = rest[end..];
+        }
+    }
+
+    fn nextReset(text: []const u8) ?struct { pos: usize, len: usize } {
+        const long = std.mem.indexOf(u8, text, "\x1b[0m");
+        const short = std.mem.indexOf(u8, text, "\x1b[m");
+        if (long) |l| {
+            if (short) |s| if (s < l) return .{ .pos = s, .len = 3 };
+            return .{ .pos = l, .len = 4 };
+        }
+        if (short) |s| return .{ .pos = s, .len = 3 };
+        return null;
     }
 
     fn renderBackdropSegment(allocator: std.mem.Allocator, bd: Backdrop, count: usize) ![]const u8 {

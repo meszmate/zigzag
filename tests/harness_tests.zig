@@ -229,3 +229,136 @@ test "harness size is configurable" {
 
     try testing.expect(try h.viewContains("size: 40x10"));
 }
+
+/// A log shown inside a modal, the way issue #158 wanted it: the log lives in
+/// the model, the modal's body is rendered from it every frame, and `deinit`
+/// gives the log's memory back.
+const LogModal = struct {
+    log: zz.RichLog,
+    modal: zz.Modal,
+
+    pub const Msg = union(enum) { key: zz.KeyEvent };
+
+    pub fn init(self: *LogModal, ctx: *zz.Context) !zz.Cmd(Msg) {
+        self.* = .{
+            .log = zz.RichLog.init(ctx.persistent_allocator, 50),
+            .modal = zz.Modal.init(),
+        };
+        self.log.setSize(30, 4);
+        for (0..12) |i| try self.log.appendFmt(ctx.io, .info, "entry {d:0>2}", .{i});
+        return .none;
+    }
+
+    pub fn deinit(self: *LogModal) void {
+        self.log.deinit();
+    }
+
+    pub fn update(self: *LogModal, msg: Msg, ctx: *zz.Context) !zz.Cmd(Msg) {
+        const k = msg.key;
+        if (self.modal.isVisible()) {
+            self.modal.handleKey(k);
+            return .none;
+        }
+        switch (k.key) {
+            .char => |c| switch (c) {
+                'q' => return .quit,
+                'a' => try self.log.append(ctx.io, .warn, "appended"),
+                'l' => {
+                    self.modal = zz.Modal.init();
+                    self.modal.title = "Log";
+                    self.modal.width = .{ .fixed = 40 };
+                    self.modal.addButton("OK", null);
+                    self.modal.show();
+                },
+                else => {},
+            },
+            else => {},
+        }
+        return .none;
+    }
+
+    pub fn view(self: *const LogModal, ctx: *const zz.Context) ![]const u8 {
+        if (self.modal.isVisible()) {
+            const body = try self.log.view(ctx.allocator);
+            return self.modal.withBody(body).viewWithBackdrop(ctx.allocator, ctx.width, ctx.height);
+        }
+        return "main";
+    }
+};
+
+test "a RichLog renders inside a modal across frames and is freed on quit" {
+    // testing.allocator reports the log's entries if deinit does not run.
+    var h = try zz.testing.Harness(LogModal).init(testing.allocator, testing.io, .{});
+    defer h.deinit();
+    try h.start();
+
+    try h.pressChar('l');
+    for (0..3) |_| {
+        // Each frame frees the previous one's allocations; the modal must not
+        // be holding on to any of them.
+        h.nextFrame(16 * std.time.ns_per_ms);
+        const frame = try h.plainView();
+        try testing.expect(std.mem.indexOf(u8, frame, "entry 11") != null);
+        try testing.expect(std.mem.indexOf(u8, frame, "entry 07") == null);
+    }
+
+    try h.press(.{ .key = .enter });
+    try testing.expect(!h.model.modal.isVisible());
+    try h.pressChar('a');
+    try h.pressChar('l');
+    h.nextFrame(16 * std.time.ns_per_ms);
+    try testing.expect(try h.viewContains("appended"));
+
+    try h.press(.{ .key = .enter });
+    try h.pressChar('q');
+    try testing.expect(h.hasQuit());
+}
+
+/// Stands in for something `main` creates before the program starts, such as
+/// a database pool (issue #161).
+const Store = struct {
+    rows: []const []const u8,
+    queries: u32 = 0,
+
+    fn fetch(self: *Store, index: usize) []const u8 {
+        self.queries += 1;
+        return self.rows[index % self.rows.len];
+    }
+};
+
+const StoreModel = struct {
+    store: *Store,
+    current: []const u8 = "",
+
+    pub const Msg = union(enum) { key: zz.KeyEvent };
+
+    pub fn init(self: *StoreModel, _: *zz.Context) zz.Cmd(Msg) {
+        // `store` was set before start(); fill in the rest without clobbering it.
+        self.current = self.store.fetch(0);
+        return .none;
+    }
+
+    pub fn update(self: *StoreModel, msg: Msg, _: *zz.Context) zz.Cmd(Msg) {
+        if (msg.key.key == .down) self.current = self.store.fetch(1);
+        return .none;
+    }
+
+    pub fn view(self: *const StoreModel, _: *const zz.Context) []const u8 {
+        return self.current;
+    }
+};
+
+test "initWithModel hands the model values created outside the program" {
+    var store: Store = .{ .rows = &.{ "alice", "bob" } };
+
+    var h = try zz.testing.Harness(StoreModel).initWithModel(testing.allocator, testing.io, .{
+        .store = &store,
+    }, .{});
+    defer h.deinit();
+    try h.start();
+
+    try testing.expectEqualStrings("alice", try h.view());
+    try h.press(.{ .key = .down });
+    try testing.expectEqualStrings("bob", try h.view());
+    try testing.expectEqual(@as(u32, 2), store.queries);
+}

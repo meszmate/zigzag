@@ -97,6 +97,15 @@ pub fn Harness(comptime Model: type) type {
             return self;
         }
 
+        /// Like `init`, with a model whose fields are already set — the
+        /// counterpart of `Program.initWithModel`, for handing the model a
+        /// test double or fixture before `start()`.
+        pub fn initWithModel(allocator: std.mem.Allocator, io: std.Io, model: Model, options: Options) !Self {
+            var self = try init(allocator, io, options);
+            self.model = model;
+            return self;
+        }
+
         pub fn deinit(self: *Self) void {
             if (self.started and @hasDecl(Model, "deinit")) {
                 self.model.deinit();

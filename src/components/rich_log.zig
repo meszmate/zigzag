@@ -219,7 +219,10 @@ pub const RichLog = struct {
     }
 
     fn maxOffset(self: *const RichLog) usize {
-        const visible_count = self.visible.items.len;
+        return self.maxOffsetFor(self.visible.items.len);
+    }
+
+    fn maxOffsetFor(self: *const RichLog, visible_count: usize) usize {
         if (visible_count <= self.height) return 0;
         return visible_count - self.height;
     }
@@ -227,6 +230,15 @@ pub const RichLog = struct {
     fn refresh(self: *RichLog) !void {
         if (!self.visible_dirty) return;
         self.visible.clearRetainingCapacity();
+        try self.collectVisible(&self.visible);
+        self.visible_dirty = false;
+        const max_off = self.maxOffset();
+        if (self.y_offset > max_off) self.y_offset = max_off;
+    }
+
+    /// Append the indices of the entries that pass the level and search
+    /// filters to `out`.
+    fn collectVisible(self: *const RichLog, out: *std.array_list.Managed(usize)) !void {
         for (self.entries.items, 0..) |e, i| {
             if (e.level.rank() < self.min_level.rank()) continue;
             if (self.search_term.items.len > 0 and
@@ -234,11 +246,8 @@ pub const RichLog = struct {
             {
                 continue;
             }
-            try self.visible.append(i);
+            try out.append(i);
         }
-        self.visible_dirty = false;
-        const max_off = self.maxOffset();
-        if (self.y_offset > max_off) self.y_offset = max_off;
     }
 
     pub fn handleKey(self: *RichLog, key: keys.KeyEvent) !void {
@@ -260,18 +269,27 @@ pub const RichLog = struct {
         }
     }
 
-    pub fn view(self: *RichLog, allocator: std.mem.Allocator) ![]const u8 {
-        try self.refresh();
+    /// Render the visible window. Takes a const pointer so it can be called
+    /// straight from a model's `view(self: *const Model, ...)`. When the
+    /// filter cache is stale, the visible entries are worked out in
+    /// `allocator` for this call only.
+    pub fn view(self: *const RichLog, allocator: std.mem.Allocator) ![]const u8 {
+        var scratch = std.array_list.Managed(usize).init(allocator);
+        defer scratch.deinit();
+        const visible = if (self.visible_dirty) blk: {
+            try self.collectVisible(&scratch);
+            break :blk scratch.items;
+        } else self.visible.items;
 
         var out: Writer.Allocating = .init(allocator);
         const w = &out.writer;
 
-        const visible = self.visible.items;
         if (visible.len == 0) {
             return out.toOwnedSlice();
         }
 
-        const start = self.y_offset;
+        const max_off = self.maxOffsetFor(visible.len);
+        const start = if (self.follow) max_off else @min(self.y_offset, max_off);
         const end = @min(start + self.height, visible.len);
 
         var first = true;
@@ -419,4 +437,38 @@ test "view emits at most height lines" {
         newlines += 1;
     };
     try std.testing.expect(newlines <= 2);
+}
+
+test "view renders through a const pointer" {
+    const allocator = std.testing.allocator;
+    var log = RichLog.init(allocator, 100);
+    defer log.deinit();
+    try log.append(std.testing.io, .debug, "noise");
+    try log.append(std.testing.io, .warn, "important");
+    log.setMinLevel(.warn);
+
+    // The filter changed but nothing refreshed the cache; a const view still
+    // has to honour it.
+    const const_log: *const RichLog = &log;
+    const out = try const_log.view(allocator);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "important") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "noise") == null);
+}
+
+test "follow mode shows the tail after a resize" {
+    const allocator = std.testing.allocator;
+    var log = RichLog.init(allocator, 100);
+    defer log.deinit();
+    var i: usize = 0;
+    while (i < 20) : (i += 1) {
+        try log.appendFmt(std.testing.io, .info, "line {d}", .{i});
+    }
+    // Shrinking the window after the entries arrived must not leave the
+    // newest entries below it.
+    log.setSize(80, 3);
+    const out = try log.view(allocator);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "line 19") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "line 16") == null);
 }

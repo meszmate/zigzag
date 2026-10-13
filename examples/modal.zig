@@ -7,6 +7,7 @@
 //!   3  — Show warning modal
 //!   4  — Show error modal
 //!   5  — Show custom modal
+//!   6  — Show the result log in a modal
 //!   q  — Quit
 
 const std = @import("std");
@@ -14,6 +15,10 @@ const zz = @import("zigzag");
 
 const Model = struct {
     modal: zz.Modal,
+    /// Every modal result, shown by the log modal.
+    log: zz.RichLog,
+    /// Whether the open modal displays `log`.
+    showing_log: bool,
     last_result: []const u8,
     last_result_buf: [64]u8,
     status: []const u8,
@@ -22,15 +27,26 @@ const Model = struct {
         key: zz.KeyEvent,
     };
 
-    pub fn init(self: *Model, _: *zz.Context) zz.Cmd(Msg) {
+    pub fn init(self: *Model, ctx: *zz.Context) !zz.Cmd(Msg) {
         self.modal = zz.Modal.init();
+        // Model state outlives frames, so it uses the persistent allocator and
+        // is freed in `deinit`.
+        self.log = zz.RichLog.init(ctx.persistent_allocator, 100);
+        self.log.setSize(44, 8);
+        self.log.show_timestamps = true;
+        self.showing_log = false;
         self.last_result = "None";
         self.last_result_buf = undefined;
-        self.status = "Press 1-5 to open a modal";
+        self.status = "Press 1-6 to open a modal";
+        try self.log.append(ctx.io, .info, "Modal demo started");
         return .none;
     }
 
-    pub fn update(self: *Model, m: Msg, _: *zz.Context) zz.Cmd(Msg) {
+    pub fn deinit(self: *Model) void {
+        self.log.deinit();
+    }
+
+    pub fn update(self: *Model, m: Msg, ctx: *zz.Context) !zz.Cmd(Msg) {
         switch (m) {
             .key => |k| {
                 // If modal is visible, let it handle keys
@@ -47,7 +63,9 @@ const Model = struct {
                             ) catch "Button pressed",
                             .dismissed => "Dismissed (Escape)",
                         };
-                        self.status = "Press 1-5 to open another modal";
+                        if (!self.showing_log) try self.log.append(ctx.io, .info, self.last_result);
+                        self.showing_log = false;
+                        self.status = "Press 1-6 to open another modal";
                     }
                     return .none;
                 }
@@ -100,6 +118,20 @@ const Model = struct {
                             self.modal.show();
                             self.status = "Custom modal open";
                         },
+                        '6' => {
+                            // The body is left empty here: the log is rendered
+                            // fresh in `view()` and passed in with `withBody`.
+                            self.modal = zz.Modal.init();
+                            self.modal.title = "Result Log";
+                            self.modal.footer = "Every modal result is logged here";
+                            self.modal.border_fg = zz.Color.cyan;
+                            self.modal.content_bg = zz.Color.gray(2);
+                            self.modal.backdrop = .{};
+                            self.modal.addButton("Close", .enter);
+                            self.modal.show();
+                            self.showing_log = true;
+                            self.status = "Log modal open";
+                        },
                         else => {},
                     },
                     .escape => return .quit,
@@ -115,6 +147,12 @@ const Model = struct {
 
         // If modal is visible, render it with backdrop
         if (self.modal.isVisible()) {
+            if (self.showing_log) {
+                // Rendered in this frame's allocator, so it is only handed to
+                // the modal for this one render, never stored in it.
+                const log = try self.log.view(alloc);
+                return self.modal.withBody(log).viewWithBackdrop(alloc, ctx.width, ctx.height);
+            }
             return self.modal.viewWithBackdrop(alloc, ctx.width, ctx.height);
         }
 
@@ -132,7 +170,7 @@ const Model = struct {
         status_s = status_s.fg(zz.Color.gray(12)).inline_style(true);
 
         const title = try title_s.render(alloc, "Modal Component Demo");
-        const hint = try hint_s.render(alloc, "1: Info  2: Confirm  3: Warning  4: Error  5: Custom  q: Quit");
+        const hint = try hint_s.render(alloc, "1: Info  2: Confirm  3: Warning  4: Error  5: Custom  6: Log  q: Quit");
         const result_label = try result_s.render(alloc, try std.fmt.allocPrint(alloc, "Last result: {s}", .{self.last_result}));
         const status = try status_s.render(alloc, self.status);
 
