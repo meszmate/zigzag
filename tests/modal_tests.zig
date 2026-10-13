@@ -340,3 +340,42 @@ test "backdrop presets render without error" {
         try testing.expect(output.len > 0);
     }
 }
+
+test "withBody renders the given body and leaves the modal alone" {
+    const allocator = testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    var m = Modal.info("Log", "original");
+    m.show();
+
+    const shown = m.withBody("line one\nline two");
+    try testing.expectEqualStrings("original", m.body);
+    try testing.expectEqualStrings("Log", shown.title);
+    try testing.expect(shown.isVisible());
+
+    const out = try zz.testing.stripAnsi(a, try shown.viewWithBackdrop(a, 60, 20));
+    try testing.expect(std.mem.indexOf(u8, out, "line one") != null);
+    try testing.expect(std.mem.indexOf(u8, out, "line two") != null);
+    try testing.expect(std.mem.indexOf(u8, out, "original") == null);
+}
+
+test "pre-styled body text keeps the content background after its resets" {
+    const allocator = testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    var m = Modal.init();
+    m.content_bg = zz.Color.gray(2);
+    m.width = .{ .fixed = 30 };
+    m.show();
+
+    // What a RichLog line looks like: a styled level label, then plain text.
+    const out = try m.withBody("\x1b[36mINFO \x1b[0m hello").renderBox(a, 80, 24);
+    const bg = "\x1b[48;5;234m";
+    const hello = std.mem.indexOf(u8, out, " hello").?;
+    const last_reset = std.mem.lastIndexOf(u8, out[0..hello], "\x1b[0m").?;
+    try testing.expect(std.mem.indexOf(u8, out[last_reset..hello], bg) != null);
+}
