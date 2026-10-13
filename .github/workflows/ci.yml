@@ -5,19 +5,21 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ZIG_VERSION: "0.16.0"
 
 jobs:
+  # Formatted with the oldest supported Zig: 0.17's `zig fmt` rewrites
+  # @intFromEnum/@enumFromInt to builtins that 0.16 doesn't have.
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v2
         with:
-          version: ${{ env.ZIG_VERSION }}
+          version: 0.16.0
       - run: zig fmt --check src tests examples build.zig
 
   build:
@@ -25,12 +27,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        zig: [0.16.0, 0.17.0]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v2
         with:
-          version: ${{ env.ZIG_VERSION }}
+          version: ${{ matrix.zig }}
       - run: zig build
 
   test:
@@ -38,12 +41,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        zig: [0.16.0, 0.17.0]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v2
         with:
-          version: ${{ env.ZIG_VERSION }}
+          version: ${{ matrix.zig }}
       - run: zig build test
 
   # Debug catches overflow and bounds violations by panicking; the release
@@ -56,11 +60,12 @@ jobs:
       fail-fast: false
       matrix:
         optimize: [ReleaseSafe, ReleaseFast]
+        zig: [0.16.0, 0.17.0]
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v2
         with:
-          version: ${{ env.ZIG_VERSION }}
+          version: ${{ matrix.zig }}
       - run: zig build test -Doptimize=${{ matrix.optimize }}
 
   cross-compile:
@@ -69,9 +74,10 @@ jobs:
       fail-fast: false
       matrix:
         target: [x86_64-windows, aarch64-macos, x86_64-linux]
+        zig: [0.16.0, 0.17.0]
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v2
         with:
-          version: ${{ env.ZIG_VERSION }}
+          version: ${{ matrix.zig }}
       - run: zig build -Dtarget=${{ matrix.target }}

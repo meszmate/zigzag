@@ -7,7 +7,7 @@
     <a href="https://github.com/meszmate/zigzag/actions"><img src="https://img.shields.io/github/actions/workflow/status/meszmate/zigzag/ci.yml?branch=main&style=flat-square&label=CI" alt="CI status" /></a>
     <a href="https://github.com/meszmate/zigzag/releases"><img src="https://img.shields.io/github/v/release/meszmate/zigzag?style=flat-square" alt="Latest release" /></a>
     <a href="./LICENSE"><img src="https://img.shields.io/github/license/meszmate/zigzag?style=flat-square" alt="MIT license" /></a>
-    <img src="https://img.shields.io/badge/Zig-0.16.0-F7A41D?logo=zig&logoColor=white&style=flat-square" alt="Zig 0.16.0" />
+    <img src="https://img.shields.io/badge/Zig-0.16%20%7C%200.17-F7A41D?logo=zig&logoColor=white&style=flat-square" alt="Zig 0.16 | 0.17" />
   </p>
 
   <p>
@@ -52,7 +52,7 @@ flowchart LR
 
 ## Quick start
 
-Requires Zig 0.16.0 or newer.
+Requires Zig 0.16.0 or newer (tested on 0.16 and 0.17).
 
 ```sh
 zig fetch --save git+https://github.com/meszmate/zigzag#main
