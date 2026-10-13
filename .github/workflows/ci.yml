@@ -11,13 +11,15 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # Formatted with the oldest supported Zig: 0.17's `zig fmt` rewrites
+  # @intFromEnum/@enumFromInt to builtins that 0.16 doesn't have.
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v2
         with:
-          version: 0.17.0
+          version: 0.16.0
       - run: zig fmt --check src tests examples build.zig
 
   build:

@@ -6,7 +6,7 @@ Thank you for your interest in contributing to ZigZag! This document provides gu
 
 ### Prerequisites
 
-- [Zig](https://ziglang.org/download/) 0.16.0 or later, it needs to be compatible with the latest version
+- [Zig](https://ziglang.org/download/) 0.16.0 or later. Changes must build on both 0.16 and 0.17; run `zig fmt` with 0.16, since 0.17 rewrites `@intFromEnum`/`@enumFromInt` into builtins 0.16 lacks
 - Git
 
 ### Setup

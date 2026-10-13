@@ -77,13 +77,11 @@ pub fn build(b: *std.Build) void {
 
         const run_cmd = b.addRunArtifact(example);
         run_cmd.step.dependOn(&install_example.step);
-        // compat 0.16 / 0.17
-        if (@hasDecl(@TypeOf(run_cmd.*), "addPassthruArgs")) {
+        // Zig 0.17 replaced `b.args` with `Run.addPassthruArgs`.
+        if (@hasDecl(std.Build.Step.Run, "addPassthruArgs")) {
             run_cmd.addPassthruArgs();
-        } else {
-            if (b.args) |args| {
-                run_cmd.addArgs(args);
-            }
+        } else if (b.args) |args| {
+            run_cmd.addArgs(args);
         }
 
         const run_step = b.step(
